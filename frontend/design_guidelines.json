@@ -1,0 +1,192 @@
+{
+  "project_name": "INVESTWATCH - UKNF Analytical Supervision Platform",
+  "app_type": "dashboard",
+  "audience": "UKNF (Komisja Nadzoru Finansowego) analysts, financial supervision inspectors, legal enforcement officers, hackathon jury",
+  "theme": "institutional-light",
+  "theme_strategy": {
+    "default_mode": "light",
+    "rationale": "Official state regulatory agency (UKNF) aesthetic. High-contrast, serious institutional design optimized for 1080p/4K projector presentations, video demos, and official black-and-white/color A4 printed dossiers.",
+    "theme_switch": "Include PL/EN language toggle and dark mode preview toggle in top navigation bar"
+  },
+  "visual_identity": {
+    "archetype": "SWISS & HIGH-CONTRAST + INSTITUTIONAL REGULATORY",
+    "emotional_tone": "Rigorous, authoritative, uncompromised, clinical clarity, forensic scrutiny",
+    "branding": {
+      "logo_name": "INVESTWATCH",
+      "sub_brand": "UKNF FinTech / Nadzór Rynku Finansowego",
+      "svg_concept": "Custom vector badge: Precision magnifying reticle / vigilant optical eye over high-frequency candlestick/trend line, framed in deep navy #0B192C with amber focal beacon #D97706"
+    }
+  },
+  "typography": {
+    "font_family_headings": "IBM Plex Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    "font_family_body": "IBM Plex Sans, system-ui, sans-serif",
+    "font_family_mono": "JetBrains Mono, 'Courier New', monospace",
+    "font_weights": {
+      "light": 300,
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "hierarchy": {
+      "h1": "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#0B192C]",
+      "h2": "text-xl sm:text-2xl font-semibold tracking-tight text-[#0B192C]",
+      "h3": "text-lg sm:text-xl font-semibold text-[#1E293B]",
+      "h4": "text-sm sm:text-base font-medium uppercase tracking-[0.08em] text-[#475569]",
+      "body": "text-sm leading-relaxed text-[#334155]",
+      "data_metrics": "font-mono font-bold tabular-nums tracking-tight",
+      "legal_quotes": "font-serif italic border-l-2 border-[#D97706] pl-4 py-1 text-sm bg-[#FFFBEB] text-[#78350F]"
+    }
+  },
+  "color_palette": {
+    "institutional_core": {
+      "navy_950": "#060D17",
+      "navy_900_primary": "#0B192C",
+      "navy_800": "#1E3E62",
+      "navy_700": "#2E5077",
+      "cool_gray_50": "#F8FAFC",
+      "cool_gray_100": "#F1F5F9",
+      "cool_gray_200": "#E2E8F0",
+      "cool_gray_300": "#CBD5E1",
+      "cool_gray_500": "#64748B",
+      "cool_gray_700": "#334155",
+      "cool_gray_900": "#0F172A",
+      "pure_white": "#FFFFFF"
+    },
+    "regulatory_status_tokens": {
+      "critical_red": {
+        "text": "#991B1B",
+        "bg": "#FEF2F2",
+        "border": "#FCA5A5",
+        "dot": "#EF4444",
+        "label": "KRYTYCZNE / WYSOKIE RYZYKO"
+      },
+      "amber_warning": {
+        "text": "#92400E",
+        "bg": "#FFFBEB",
+        "border": "#FCD34D",
+        "dot": "#F59E0B",
+        "label": "WYMAGA WERYFIKACJI"
+      },
+      "emerald_compliant": {
+        "text": "#065F46",
+        "bg": "#ECFDF5",
+        "border": "#6EE7B7",
+        "dot": "#10B981",
+        "label": "ZGODNY / STANDARD"
+      },
+      "blue_info": {
+        "text": "#1E40AF",
+        "bg": "#EFF6FF",
+        "border": "#93C5FD",
+        "dot": "#3B82F6",
+        "label": "W TOKU OBSERWACJI"
+      }
+    },
+    "charts": {
+      "finfluencer": "#2563EB",
+      "risk_disclosure": "#D97706",
+      "shadow_advisory": "#DC2626",
+      "threshold_line": "#475569",
+      "grid_lines": "#E2E8F0"
+    }
+  },
+  "spacing_and_layout": {
+    "grid_mode": "MODE B: High Density Dashboard Grid",
+    "container_padding": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6",
+    "card_style": "bg-white border border-[#CBD5E1] rounded-sm shadow-none p-5 text-left",
+    "table_style": "w-full text-left border-collapse text-xs sm:text-sm tabular-nums",
+    "header_style": "sticky top-0 z-50 bg-[#0B192C] text-white border-b border-[#1E3E62] shadow-sm",
+    "demo_banner": "bg-[#DC2626] text-white text-xs font-mono font-bold tracking-widest px-4 py-1.5 flex items-center justify-between"
+  },
+  "modules_specification": [
+    {
+      "id": "module_1",
+      "name_pl": "Moduł 1: Finfluencerzy & Krypto-Naganiacze",
+      "name_en": "Module 1: Finfluencers & Crypto Promoters",
+      "code": "FINFLUENCER_MONITOR",
+      "detection_targets": ["Nieoznaczone reklamy afiliacyjne", "Sponsorowane pump-and-dump", "Brak ostrzeżeń KNF", "Obietnice nierealistycznych zysków (>20% APY)"]
+    },
+    {
+      "id": "module_2",
+      "name_pl": "Moduł 2: Zgodność Informacji o Ryzyku (KID/MiFID II)",
+      "name_en": "Module 2: Risk Disclosure Compliance (MiFID II/PRIIPs)",
+      "code": "RISK_DISCLOSURE",
+      "detection_targets": ["Ukrywanie disclaimera o stracie kapitału (CFD 70-85%)", "Zbyt mały font ostrzeżenia (<8px)", "Brak standardowej klauzuli KNF", "Kontrast disclaimera <3:1"]
+    },
+    {
+      "id": "module_3",
+      "name_pl": "Moduł 3: Shadow Advisory (Ukryte Doradztwo)",
+      "name_en": "Module 3: Shadow Advisory & Unauthorized Signals",
+      "code": "SHADOW_ADVISORY",
+      "detection_targets": ["Płatne grupy sygnałowe Telegram/Discord", "Konkretne rekomendacje kup/sprzedaj bez licencji maklerskiej", "Zarządzanie kapitałem na czarno", "Obejście art. 69 ustawy o obrocie"]
+    }
+  ],
+  "key_features_and_components": {
+    "header_navbar": {
+      "brand_badge": "INVESTWATCH / UKNF",
+      "live_crawler_pill": "WebSocket Crawler: ONLINE (ping: 18ms, 1,420 postów/min)",
+      "language_toggle": "PL / EN",
+      "demo_mode_switch": "Tryb Prezentacji HackNation (wstępnie załadowane incydenty)",
+      "data_testids": ["nav-logo", "nav-crawler-status", "nav-lang-toggle", "nav-demo-toggle"]
+    },
+    "kpi_summary_grid": {
+      "cards": [
+        {"title": "Wykryte incydenty (24h)", "metric": "47", "change": "+14.6%", "status": "critical"},
+        {"title": "Sprawdzonych materiałów", "metric": "14,892", "change": "+2.1k/h", "status": "info"},
+        {"title": "Potwierdzone naruszenia KNF", "metric": "18", "change": "W toku: 6", "status": "amber"},
+        {"title": "Skuteczność modelu (F1-score)", "metric": "94.2%", "change": "Precision 96%", "status": "compliant"}
+      ]
+    },
+    "interactive_analysis_form": {
+      "modes": ["Analiza Treści (Tekst / Skrypt wideo)", "Skanowanie URL / Profilu Social", "OCR & Analiza Zrzutu Ekranu (Image)"],
+      "preset_examples": [
+        {"name": "Przykład UKNF #1: Sygnały Krypto VIP (Telegram)", "module": "SHADOW_ADVISORY"},
+        {"name": "Przykład UKNF #2: Finfluencer Forex z ukrytym ref-linkiem", "module": "FINFLUENCER_MONITOR"},
+        {"name": "Przykład UKNF #3: Reklama CFD bez disclaimera o ryzyku", "module": "RISK_DISCLOSURE"}
+      ],
+      "actions": ["Wczytaj przykład UKNF", "Uruchom weryfikację algorytmiczną", "Wyczyść"]
+    },
+    "incident_detail_dossier": {
+      "elements": [
+        "Metadane incydentu (ID, Platforma: TikTok/Instagram/YouTube/X/Telegram, Data, Autor/Kanał)",
+        "Wskaźnik Scoringu Ryzyka (0-100) z podziałem składowych (Naruszenie MiFID, Brak licencji, Presja psychologiczna)",
+        "Cytaty dowodowe z precyzyjnym podświetleniem (Highlighted Excerpts)",
+        "Sprawdzenie w rejestrze UKNF (Status podmiotu: BRAK WPISU NA LISTĘ MAKLERÓW / OSTRZEŻENIE PUBLICZNE)",
+        "Zmiana statusu sprawy (Nowe -> Skierowano do Departamentu Prawnego -> Wniosek o zablokowanie -> Umorzono)",
+        "Przycisk 'Generuj Raport Urzędowy A4' (Window.print z dedykowanymi stylami print:block)"
+      ]
+    },
+    "threshold_calibration_panel": {
+      "elements": [
+        "Interaktywny suwak czułości progu decyzyjnego (Decision Threshold Slider 0.00 - 1.00)",
+        "Macierz Pomyłek (Confusion Matrix: TP, FP, TN, FN)",
+        "Wykres Trade-off Precision / Recall w Recharts",
+        "Szacowana liczba spraw kierowanych do analityka dziennie"
+      ]
+    },
+    "live_crawler_feed": {
+      "elements": [
+        "Konsola strumienia zdarzeń w czasie rzeczywistym (Live Event Stream)",
+        "Pauza / Wznów / Symuluj nowe wykrycie",
+        "Filtry modułów 1, 2, 3"
+      ]
+    }
+  },
+  "print_a4_specification": {
+    "rules": [
+      "@media print { body { background: white; color: black; font-size: 11pt; } .no-print { display: none !important; } .print-dossier { display: block !important; } }",
+      "Dodanie oficjalnego nagłówka urzędowego: KOMISJA NADZORU FINANSOWEGO - PROTOKÓŁ INSPEKCJI MATERIAŁU CYFROWEGO",
+      "Formatowanie tabel i cytatów czarno-białe z ramkami 1px dla czytelnego kserowania/wydruku"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Używaj plików .js i .jsx (React 19 + Tailwind CSS + Lucide Icons + Recharts + Sonner).",
+    "Wszystkie interaktywne elementy (przyciski, karty, taby, filtry, suwaki, selecty) MUSZĄ posiadać 'data-testid'.",
+    "Żadnych zdjęć stockowych - wyłącznie wektorowy logotyp SVG InvestWatch, wykresy analityczne Recharts i ikony Lucide.",
+    "Brak zbędnych gradientów, miękkich cieni i kolorowych plam. Trzymaj się stylu urzędowego: ostre krawędzie (rounded-sm), czytelne linie podziału border-[#CBD5E1], czcionka o stałej szerokości dla liczb (tabular-nums font-mono).",
+    "Domyślny język to polski (PL) z możliwością szybkiego przełączenia etykiet na angielski (EN) dla jury międzynarodowego.",
+    "Zapewnij stan początkowy z bogatym zestawem realistycznych danych (minimum 8 incydentów, 3 presety UKNF, aktywny crawler z animacją nowych logów).",
+    "Widok wydruku A4 musi generować kompletny dokument z pieczęcią referencyjną sprawy, sumą kontrolną SHA-256 zabezpieczonego materiału i sekcją na podpis inspektora KNF."
+  ]
+}

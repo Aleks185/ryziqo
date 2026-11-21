@@ -1,0 +1,77 @@
+body {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  background: #f8fafc;
+}
+
+.font-mono {
+  font-family: "IBM Plex Mono", "Courier New", monospace !important;
+}
+
+.font-serif-plex {
+  font-family: "IBM Plex Serif", Georgia, serif;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid #d97706;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #fde68a;
+  color: #0b192c;
+}
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+  body {
+    background: #fff !important;
+    color: #000;
+    font-size: 10.5pt;
+  }
+  .no-print,
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+  }
+  .print-only.flex {
+    display: flex;
+  }
+  .print-only.grid {
+    display: grid;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .print-dossier section {
+    break-inside: avoid;
+    border-color: #000 !important;
+  }
+  .print-dossier .grid {
+    display: block !important;
+  }
+  .print-dossier .grid > * + * {
+    margin-top: 12px;
+  }
+  .print-dossier .print-only.grid {
+    display: grid !important;
+  }
+  mark {
+    background: #eee !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

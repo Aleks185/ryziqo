@@ -1,0 +1,37 @@
+{
+  "summary": "Frontend-only E2E test of INVESTWATCH in DEMO mode (Playwright, desktop 1920 and mobile 390, fresh localStorage). Every requested feature works: DEMO banner with reason and retry, header pill TRYB DEMO, Analyze (text/sample/modules/validation/result/demo tag/detail link), URL and Image demo notices with submit disabled, high-risk toast with no duplicates (also none after reload), Dashboard KPIs/filters/trend/table/live log, Incident detail (verbatim quotes, <mark> highlights, entity, registry 'nie sprawdzono — brak połączenia z backendem', 64-hex SHA-256, AI disclaimer, status and label persist after reload, print button), Calibration (empty state, 6 samples, slider via keyboard updates threshold, TP/FP/FN/TN and P/R/F1 correctly), Log page clear, PL/EN toggle persists. Zero console errors and zero localhost/ws:// requests. No page-level horizontal overflow at 390px on /, /analyze, /calibration, /log or incident detail. I found a few minor issues, listed below.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Calibration load samples", "issue": "Clicking calib-load-samples-button twice re-analyzes the samples and creates duplicates (labeled count goes 6 -> 12). This skews the confusion matrix and fills the dashboard with duplicate incidents. Dedupe by sample_id (replace existing) or disable the button once the samples are loaded.", "selector": "[data-testid='calib-load-samples-button']", "priority": "MEDIUM"},
+      {"component": "i18n / store.js", "issue": "document.documentElement.lang is only set inside setLang. After a reload with EN saved, <html lang> is still 'pl' while the UI is in English (a11y and screen-reader mismatch). Set it in a useEffect on lang, or on init.", "selector": "html[lang]", "priority": "LOW"},
+      {"component": "Live log", "issue": "Events are kept in memory only, so the live log is empty after any reload even when incidents exist. This may be by design, but users may be confused that the dashboard shows N incidents and an empty log.", "selector": "[data-testid='live-crawler-log']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Incident detail - Entity/Meta rows", "issues": ["The dd uses 'break-all', so normal words split mid-word ('b rak', 'backende m'). Use 'break-words' (overflow-wrap:anywhere) for text and keep break-all only for the hash."]},
+      {"screen": "Calibration chart", "issues": ["The ReferenceLine label at position 'top' is clipped at the top edge when the threshold is near 0 (and the top Y tick looks clipped too). Increase top margin."]},
+      {"screen": "Dashboard mobile 390px", "issues": ["The module filter wraps vertically with leftover border-r segments that look broken. Consider horizontal scroll or full-width stacked buttons. The sticky header plus the DEMO banner take about 330px of the 844px viewport."]},
+      {"screen": "Incident detail", "issues": ["The AI disclaimer says 'Wynik AI ...' even in DEMO mode, where the result comes from a heuristic and not AI. Consider a demo-specific wording."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Dedupe the calibration sample load: replace incidents with the same sample_id, or disable the button after loading",
+    "Sync <html lang> with the persisted language on app init",
+    "Change break-all to break-words in the IncidentDetail Row dd (keep monospace break-all for the hash only)",
+    "Optional: fix calibration chart top margin clipping; polish the mobile module filter"
+  ],
+  "critical_code_review_comments": [
+    "store.js: the useMemo deps omit updateStatus/setGroundTruth/analyzeSamples. This works today because mode/analyze are deps, but it is fragile. Wrap them in useCallback.",
+    "TrendChart buckets by UTC day (toISOString) while dates are shown in local time. Near midnight in Poland (UTC+1/+2) incidents land in the wrong day.",
+    "Heuristic note: true-positive samples S2 (0.62) and S6 (0.64) score below the default 0.70 threshold, so the default calibration shows recall 50%. This is fine for a demo, but it is worth noting for the presentation.",
+    "With mode 'checking', the DemoBanner still renders (it only returns null when online). If a real backend is reachable, the banner flashes briefly."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (no backend by design)", "frontend": "97%"},
+  "seed_data_creation": "None. Only browser localStorage was used, cleared before each run.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "App is frontend-only; DEMO mode triggers on mixed content (https page and http API). Data is in localStorage key investwatch.demo.incidents.v1; language is in investwatch.lang. Sample scores: S1 0.88, S2 0.62, S3 0.82, S4 0, S5 0, S6 0.64. At th=0.70: TP2 FP0 FN2 TN2; at 0.50: TP4 TN2. The radix slider responds to the keyboard on [role=slider] inside calib-threshold-slider."
+}
