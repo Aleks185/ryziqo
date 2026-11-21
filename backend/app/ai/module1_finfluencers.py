@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from app.ai.context import AnalysisContext, request_llm_assessment
+from app.ai.fusion import fuse_module_result, has_commercial_cta
 from app.ai.ollama_client import OllamaClient
 from app.ai.preprocessor import PreprocessedDocument
 from app.knf_registry import KNFRegistrySnapshot
@@ -32,16 +34,6 @@ EDU_ONLY_RE = re.compile(
     r"(charakter\s+ogólnoedukacyjn|nie\s+promuje\s+żadnej\s+firmy|brak\s+linków\s+afiliacyjnych)",
     re.IGNORECASE,
 )
-
-MODULE1_SYSTEM_PROMPT = """Jesteś analitykiem UKNF oceniającym treści finfluencerów i podmiotów trzecich (Moduł 1 #InvestWatch).
-Zwróć wyłącznie JSON:
-{
-  "risk_score": 0.0-1.0,
-  "is_third_party_promo": true/false,
-  "has_ad_disclosure": true/false,
-  "summary_reason": "krótkie uzasadnienie po polsku"
-}"""
-
 
 @dataclass
 class ModuleAnalysisResult:
@@ -74,6 +66,7 @@ async def analyze_module1(
     doc: PreprocessedDocument,
     registry: KNFRegistrySnapshot,
     ollama: OllamaClient,
+    context: AnalysisContext | None = None,
 ) -> ModuleAnalysisResult:
     """Detect third-party / finfluencer promotion of Polish and cross-border investment firms."""
     text = doc.normalized_text
@@ -84,7 +77,8 @@ async def analyze_module1(
     has_promoter = bool(promoter) or is_social
     has_affiliate = bool(AFFILIATE_RE.search(text))
     has_disclosure = bool(AD_DISCLOSURE_RE.search(text))
-    has_hype = bool(HYPE_PROFIT_RE.search(text))
+    # Three or more hype emoji (🚀💰📈🔥...) count as a profit-hype signal even without keywords
+    has_hype = bool(HYPE_PROFIT_RE.search(text)) or doc.finance_emoji_count >= 3
     has_risk_warn = bool(RISK_WARN_RE.search(text))
     is_edu_only = bool(EDU_ONLY_RE.search(text))
 
@@ -157,20 +151,39 @@ async def analyze_module1(
     model_used = "deterministic-uknf-m1-fallback"
     is_fallback = True
 
-    llm_data = await ollama.generate_json(
-        MODULE1_SYSTEM_PROMPT,
-        f"Platforma: {doc.source_platform}\nPromotor: {promoter or 'nieznany'}\n"
-        f"Dopasowana firma KNF: {matched_entity.official_name if matched_entity else 'brak'}\n"
-        f"Treść:\n{text[:2200]}",
+    ctx = context or AnalysisContext()
+    assessment = await request_llm_assessment(
+        ollama,
+        1,
+        doc,
+        {
+            "Platforma": doc.source_platform,
+            "Promotor": promoter or "nieznany",
+            "Dopasowana firma KNF": matched_entity.official_name if matched_entity else "brak",
+            "Status w snapshocie KNF": matched_entity.registry_status if matched_entity else "brak wpisu",
+            "Reguły wstępne": [r.rule_id for r in rules] or "brak",
+        },
+        ctx,
     )
-    if llm_data and isinstance(llm_data.get("risk_score"), (int, float)):
-        llm_score = max(0.0, min(1.0, float(llm_data["risk_score"])))
-        score = round(0.65 * score + 0.35 * llm_score, 4)
+    fused = fuse_module_result(
+        doc,
+        1,
+        score,
+        rules,
+        quotes,
+        assessment,
+        llm_weight=0.35,
+        hard_commercial=has_affiliate or has_commercial_cta(text),
+        rules_by_id=registry.rules_by_id,
+        strict_quotes=ctx.strict_quote_verification,
+        max_score=1.0,
+    )
+    score, rules, quotes = fused.score, fused.rules, fused.quotes
+    if fused.used_llm:
         model_used = f"{ollama.active_model} + uknf-m1-rules"
         is_fallback = False
-        reason = llm_data.get("summary_reason")
-        if isinstance(reason, str) and reason.strip() and len(quotes) < 4:
-            quotes.append(f"[AI] {reason.strip()[:220]}")
+        # A verified AI signal makes the page relevant even when no regex matched (paraphrases, slang)
+        relevant = relevant or bool(fused.verified_signals)
 
     entity_name = (
         matched_entity.official_name

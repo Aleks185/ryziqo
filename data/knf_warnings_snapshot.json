@@ -1,0 +1,30 @@
+{
+  "snapshot_date": "2026-11-21",
+  "disclaimer": "Lokalny snapshot DEMONSTRACYJNY w formacie Listy Ostrzeżeń Publicznych KNF. Wszystkie wpisy są FIKCYJNE (is_synthetic_demo=true) i służą wyłącznie testom #InvestWatch. Przed użyciem produkcyjnym zastąp plik eksportem aktualnej listy opublikowanej przez KNF (knf.gov.pl) — trafienie nie zastępuje weryfikacji analityka.",
+  "entries": [
+    {
+      "name": "Quantum Profit Capital [DEMO]",
+      "aliases": ["Quantum Profit", "QuantumProfit AI"],
+      "domains": ["quantumprofit-capital.example", "qprofit-ai.example"],
+      "category": "podmiot nieposiadający zezwolenia KNF (fikcyjny)",
+      "added_date": "2026-09-14",
+      "is_synthetic_demo": true
+    },
+    {
+      "name": "Bursztyn Invest Group [DEMO]",
+      "aliases": ["Bursztyn Invest", "BursztynFX"],
+      "domains": ["bursztyn-invest.example"],
+      "category": "podmiot nieposiadający zezwolenia KNF (fikcyjny)",
+      "added_date": "2026-07-02",
+      "is_synthetic_demo": true
+    },
+    {
+      "name": "WawelCoin Signals [DEMO]",
+      "aliases": ["WawelCoin", "Wawel Signals VIP"],
+      "domains": ["wawelcoin.example", "wawel-signals.example"],
+      "category": "grupa sygnałowa / podejrzenie oszustwa (fikcyjny)",
+      "added_date": "2026-10-30",
+      "is_synthetic_demo": true
+    }
+  ]
+}

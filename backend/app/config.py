@@ -33,7 +33,27 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "gemma3:4b"
     ollama_embed_model: str = "nomic-embed-text"
-    ollama_timeout_seconds: float = 25.0
+    # Larger prompts (sections + rubric + few-shot) and structured output need more time on CPU
+    ollama_timeout_seconds: float = 60.0
+    # Response token limit (reasoning + signals + exact quotes) and model context window
+    ollama_num_predict: int = 768
+    ollama_num_ctx: int = 8192
+    # Vision (VLM) analysis of Playwright screenshots; requires a model with the "vision" capability
+    ollama_vision_enabled: bool = False
+    ollama_vision_model: str = ""
+
+    # Character budget for page content sent to the LLM (split into hero / body / risk / links sections)
+    ai_prompt_content_chars: int = 9000
+    # Inject top-K verified incidents (confirmed + false positive) as dynamic few-shot examples
+    ai_rag_few_shot_enabled: bool = True
+    # Cosine similarity to a confirmed incident on another domain that marks a campaign clone
+    ai_clone_similarity_threshold: float = 0.85
+    # Require LLM quotes to exist in the source text before a semantic signal gets any weight
+    ai_strict_quote_verification: bool = True
+    # "primary": one incident per page (secondary detections summarized in evidence_quotes);
+    # "all_significant": one incident per module with violations and risk_score >= the threshold below
+    aggregator_multi_module_mode: str = "primary"
+    aggregator_secondary_min_score: float = 0.55
 
     crawler_timeout_seconds: float = 12.0
     crawler_max_bytes: int = 2_097_152
@@ -51,6 +71,10 @@ class Settings(BaseSettings):
     crawler_schedule_include_mocks: bool = True
     # Comma-separated proxy URLs rotated per request, e.g. "http://proxy1:3128,socks5://proxy2:1080"
     crawler_proxies: str = ""
+    # Resolve link-shortener / link-in-bio URLs (bit.ly, linktr.ee, ...) to their final destination
+    # (every hop re-validated by the anti-SSRF guard); destinations feed registry/warning-list checks
+    crawler_expand_short_links: bool = False
+    crawler_expand_short_links_max: int = 5
     # Cosine similarity above which a re-scanned page (same URL + module) updates the existing incident
     dedup_similarity_threshold: float = 0.92
 

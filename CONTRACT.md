@@ -71,6 +71,8 @@ Każdy rekord zwracany przez API i agregator wyników Modułów 1–3 ma ujednol
 - `source_platform`: `"web"` | `"facebook"` | `"instagram"` | `"tiktok"` | `"youtube"` | `"mock_demo"` | `"manual"` *(od 1.1.0 — treść wklejona przez analityka)* | `"x"` *(od 1.2.0)*
 - `risk_score`: liczba zmiennoprzecinkowa **`0.00` – `1.00`** (wskaźnik modelu AI + reguł; nie stanowi wiążącego rozstrzygnięcia prawnego).
 - `risk_level`: `"low"` (`< 0.40`) | `"medium"` (`0.40 – 0.69`) | `"high"` (`>= 0.70`) — domyślna etykieta; **Panel Kalibracji w UI przelicza flagowanie dynamicznie wg suwaka `threshold`**.
+- `violated_rules[].rule_id`: identyfikatory kryteriów UKNF `"1"`–`"18"` (w tym `"12a"`, `"12b"`) oraz reguły modułów (`M1_*`, `M3_*`). Rozszerzenie addytywne (bez zmiany schematu): sygnały semantyczne LLM potwierdzone cytatem (`AI_*`, np. `AI_M3_SUCCESS_FEE`, `AI_PROMPT_INJECTION`), sygnały VLM (`AI_VLM_*`), `CAMPAIGN_CLONE_MATCH`, `KNF_WARNING_LIST_MATCH`, `KNF_IMPERSONATION_SUSPECT`. Klient powinien traktować nieznane `rule_id` jako zwykłe naruszenie.
+- `evidence_quotes[]`: dosłowne cytaty z treści; wpisy techniczne mają prefiks `[AI]`, `[AI-Context]`, `[AI-Guard]`, `[VLM]`, `[KNF]`, `[Klon]`, `[Wtórne]`.
 - `status`: `"new"` | `"in_review"` | `"confirmed"` | `"false_positive"` | `"dismissed"`
 - `ground_truth_label`: `true` (rzeczywiste naruszenie referencyjne) | `false` (materiał poprawny / neutralny) | `null` (brak etykiety referencyjnej). Służy do wyliczania macierzy **TP / FP / TN / FN** w Panelu Kalibracji.
 

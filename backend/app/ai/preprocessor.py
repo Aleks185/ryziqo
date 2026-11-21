@@ -7,6 +7,7 @@ import math
 import re
 import unicodedata
 from dataclasses import dataclass, field
+from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup, Tag
 
@@ -22,6 +23,66 @@ FONT_SIZE_RE = re.compile(r"font-size\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*px", re.IGNO
 COLOR_HEX_RE = re.compile(r"(?:^|[;\s])color\s*:\s*(#[0-9a-fA-F]{3,6})", re.IGNORECASE)
 WIDTH_PX_RE = re.compile(r"width\s*:\s*([0-9]+)\s*px", re.IGNORECASE)
 TOKEN_RE = re.compile(r"[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9%]{2,}")
+
+# --- Anti-obfuscation ---------------------------------------------------------------------------
+ZERO_WIDTH_RE = re.compile("[­​-‏‪-‮⁠-⁤﻿]")
+# Cyrillic / Greek letters visually identical to Latin ones (used to dodge keyword filters)
+HOMOGLYPHS = str.maketrans(
+    {
+        "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x", "і": "i", "ј": "j",
+        "ѕ": "s", "к": "k", "ԁ": "d", "ԛ": "q", "ԝ": "w", "һ": "h", "ӏ": "l",
+        "А": "A", "В": "B", "Е": "E", "К": "K", "М": "M", "Н": "H", "О": "O", "Р": "P", "С": "C",
+        "Т": "T", "Х": "X", "І": "I", "Ј": "J", "Ѕ": "S", "У": "Y",
+        "α": "a", "ο": "o", "ε": "e", "ρ": "p", "ν": "v", "κ": "k", "ι": "i", "τ": "t",
+        "Α": "A", "Β": "B", "Ε": "E", "Ζ": "Z", "Η": "H", "Ι": "I", "Κ": "K", "Μ": "M", "Ν": "N",
+        "Ο": "O", "Ρ": "P", "Τ": "T", "Υ": "Y", "Χ": "X",
+    }
+)
+_HOMOGLYPH_CHARS = frozenset(chr(k) for k in HOMOGLYPHS)
+_LATIN_RE = re.compile(r"[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]")
+_NONLATIN_SCRIPT_RE = re.compile("[Ͱ-ϿЀ-ԯ]")
+_WORD_RE = re.compile(r"\S+")
+# "g.w.a.r.a.n.t.o.w.a.n.y", "z-y-s-k" (>= 3 single letters joined by punctuation)
+SPACED_PUNCT_RE = re.compile(r"(?<![\w.])[^\W\d_](?:[.\-*_·•][^\W\d_]){2,}(?![^\W_])")
+# "z y s k", "G W A R A N C J A" (>= 4 single letters joined by single spaces)
+SPACED_SPACE_RE = re.compile(r"(?<![\w.])[^\W\d_](?: [^\W\d_]){3,}(?![^\W_])")
+FINANCE_EMOJI_RE = re.compile(
+    "[\U0001F680\U0001F4B0\U0001F4B8\U0001F4B5\U0001F4B6\U0001F911\U0001F4C8\U0001F525\U0001F48E\U0001F3C6\U0001FA99]"
+)
+
+# --- Prompt injection / cloaking ----------------------------------------------------------------
+INJECTION_RE = re.compile(
+    r"(ignore\s+(?:all\s+)?(?:previous|prior|above)\s+instructions|disregard\s+(?:the\s+)?(?:previous|above)|"
+    r"(?:z?ignoruj)\s+(?:wszystkie\s+)?(?:poprzednie\s+|powyższe\s+|wcześniejsze\s+)?(?:instrukcj|polece)\w*|"
+    r"\brisk_score\b|system\s+prompt|jesteś\s+teraz|you\s+are\s+now|</?untrusted_content>|"
+    r"zwróć\s+(?:ocen\w+|wynik)\s+0|return\s+(?:a\s+)?(?:score|risk)\s+(?:of\s+)?0)",
+    re.IGNORECASE,
+)
+HIDDEN_STYLE_RE = re.compile(
+    r"(display\s*:\s*none|visibility\s*:\s*hidden|font-size\s*:\s*0(?:\.0+)?(?:px|em|rem|pt|%)?\s*(?:;|$|!)|"
+    r"opacity\s*:\s*0(?:\.0+)?\s*(?:;|$|!)|text-indent\s*:\s*-\d{3,}|(?:left|top)\s*:\s*-\d{4,}px|"
+    r"clip\s*:\s*rect\(\s*0)",
+    re.IGNORECASE,
+)
+BG_COLOR_HEX_RE = re.compile(r"background(?:-color)?\s*:\s*(#[0-9a-fA-F]{3,6})", re.IGNORECASE)
+
+# --- Sections -----------------------------------------------------------------------------------
+HIGHLIGHT_RE = re.compile(
+    r"(zysk|zarob|zwrot|%|gwarant|bonus|link|kod\s|polec|rekomend|portfel|kup|sprzeda|KNF|podat|prognoz|"
+    r"wynik|sygna|vip|konsultac|mentoring|success\s+fee|cfd|forex|krypto|dźwigni|bez\s+ryzyka|pewn)",
+    re.IGNORECASE,
+)
+HASHTAG_RE = re.compile(r"#[\wąćęłńóśźż]{2,40}", re.IGNORECASE)
+
+
+@dataclass
+class DocumentSections:
+    """Structured, budgetable context for the LLM instead of a blind `text[:N]` cut."""
+
+    hero_and_headings: str = ""
+    main_body_excerpt: str = ""
+    risk_and_footer_snippets: list[str] = field(default_factory=list)
+    links_and_cta: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -39,6 +100,22 @@ class PreprocessedDocument:
     dom_metrics: DomMetrics = field(default_factory=DomMetrics)
     is_mock_source: bool = False
     social: SocialPost | None = None
+    sections: DocumentSections | None = None
+    outbound_links: list[str] = field(default_factory=list)
+    # Final destinations of shortener / link-in-bio URLs (filled by the worker when enabled)
+    resolved_links: list[str] = field(default_factory=list)
+    # Cloaking / anti-injection: text the user cannot see is excluded from normalized_text
+    hidden_text_detected: bool = False
+    hidden_text_snippets: list[str] = field(default_factory=list)
+    prompt_injection_detected: bool = False
+    injection_snippets: list[str] = field(default_factory=list)
+    obfuscation_detected: bool = False
+    finance_emoji_count: int = 0
+    # Deterministic 128-dim feature-hashing vector; kept even when `embedding` is upgraded to an
+    # Ollama embedding, so similarity search always has a comparable vector
+    local_embedding: list[float] = field(default_factory=list)
+    # JPEG screenshots from Playwright (desktop, mobile) for the optional VLM analysis
+    screenshots: list[bytes] = field(default_factory=list)
 
 
 def _hex_luminance(hex_color: str) -> float:
@@ -190,6 +267,172 @@ def extract_dom_metrics(
     )
 
 
+def deobfuscate_text(text: str) -> tuple[str, int]:
+    """Undo common keyword-filter evasion; returns (clean_text, number_of_fixes).
+
+    - zero-width / soft-hyphen / bidi control characters are removed,
+    - Cyrillic/Greek look-alike letters are mapped to Latin in mixed-script words (and everywhere when
+      the text is predominantly Latin, e.g. "ХТВ" inside a Polish post); genuine Cyrillic text is kept,
+    - letter-spaced words are joined ("z y s k", "g.w.a.r.a.n.t.o.w.a.n.y" -> "zysk", "gwarantowany").
+    """
+    fixes = 0
+    cleaned, n = ZERO_WIDTH_RE.subn("", text)
+    fixes += n
+
+    if _NONLATIN_SCRIPT_RE.search(cleaned):
+        latin = len(_LATIN_RE.findall(cleaned))
+        non_latin = len(_NONLATIN_SCRIPT_RE.findall(cleaned))
+        mostly_latin = latin >= 5 * non_latin
+
+        def fix_word(m: re.Match[str]) -> str:
+            nonlocal fixes
+            word = m.group(0)
+            if not any(ch in _HOMOGLYPH_CHARS for ch in word):
+                return word
+            if mostly_latin or _LATIN_RE.search(word):
+                fixed = word.translate(HOMOGLYPHS)
+                if fixed != word:
+                    fixes += 1
+                return fixed
+            return word
+
+        cleaned = _WORD_RE.sub(fix_word, cleaned)
+
+    def join_letters(m: re.Match[str]) -> str:
+        nonlocal fixes
+        fixes += 1
+        return re.sub(r"[.\-*_·• ]", "", m.group(0))
+
+    cleaned = SPACED_PUNCT_RE.sub(join_letters, cleaned)
+    cleaned = SPACED_SPACE_RE.sub(join_letters, cleaned)
+    return cleaned, fixes
+
+
+def clean_text(raw: str) -> str:
+    """NFKC + anti-obfuscation + whitespace collapse (the same normalization as normalized_text)."""
+    text = unicodedata.normalize("NFKC", raw)
+    text, _ = deobfuscate_text(text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _ancestor_background(tag: Tag, css_map: dict[str, str]) -> str | None:
+    for anc in [tag, *tag.parents]:
+        if not isinstance(anc, Tag):
+            continue
+        m = BG_COLOR_HEX_RE.search(_effective_style(anc, css_map))
+        if m:
+            return m.group(1)
+    return None
+
+
+def _normalize_hex(h: str) -> str:
+    h = h.lstrip("#").lower()
+    return "".join(c * 2 for c in h) if len(h) == 3 else h
+
+
+def _is_hidden(tag: Tag, css_map: dict[str, str]) -> bool:
+    if tag.has_attr("hidden"):
+        return True
+    style = _effective_style(tag, css_map)
+    if HIDDEN_STYLE_RE.search(style):
+        return True
+    color = COLOR_HEX_RE.search(style)
+    if color:
+        bg = _ancestor_background(tag, css_map)
+        if bg and _normalize_hex(bg) == _normalize_hex(color.group(1)):
+            return True  # text in the background colour (white-on-white)
+    return False
+
+
+def extract_hidden_text(soup: BeautifulSoup) -> list[str]:
+    """Remove text invisible to users (cloaking, white-on-white, font-size:0) and return it.
+
+    Hidden text is reported separately as a signal and never enters the normal content or the
+    LLM prompt, which neutralizes the classic hidden prompt-injection payload. Note that real sites
+    hide menus/modals routinely, so hidden text alone is NOT treated as a violation.
+    """
+    css_map = _extract_css_rules(soup)
+    snippets: list[str] = []
+    for tag in list(soup.find_all(True)):
+        if not isinstance(tag, Tag) or tag.decomposed:
+            continue
+        if tag.name in ("html", "head", "body", "title", "meta", "link", "script", "style", "noscript", "template", "svg"):
+            continue
+        if _is_hidden(tag, css_map):
+            text = clean_text(tag.get_text(" ", strip=True))
+            if text:
+                snippets.append(text[:300])
+            tag.decompose()
+    return snippets
+
+
+def _absolute_http_link(href: str, base_url: str) -> str | None:
+    href = href.strip()
+    if not href or href.startswith(("#", "javascript:", "mailto:", "tel:", "data:")):
+        return None
+    full = urljoin(base_url, href) if base_url.startswith(("http://", "https://")) else href
+    parsed = urlparse(full)
+    if parsed.scheme in ("http", "https") and parsed.hostname:
+        return full[:500]
+    return None
+
+
+def extract_sections(
+    soup: BeautifulSoup, title: str, normalized: str, sentences: list[str], base_url: str
+) -> tuple[DocumentSections, list[str]]:
+    """Split the visible document into hero / body / risk+footer / links sections."""
+    headings: list[str] = [title] if title else []
+    for h in soup.find_all(["h1", "h2", "h3"]):
+        t = clean_text(h.get_text(" ", strip=True))[:200]
+        if t and t not in headings:
+            headings.append(t)
+    hero_and_headings = f"{' | '.join(headings[:8])}\n{normalized[:600]}".strip()
+
+    risk_snippets: list[str] = []
+
+    def add_risk(text: str) -> None:
+        text = text[:500]
+        if text and not any(text in r or r in text for r in risk_snippets):
+            risk_snippets.append(text)
+
+    for tag in soup.find_all(["footer", "details", "small"]):
+        add_risk(clean_text(tag.get_text(" ", strip=True)))
+    for tag in soup.find_all(True):
+        marker = f"{tag.get('id') or ''} {' '.join(str(c) for c in (tag.get('class') or []))}".lower()
+        if any(k in marker for k in ("legal", "disclaimer", "footnote", "risk", "ryzyk")):
+            add_risk(clean_text(tag.get_text(" ", strip=True)))
+    for sent in sentences:
+        if RISK_KEYWORDS_RE.search(sent):
+            add_risk(sent)
+
+    links: list[str] = []
+    outbound: list[str] = []
+    for tag in soup.find_all(["a", "button"]):
+        anchor = clean_text(tag.get_text(" ", strip=True))[:120]
+        href = tag.get("href")
+        target = _absolute_http_link(href, base_url) if isinstance(href, str) else None
+        if target and target not in outbound:
+            outbound.append(target)
+        domain = urlparse(target).hostname if target else None
+        entry = f"{anchor or '(bez tekstu)'} -> {domain}" if domain else anchor
+        if entry and entry not in links:
+            links.append(entry)
+    for tag in HASHTAG_RE.findall(normalized):
+        if tag not in links:
+            links.append(tag)
+
+    highlighted = [s for s in sentences if HIGHLIGHT_RE.search(s)]
+    return (
+        DocumentSections(
+            hero_and_headings=hero_and_headings,
+            main_body_excerpt=" ".join(highlighted) if highlighted else normalized,
+            risk_and_footer_snippets=risk_snippets[:20],
+            links_and_cta=links[:40],
+        ),
+        outbound[:60],
+    )
+
+
 def build_local_embedding(tokens: list[str], dim: int = 128) -> list[float]:
     """Deterministic L2-normalized feature-hashing vector representation (zero external APIs)."""
     vec = [0.0] * dim
@@ -270,12 +513,26 @@ def preprocess_html(
     )
 
     # Remove non-visible script/style tags before text extraction
-    for noise in soup.find_all(["script", "style", "noscript", "svg"]):
+    # Cloaking: text invisible to users is removed from content and reported separately
+    # (runs before <style> removal, because the CSS rules decide what is hidden)
+    hidden_snippets = extract_hidden_text(soup)
+
+    for noise in soup.find_all(["script", "style", "noscript", "svg", "template"]):
         noise.decompose()
 
+    if any(RISK_KEYWORDS_RE.search(snip) for snip in hidden_snippets):
+        # A risk warning the user cannot see at all is hidden risk (UKNF criterion 6)
+        dom_metrics.risk_hidden_in_footer = True
+
     raw_text = soup.get_text(" ", strip=True)
-    normalized = unicodedata.normalize("NFKC", raw_text)
-    normalized = re.sub(r"\s+", " ", normalized).strip()
+    normalized = clean_text(raw_text)
+    obfuscation_detected = normalized != re.sub(
+        r"\s+", " ", unicodedata.normalize("NFKC", raw_text)
+    ).strip()
+    finance_emoji_count = len(FINANCE_EMOJI_RE.findall(normalized))
+    injection_snippets = [
+        m.group(0) for m in INJECTION_RE.finditer(" ".join([normalized, *hidden_snippets]))
+    ][:5]
 
     sentences = [
         s.strip()
@@ -284,6 +541,7 @@ def preprocess_html(
     ]
     tokens = [t.lower() for t in TOKEN_RE.findall(normalized)]
     embedding = build_local_embedding(tokens)
+    sections, outbound_links = extract_sections(soup, title, normalized, sentences, source_url)
 
     hash_input = f"{source_url}::{normalized.lower()}"
     content_hash = hashlib.sha256(hash_input.encode("utf-8")).hexdigest()[:24]
@@ -296,10 +554,19 @@ def preprocess_html(
         sentences=sentences,
         tokens=tokens,
         embedding=embedding,
+        local_embedding=list(embedding),
         content_hash=content_hash,
         promoter_hint=promoter_hint,
         ground_truth_hint=gt_hint,
         dom_metrics=dom_metrics,
         is_mock_source=is_mock_source,
         social=social,
+        sections=sections,
+        outbound_links=outbound_links,
+        hidden_text_detected=bool(hidden_snippets),
+        hidden_text_snippets=hidden_snippets[:10],
+        prompt_injection_detected=bool(injection_snippets),
+        injection_snippets=injection_snippets,
+        obfuscation_detected=obfuscation_detected,
+        finance_emoji_count=finance_emoji_count,
     )

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from app.ai.context import AnalysisContext, request_llm_assessment
+from app.ai.fusion import fuse_module_result, has_commercial_cta
 from app.ai.module1_finfluencers import ModuleAnalysisResult
 from app.ai.ollama_client import OllamaClient
 from app.ai.preprocessor import PreprocessedDocument
@@ -62,14 +64,6 @@ KNF_SAFETY_ABUSE_RE = re.compile(
     re.IGNORECASE,
 )
 
-MODULE2_SYSTEM_PROMPT = """Jesteś ekspertem zgodności UKNF (Moduł 2 #InvestWatch — MiFID II art. 24 ust. 3 oraz rozp. del. 2017/565 art. 44).
-Oceń proporcjonalność informacji o ryzyku względem przekazu o zyskach. Zwróć wyłącznie JSON:
-{
-  "risk_score": 0.0-1.0,
-  "key_finding": "jedno zdanie podsumowania po polsku"
-}"""
-
-
 def _make_rule(rules_by_id: dict[str, dict], rule_id: str, severity: str, reason: str) -> ViolatedRule:
     meta = rules_by_id.get(rule_id, {})
     return ViolatedRule(
@@ -85,6 +79,7 @@ async def analyze_module2(
     doc: PreprocessedDocument,
     registry: KNFRegistrySnapshot,
     ollama: OllamaClient,
+    context: AnalysisContext | None = None,
 ) -> ModuleAnalysisResult:
     """Evaluate marketing material of an investment firm against the 18 UKNF risk criteria."""
     text = doc.normalized_text
@@ -263,20 +258,37 @@ async def analyze_module2(
     model_used = "deterministic-uknf-18rules-fallback"
     is_fallback = True
 
-    llm_data = await ollama.generate_json(
-        MODULE2_SYSTEM_PROMPT,
-        f"Podmiot: {matched_entity.official_name if matched_entity else 'nieznany'}\n"
-        f"Wstępne naruszone reguły ({len(violated)}): {[v.rule_id for v in violated]}\n"
-        f"Metryki DOM: {dom.model_dump()}\nTreść:\n{text[:2200]}",
+    ctx = context or AnalysisContext()
+    assessment = await request_llm_assessment(
+        ollama,
+        2,
+        doc,
+        {
+            "Podmiot": matched_entity.official_name if matched_entity else "nieznany",
+            "Status w snapshocie KNF": matched_entity.registry_status if matched_entity else "brak wpisu",
+            "Wstępne naruszone reguły": [v.rule_id for v in violated] or "brak",
+            "Metryki DOM": dom.model_dump(),
+        },
+        ctx,
     )
-    if llm_data and isinstance(llm_data.get("risk_score"), (int, float)):
-        llm_score = max(0.0, min(1.0, float(llm_data["risk_score"])))
-        score = round(0.70 * score + 0.30 * llm_score, 4)
+    fused = fuse_module_result(
+        doc,
+        2,
+        score,
+        violated,
+        quotes,
+        assessment,
+        llm_weight=0.30,
+        hard_commercial=is_registered_direct or bool(AD_LABEL_RE.search(text)) or has_commercial_cta(text),
+        rules_by_id=rules_by_id,
+        strict_quotes=ctx.strict_quote_verification,
+        max_score=0.97,
+    )
+    score, violated, quotes = fused.score, fused.rules, fused.quotes
+    if fused.used_llm:
         model_used = f"{ollama.active_model} + uknf-18rules"
         is_fallback = False
-        finding = llm_data.get("key_finding")
-        if isinstance(finding, str) and finding.strip() and len(quotes) < 5:
-            quotes.append(f"[AI] {finding.strip()[:220]}")
+        relevant = relevant or bool(fused.verified_signals)
 
     return ModuleAnalysisResult(
         module_id=2,
@@ -286,7 +298,7 @@ async def analyze_module2(
         promoter_name=None,
         knf_registry_status=matched_entity.registry_status if matched_entity else "unknown",
         risk_score=score,
-        evidence_quotes=quotes[:5],
+        evidence_quotes=quotes[:6],
         violated_rules=violated,
         model_used=model_used,
         is_demo_fallback=is_fallback,

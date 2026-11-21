@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from app.ai.context import AnalysisContext, request_llm_assessment
+from app.ai.fusion import fuse_module_result, has_commercial_cta
 from app.ai.module1_finfluencers import ModuleAnalysisResult
 from app.ai.ollama_client import OllamaClient
 from app.ai.preprocessor import PreprocessedDocument
@@ -35,20 +37,11 @@ EXPLICIT_NON_ADVISORY_RE = re.compile(
 )
 DISGUISED_EDU_RE = re.compile(r"(charakter\s+edukacyjny|tylko\s+edukacja)", re.IGNORECASE)
 
-MODULE3_SYSTEM_PROMPT = """Jesteś analitykiem UKNF ds. Shadow Advisory (Moduł 3 #InvestWatch — art. 76, art. 2 i art. 3 ustawy o obrocie instrumentami finansowymi).
-Sprawdź, czy podmiot nieautoryzowany oferuje spersonalizowane rekomendacje nabycia/zbycia/trzymania instrumentów finansowych.
-Zwróć wyłącznie JSON:
-{
-  "risk_score": 0.0-1.0,
-  "shadow_advisory_detected": true/false,
-  "summary_reason": "krótkie uzasadnienie po polsku"
-}"""
-
-
 async def analyze_module3(
     doc: PreprocessedDocument,
     registry: KNFRegistrySnapshot,
     ollama: OllamaClient,
+    context: AnalysisContext | None = None,
 ) -> ModuleAnalysisResult:
     """Detect unauthorized investment advisory (art. 76 u.o.i.f.) offered by non-KNF entities."""
     text = doc.normalized_text
@@ -146,19 +139,37 @@ async def analyze_module3(
     model_used = "deterministic-uknf-m3-fallback"
     is_fallback = True
 
-    llm_data = await ollama.generate_json(
-        MODULE3_SYSTEM_PROMPT,
-        f"Tytuł: {doc.title}\nStatus w snapshocie KNF: brak wpisu\n"
-        f"Wykryte instrumenty: {instruments_found}\nTreść:\n{text[:2200]}",
+    ctx = context or AnalysisContext()
+    assessment = await request_llm_assessment(
+        ollama,
+        3,
+        doc,
+        {
+            "Tytuł": doc.title,
+            "Status w snapshocie KNF": "brak wpisu",
+            "Wykryte instrumenty": instruments_found or "brak",
+            "Reguły wstępne": [r.rule_id for r in rules] or "brak",
+        },
+        ctx,
     )
-    if llm_data and isinstance(llm_data.get("risk_score"), (int, float)):
-        llm_score = max(0.0, min(1.0, float(llm_data["risk_score"])))
-        score = round(0.65 * score + 0.35 * llm_score, 4)
+    fused = fuse_module_result(
+        doc,
+        3,
+        score,
+        rules,
+        quotes,
+        assessment,
+        llm_weight=0.35,
+        hard_commercial=has_personal_rec or has_commercial_cta(text),
+        rules_by_id=registry.rules_by_id,
+        strict_quotes=ctx.strict_quote_verification,
+        max_score=0.96,
+    )
+    score, rules, quotes = fused.score, fused.rules, fused.quotes
+    if fused.used_llm:
         model_used = f"{ollama.active_model} + uknf-m3-art76"
         is_fallback = False
-        reason = llm_data.get("summary_reason")
-        if isinstance(reason, str) and reason.strip() and len(quotes) < 4:
-            quotes.append(f"[AI] {reason.strip()[:220]}")
+        relevant = relevant or bool(fused.verified_signals)
 
     entity_title = doc.title.split("—")[0].split("[MOCK")[0].strip() or "Nieautoryzowany podmiot doradczy"
 
@@ -170,7 +181,7 @@ async def analyze_module3(
         promoter_name=None,
         knf_registry_status="not_in_knf_snapshot",
         risk_score=score,
-        evidence_quotes=quotes[:4],
+        evidence_quotes=quotes[:5],
         violated_rules=rules,
         model_used=model_used,
         is_demo_fallback=is_fallback,

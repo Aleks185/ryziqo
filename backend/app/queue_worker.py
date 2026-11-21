@@ -11,8 +11,10 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.ai.aggregator import run_analytical_pipeline
+from app.ai.context import AnalysisContext
 from app.ai.ollama_client import OllamaClient
 from app.ai.preprocessor import preprocess_html
+from app.ai.retrieval import Retriever
 from app.config import Settings
 from app.database import Database, utc_now_iso
 from app.knf_registry import KNFRegistrySnapshot
@@ -52,6 +54,11 @@ class CrawlQueueWorker:
         self.ollama = ollama
         self.fetcher = fetcher
         self.ws_manager = ws_manager
+        self.retriever = Retriever(
+            db,
+            clone_threshold=settings.ai_clone_similarity_threshold,
+            rag_enabled=settings.ai_rag_few_shot_enabled,
+        )
 
         self._wakeup = asyncio.Event()
         self._worker_task: asyncio.Task[None] | None = None
@@ -289,8 +296,17 @@ class CrawlQueueWorker:
             is_mock_source=page.is_mock_source,
             playwright_metrics=page.playwright_dom_metrics,
         )
+        doc.screenshots = list(page.screenshots or [])
+        # Shortener / link-in-bio destinations (public URLs only; mock and pasted text never hit the network)
+        if (
+            self.settings.crawler_expand_short_links
+            and not page.is_mock_source
+            and page.source_platform != "manual"
+            and doc.outbound_links
+        ):
+            doc.resolved_links = await self.fetcher.resolve_short_links(doc.outbound_links)
 
-        # Optionally upgrade embedding with local Ollama embeddings
+        # Optionally upgrade embedding with local Ollama embeddings (local_embedding is kept as well)
         ollama_emb = await self.ollama.embed_text(doc.normalized_text)
         if ollama_emb:
             doc.embedding = ollama_emb
@@ -302,14 +318,22 @@ class CrawlQueueWorker:
             raw_html=page.raw_html,
             normalized_text=doc.normalized_text,
             embedding=doc.embedding,
+            local_embedding=doc.local_embedding,
             extracted={
                 "title": doc.title,
                 "final_url": page.final_url,
                 "used_playwright": page.used_playwright,
                 "social": doc.social.to_dict() if doc.social else None,
                 "dom_metrics": doc.dom_metrics.model_dump(),
+                "hidden_text_snippets": doc.hidden_text_snippets,
+                "prompt_injection_snippets": doc.injection_snippets,
+                "obfuscation_detected": doc.obfuscation_detected,
+                "outbound_links": doc.outbound_links[:30],
+                "resolved_links": doc.resolved_links,
             },
         )
+        if doc.screenshots:
+            self.db.save_screenshots(doc.content_hash, doc.screenshots)
 
         await self._emit_stage(
             job_id,
@@ -323,6 +347,10 @@ class CrawlQueueWorker:
             registry=self.registry,
             ollama=self.ollama,
             storage_key=storage_key,
+            retriever=self.retriever,
+            context=AnalysisContext.from_settings(self.settings),
+            multi_module_mode=self.settings.aggregator_multi_module_mode,
+            secondary_min_score=self.settings.aggregator_secondary_min_score,
         )
 
         saved: list[IncidentDetail] = []

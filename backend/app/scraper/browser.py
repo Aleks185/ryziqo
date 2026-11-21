@@ -26,6 +26,9 @@ from app.scraper.ssrf import SSRFError, validate_public_url
 logger = logging.getLogger("investwatch.browser")
 
 BLOCKED_RESOURCE_TYPES = frozenset({"image", "media", "font"})
+# With screenshots (VLM analysis) images must load, or banners would be blank; still SSRF-guarded
+SCREENSHOT_BLOCKED_RESOURCE_TYPES = frozenset({"media"})
+SCREENSHOT_JPEG_QUALITY = 70
 CHROMIUM_ARGS = [
     "--disable-dev-shm-usage",  # Docker's default /dev/shm (64 MB) crashes Chromium
     "--disable-gpu",
@@ -135,6 +138,8 @@ class RenderResult:
     final_url: str
     metrics: dict[str, Any] = field(default_factory=dict)
     blocked_requests: int = 0
+    # JPEG viewport screenshots: [desktop 1280x800, mobile 375x667] when requested
+    screenshots: list[bytes] = field(default_factory=list)
 
 
 def playwright_proxy_config(proxy: str | None) -> dict[str, str] | None:
@@ -189,7 +194,9 @@ class BrowserRenderer:
                 host_cache[key] = False
         return host_cache[key]
 
-    async def render(self, url: str, user_agent: str, proxy: str | None = None) -> RenderResult:
+    async def render(
+        self, url: str, user_agent: str, proxy: str | None = None, capture_screenshots: bool = False
+    ) -> RenderResult:
         """Render `url` in headless Chromium. Raises on navigation/SSRF errors."""
         from playwright.async_api import async_playwright
 
@@ -197,6 +204,8 @@ class BrowserRenderer:
         timeout_ms = int(self.settings.crawler_playwright_timeout_seconds * 1000)
         host_cache: dict[str, bool] = {}
         blocked = 0
+        blocked_types = SCREENSHOT_BLOCKED_RESOURCE_TYPES if capture_screenshots else BLOCKED_RESOURCE_TYPES
+        screenshots: list[bytes] = []
 
         async with self._semaphore, async_playwright() as p:
             browser = await p.chromium.launch(
@@ -216,7 +225,7 @@ class BrowserRenderer:
                 async def guard_request(route) -> None:  # type: ignore[no-untyped-def]
                     nonlocal blocked
                     request = route.request
-                    if request.resource_type in BLOCKED_RESOURCE_TYPES:
+                    if request.resource_type in blocked_types:
                         await route.abort()
                         return
                     if not await self._is_allowed(request.url, host_cache):
@@ -283,8 +292,18 @@ class BrowserRenderer:
                 metrics: dict[str, Any] = {"computed": await page.evaluate(
                     COMPUTED_METRICS_JS, RISK_KEYWORDS_RE.pattern
                 )}
+                if capture_screenshots:
+                    screenshots.append(await page.screenshot(type="jpeg", quality=SCREENSHOT_JPEG_QUALITY))
                 await page.set_viewport_size({"width": 375, "height": 667})
                 metrics["responsive_overflow_detected"] = bool(await page.evaluate(MOBILE_OVERFLOW_JS))
-                return RenderResult(html=html, final_url=final_url, metrics=metrics, blocked_requests=blocked)
+                if capture_screenshots:
+                    screenshots.append(await page.screenshot(type="jpeg", quality=SCREENSHOT_JPEG_QUALITY))
+                return RenderResult(
+                    html=html,
+                    final_url=final_url,
+                    metrics=metrics,
+                    blocked_requests=blocked,
+                    screenshots=screenshots,
+                )
             finally:
                 await browser.close()

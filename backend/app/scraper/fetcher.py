@@ -19,6 +19,22 @@ from app.scraper.ssrf import SSRFError, validate_public_url
 
 logger = logging.getLogger("investwatch.scraper")
 
+# URL shorteners whose redirect target is resolved (CRAWLER_EXPAND_SHORT_LINKS); link-in-bio pages
+# (linktr.ee, ...) are fetched and their outbound links collected
+SHORTENER_HOSTS = frozenset(
+    {
+        "bit.ly", "tinyurl.com", "t.co", "goo.gl", "ow.ly", "is.gd", "buff.ly", "rebrand.ly", "cutt.ly",
+        "shorturl.at", "t.ly", "s.id", "lnkd.in", "tiny.cc", "rb.gy",
+    }
+)
+LINK_IN_BIO_HOSTS = frozenset({"linktr.ee", "beacons.ai", "lnk.bio", "bio.link", "linkin.bio", "taplink.cc"})
+LINK_IN_BIO_MAX_BYTES = 524_288
+
+
+def _host(url: str) -> str:
+    host = (urlparse(url).hostname or "").lower()
+    return host[4:] if host.startswith("www.") else host
+
 # Ethical, transparent User-Agent pool (no spoofing to bypass access controls)
 ETHICAL_USER_AGENTS = [
     "InvestWatchResearchBot/1.0 (+https://knf.gov.pl; HackNation-UKNF-MVP) httpx/0.28",
@@ -37,6 +53,8 @@ class FetchedPage:
     used_playwright: bool = False
     is_mock_source: bool = False
     playwright_dom_metrics: dict[str, object] | None = None
+    # JPEG screenshots [desktop, mobile] from Playwright when OLLAMA_VISION_ENABLED=true
+    screenshots: list[bytes] | None = None
 
 
 def build_manual_text_page(content: str, title: str | None, source_url: str | None) -> FetchedPage:
@@ -187,6 +205,7 @@ class PageFetcher:
 
         html = raw_bytes.decode("utf-8", errors="replace")
         pw_metrics: dict[str, object] | None = None
+        screenshots: list[bytes] | None = None
         used_pw = False
 
         should_try_pw = use_playwright or (
@@ -199,6 +218,7 @@ class PageFetcher:
                 html = rendered.html
                 current_url = rendered.final_url
                 pw_metrics = rendered.metrics
+                screenshots = rendered.screenshots or None
                 used_pw = True
 
         return FetchedPage(
@@ -210,6 +230,7 @@ class PageFetcher:
             used_playwright=used_pw,
             is_mock_source=False,
             playwright_dom_metrics=pw_metrics,
+            screenshots=screenshots,
         )
 
     @staticmethod
@@ -228,7 +249,68 @@ class PageFetcher:
             logger.info("Playwright nie jest zainstalowany — używam wyników httpx.")
             return None
         try:
-            return await self._renderer.render(url, user_agent=self.pick_user_agent(), proxy=proxy)
+            return await self._renderer.render(
+                url,
+                user_agent=self.pick_user_agent(),
+                proxy=proxy,
+                capture_screenshots=self.settings.ollama_vision_enabled,
+            )
         except Exception as exc:
             logger.warning("Playwright fallback nie powiódł się dla %s: %s", url, exc)
             return None
+
+    async def resolve_short_links(self, urls: list[str]) -> list[str]:
+        """Resolve shortener / link-in-bio URLs to their destinations (anti-SSRF on every hop).
+
+        Shorteners: the redirect chain is followed manually without downloading bodies.
+        Link-in-bio pages: the page is fetched (size-capped) and its outbound links are returned.
+        Failures are ignored — this only enriches the analysis.
+        """
+        candidates = [u for u in urls if _host(u) in SHORTENER_HOSTS | LINK_IN_BIO_HOSTS]
+        candidates = candidates[: self.settings.crawler_expand_short_links_max]
+        resolved: list[str] = []
+        if not candidates:
+            return resolved
+        headers = {"User-Agent": self.pick_user_agent()}
+        timeout = httpx.Timeout(self.settings.crawler_timeout_seconds)
+        async with httpx.AsyncClient(
+            timeout=timeout, follow_redirects=False, proxy=self.pick_proxy(), trust_env=False
+        ) as client:
+            for url in candidates:
+                try:
+                    current = validate_public_url(url)
+                    for _ in range(self.settings.crawler_max_redirects + 1):
+                        await self._respect_rate_limit()
+                        if _host(current) in LINK_IN_BIO_HOSTS:
+                            resolved.extend(await self._link_in_bio_targets(client, current, headers))
+                            break
+                        async with client.stream("GET", current, headers=headers) as resp:
+                            location = resp.headers.get("location")
+                            if not (resp.is_redirect and location):
+                                if current != url:
+                                    resolved.append(current)
+                                break
+                            current = validate_public_url(urljoin(current, location))
+                except (SSRFError, httpx.HTTPError, ValueError) as exc:
+                    logger.info("Nie rozwinięto linku %s: %s", url, exc)
+        return list(dict.fromkeys(resolved))[:20]
+
+    async def _link_in_bio_targets(
+        self, client: httpx.AsyncClient, url: str, headers: dict[str, str]
+    ) -> list[str]:
+        raw = bytearray()
+        async with client.stream("GET", url, headers=headers) as resp:
+            if resp.status_code != 200:
+                return []
+            async for chunk in resp.aiter_bytes():
+                raw.extend(chunk)
+                if len(raw) > LINK_IN_BIO_MAX_BYTES:
+                    break
+        soup = BeautifulSoup(raw.decode("utf-8", errors="replace"), "html.parser")
+        own_host = _host(url)
+        targets: list[str] = []
+        for a in soup.find_all("a", href=True):
+            href = urljoin(url, str(a["href"]))
+            if href.startswith(("http://", "https://")) and _host(href) and _host(href) != own_host:
+                targets.append(href[:500])
+        return targets[:10]

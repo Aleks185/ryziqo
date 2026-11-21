@@ -42,6 +42,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
         registry = KNFRegistrySnapshot(
             snapshot_path=settings.resolved_data_dir / "knf_registry_snapshot.json",
             rules_path=settings.resolved_data_dir / "risk_criteria_rules.json",
+            warnings_path=settings.resolved_data_dir / "knf_warnings_snapshot.json",
         )
         ollama = OllamaClient(settings)
         await ollama.check_health()

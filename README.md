@@ -86,6 +86,14 @@ Wszystkie parametry znajdują się w [.env.example](.env.example). Sekrety są i
 | `CRAWLER_PLAYWRIGHT_MIN_TEXT_CHARS` | `400` | Próg widocznego tekstu uruchamiający render |
 | `HIGH_RISK_ALERT_THRESHOLD` | `0.65` | Próg emisji alertów `high_risk_alert` na `/ws/alerts` (w Dockerze także próg alertów w panelu) |
 | `FRONTEND_PORT` | `3000` | Port hosta, na którym Docker Compose wystawia panel |
+| `OLLAMA_NUM_PREDICT` / `OLLAMA_NUM_CTX` | `768` / `8192` | Limit tokenów odpowiedzi LLM i okno kontekstu |
+| `OLLAMA_VISION_ENABLED` | `false` | Analiza VLM zrzutów ekranu (wymaga Playwrighta i modelu z obsługą obrazów) |
+| `AI_PROMPT_CONTENT_CHARS` | `9000` | Budżet znaków treści w prompcie (sekcje zamiast ucinania tekstu) |
+| `AI_RAG_FEW_SHOT_ENABLED` | `true` | Dynamiczne przykłady few-shot z incydentów zweryfikowanych przez analityków |
+| `AI_CLONE_SIMILARITY_THRESHOLD` | `0.85` | Próg oznaczania klonów potwierdzonych kampanii na innych domenach |
+| `AI_STRICT_QUOTE_VERIFICATION` | `true` | Sygnał LLM bez cytatu obecnego w treści jest odrzucany |
+| `AGGREGATOR_MULTI_MODULE_MODE` | `primary` | `primary` — jeden incydent na stronę; `all_significant` — incydent per moduł z naruszeniami |
+| `CRAWLER_EXPAND_SHORT_LINKS` | `false` | Rozwijanie skracaczy / link-in-bio do domen docelowych (anty-SSRF) |
 
 Zmienne frontendu (`REACT_APP_INVESTWATCH_API_URL`, `REACT_APP_ALERT_THRESHOLD`) opisuje [frontend/.env.example](frontend/.env.example). Są wklejane do bundla w czasie builda — nie umieszczaj w nich sekretów.
 
@@ -95,6 +103,8 @@ Zmienne frontendu (`REACT_APP_INVESTWATCH_API_URL`, `REACT_APP_ALERT_THRESHOLD`)
 cd backend
 pytest -q                    # testy Playwright wymagają: pip install -r requirements-playwright.txt && playwright install chromium
 pip-audit -r requirements-dev.txt -r requirements-playwright.txt
+python -m scripts.evaluate_detection --mode both   # Precision/Recall/F1 na data/eval_golden_dataset.json (reguły vs Ollama)
+# instalacja Ollama, wybór modelu pod sprzęt i benchmark krok po kroku: docs/ollama-llm-setup.md
 
 cd ../frontend
 yarn audit

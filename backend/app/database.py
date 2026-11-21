@@ -128,6 +128,7 @@ class Database:
             # Additive migrations for databases created by earlier versions
             self._add_column_if_missing(conn, "crawl_jobs", "request_json", "TEXT")
             self._add_column_if_missing(conn, "content_snapshots", "embedding_json", "TEXT")
+            self._add_column_if_missing(conn, "content_snapshots", "local_embedding_json", "TEXT")
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_incidents_source ON incidents(module_id, source_url)"
             )
@@ -159,6 +160,7 @@ class Database:
         normalized_text: str,
         embedding: list[float],
         extracted: dict[str, Any] | None = None,
+        local_embedding: list[float] | None = None,
     ) -> str:
         """Persist raw HTML and normalized JSON artifact in local Object Storage + SQL metadata."""
         storage_key = f"{content_hash}.json"
@@ -182,8 +184,9 @@ class Database:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO content_snapshots
-                    (content_hash, source_url, source_platform, storage_key, vector_dim, embedding_json, fetched_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (content_hash, source_url, source_platform, storage_key, vector_dim, embedding_json,
+                     local_embedding_json, fetched_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     content_hash,
@@ -192,10 +195,20 @@ class Database:
                     storage_key,
                     len(embedding),
                     json.dumps(embedding),
+                    json.dumps(local_embedding) if local_embedding else None,
                     utc_now_iso(),
                 ),
             )
         return storage_key
+
+    def save_screenshots(self, content_hash: str, screenshots: list[bytes]) -> list[str]:
+        """Store Playwright JPEG screenshots next to the HTML snapshot (desktop, mobile)."""
+        names: list[str] = []
+        for label, data in zip(("desktop", "mobile"), screenshots):
+            name = f"{content_hash}_{label}.jpg"
+            (self.object_store_dir / name).write_bytes(data)
+            names.append(name)
+        return names
 
     def read_raw_text_preview(self, storage_key: str | None) -> str | None:
         if not storage_key:
@@ -257,6 +270,63 @@ class Database:
             if sim >= best_sim:
                 best_id, best_sim = str(row["id"]), sim
         return best_id
+
+    def list_verified_incident_vectors(
+        self, exclude_content_hash: str | None = None, limit: int = 500
+    ) -> list[dict[str, Any]]:
+        """Analyst-verified incidents with stored vectors (RAG few-shot and campaign-clone search).
+
+        label = True for ground_truth_label = 1 (or status 'confirmed' without a label),
+        label = False for ground_truth_label = 0 (or status 'false_positive' without a label).
+        """
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT i.id, i.module_id, i.source_url, i.risk_score, i.status, i.ground_truth_label,
+                       i.analyst_note, i.violated_rules_json, i.content_excerpt, i.title,
+                       s.embedding_json, s.local_embedding_json
+                FROM incidents i
+                JOIN content_snapshots s ON s.content_hash = i.content_hash
+                WHERE (i.ground_truth_label IS NOT NULL OR i.status IN ('confirmed', 'false_positive'))
+                  AND (? IS NULL OR i.content_hash != ?)
+                ORDER BY i.updated_at DESC
+                LIMIT ?
+                """,
+                (exclude_content_hash, exclude_content_hash, limit),
+            ).fetchall()
+        items: list[dict[str, Any]] = []
+        for row in rows:
+            gt = row["ground_truth_label"]
+            label = bool(gt) if gt is not None else row["status"] == "confirmed"
+            vectors: list[list[float]] = []
+            for col in ("embedding_json", "local_embedding_json"):
+                try:
+                    vec = json.loads(row[col]) if row[col] else None
+                except (TypeError, json.JSONDecodeError):
+                    vec = None
+                if isinstance(vec, list) and vec:
+                    vectors.append(vec)
+            if not vectors:
+                continue
+            try:
+                rule_ids = [str(r.get("rule_id")) for r in json.loads(row["violated_rules_json"] or "[]")]
+            except (TypeError, json.JSONDecodeError, AttributeError):
+                rule_ids = []
+            items.append(
+                {
+                    "id": str(row["id"]),
+                    "module_id": int(row["module_id"]),
+                    "source_url": str(row["source_url"]),
+                    "risk_score": float(row["risk_score"]),
+                    "label": label,
+                    "analyst_note": row["analyst_note"],
+                    "rule_ids": rule_ids,
+                    "excerpt": str(row["content_excerpt"] or ""),
+                    "title": str(row["title"] or ""),
+                    "vectors": vectors,
+                }
+            )
+        return items
 
     def upsert_incident(self, incident: Incident) -> Incident:
         gt_val = None if incident.ground_truth_label is None else (1 if incident.ground_truth_label else 0)
