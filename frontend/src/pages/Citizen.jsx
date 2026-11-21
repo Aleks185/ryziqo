@@ -1,0 +1,78 @@
+import { useState } from "react";
+import { MODULES, riskLevel } from "@/lib/config";
+import { RULE_LABELS } from "@/lib/i18n";
+import { useApp } from "@/lib/store";
+import { Panel } from "@/components/Badges";
+
+const field = "block mt-1 w-full border border-slate-300 rounded-sm px-3 py-2 text-sm focus-ring";
+const tones = {
+  high: "border-red-300 bg-red-50 text-red-950",
+  medium: "border-amber-300 bg-amber-50 text-amber-950",
+  low: "border-slate-300 bg-white text-slate-800",
+};
+
+function Verdict({ inc }) {
+  const { t, lang } = useApp();
+  const level = riskLevel(inc.risk_score);
+  const findings = [...(inc.findings || [])].sort((a, b) => b.weight - a.weight)
+    .map(f => RULE_LABELS[lang][f.rule_id]);
+  const evidence = [...new Set([...findings, ...(inc.violated_rules || []).map(r => r.reason),
+    ...(inc.quotes || []).map(q => q.text), ...(inc.evidence_quotes || [])].filter(Boolean))].slice(0, 3);
+  return <section role="status" className={`border-l-4 p-5 space-y-3 ${tones[level]}`}>
+    {inc.is_demo_fallback && <p className="text-xs font-semibold">{t("local_check")}</p>}
+    <h2 className="font-semibold">{t(`public_${level}`)}</h2>
+    {evidence.length > 0 && <div><h3 className="text-sm font-semibold">{t("flags")}</h3>
+      <ul className="list-disc pl-5">{evidence.map(item => <li key={item}>{item}</li>)}</ul></div>}
+    {level === "high" && <a className="underline font-semibold" href="https://www.knf.gov.pl/dla_konsumenta/ostrzezenia_publiczne">{t("warnings")}</a>}
+  </section>;
+}
+
+export default function Citizen() {
+  const { mode, analyze, t } = useApp();
+  const [kind, setKind] = useState("text");
+  const [content, setContent] = useState("");
+  const [url, setUrl] = useState("");
+  const [file, setFile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
+  const needsText = kind !== "url" || mode !== "online";
+  async function submit(event) {
+    event.preventDefault();
+    if (needsText && content.trim().length < 20) return setError("need_content");
+    if (kind === "image" && !["image/png", "image/jpeg", "image/webp"].includes(file?.type)) return setError("image_bad");
+    setBusy(true);
+    setError("");
+    setResult(null);
+    try {
+      const items = await analyze({
+        kind: kind === "image" ? "text" : kind, content: content.trim(), url: url.trim(),
+        source_url: kind === "url" ? url.trim() : null, title: kind === "image" ? file.name : null,
+        module_ids: MODULES, citizen: true,
+      });
+      if (!items.length) throw new Error();
+      setResult(items.reduce((highest, item) => item.risk_score > highest.risk_score ? item : highest));
+    } catch {
+      setError("failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return <div className="max-w-2xl mx-auto space-y-5">
+    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0B192C]">{t("public_title")}</h1>
+    <Panel><form onSubmit={submit} onChange={() => { setResult(null); setError(""); }}>
+      <fieldset disabled={busy} className="space-y-4">
+        <div className="flex flex-wrap gap-2">{["text", "url", "image"].map(k =>
+          <button key={k} type="button" aria-pressed={kind === k} onClick={() => { if (kind !== k) setFile(null); setKind(k); setResult(null); setError(""); }}
+            className={`border rounded-sm px-3 py-2 text-sm focus-ring ${kind === k ? "bg-[#0B192C] text-white" : "border-slate-300"}`}>{t(`public_${k}`)}</button>)}</div>
+        {kind === "url" && <label className="block">{t("public_url")}<input type="url" pattern="https?://.+" required className={field} value={url} onChange={e => setUrl(e.target.value)} /></label>}
+        {kind === "image" && <label className="block">{t("public_image")}<input type="file" accept="image/png,image/jpeg,image/webp" required className={field} onChange={e => setFile(e.target.files[0])} /></label>}
+        {needsText && <label className="block">{t(kind === "text" ? "public_text" : kind === "image" ? "image_text" : "transcript")}
+          <textarea required minLength={20} rows={6} className={field} value={content} onChange={e => setContent(e.target.value)} /></label>}
+        <button disabled={mode === "checking"} className="bg-[#0B192C] text-white px-5 py-2 rounded-sm font-semibold disabled:opacity-50">{t(busy ? "analyzing" : "verify")}</button>
+      </fieldset>
+    </form></Panel>
+    {error && <p role="alert" className="text-amber-950">{t(error)}</p>}
+    {result && <Verdict inc={result} />}
+  </div>;
+}

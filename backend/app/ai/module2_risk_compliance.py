@@ -7,19 +7,25 @@ import re
 from app.ai.context import AnalysisContext, request_llm_assessment
 from app.ai.fusion import fuse_module_result, has_commercial_cta
 from app.ai.module1_finfluencers import ModuleAnalysisResult
+from app.ai.solicitation import solicitation_signals
+from app.ai.monetary_offer import assess_offer
 from app.ai.ollama_client import OllamaClient
 from app.ai.preprocessor import PreprocessedDocument
 from app.knf_registry import KNFRegistrySnapshot
 from app.models import ViolatedRule
 
 PROFIT_CLAIM_RE = re.compile(
-    r"(zarabiaj|zyskaj|pomnażaj|ponadprzeciętn\w*\s+zysk|zwrot\w*\s+[0-9]+%|"
+    r"(zarabiaj|zyskaj(?!\s+(?:ulgę|odliczenie|korzyść)\s+podatkow\w*)|pomnażaj|ponadprzeciętn\w*\s+zysk|zwrot\w*\s+[0-9]+%|"
     r"\+[0-9]+%|do\s+[0-9]+%\s+rocznie|bez\s+prowizji|szybki\s+zysk)",
     re.IGNORECASE,
 )
+PRODUCT_RE = re.compile(r"\b(?:ETF|CFD|fundusz\w*|akcj[ei]|obligacj[ei]|portfel\w* inwestycyjn\w*)\b", re.I)
+INVITATION_RE = re.compile(r"\b(?:zainwestuj|zacznij inwestować|załóż (?:konto|rachunek)|otwórz rachunek|zautomatyzuj swoje inwestycje)\b", re.I)
+BENEFIT_RE = re.compile(r"\b(?:doch[oó]d\w* pasywn\w*|optymaliz\w* wyniki|0\s*%\s*prowizji|niższe opłaty)\b", re.I)
 PL_RISK_WARNING_RE = re.compile(
     r"(ryzyk\w*\s+utrat|utrat[aąey]\s+(?:części\s+lub\s+całości\s+)?(?:zainwestowanego\s+)?kapitał|"
-    r"informacja\s+o\s+ryzyku|kontrakty\s+cfd\s+są\s+złożonymi\s+instrumentami)",
+    r"(?:inwestowanie|inwestycj\w*)\s+(?:wiąże|wiążą)\s+się\s+z\s+ryzykiem|"
+    r"możesz\s+(?:stracić|utracić)\s+(?:część|całość|zainwestowan\w*|kapitał|pieniądze)|kontrakty\s+cfd\s+są\s+złożonymi\s+instrumentami)",
     re.IGNORECASE,
 )
 EN_RISK_ONLY_RE = re.compile(r"(risk\s+warning|capital\s+at\s+risk|cfds\s+are\s+complex)", re.IGNORECASE)
@@ -52,7 +58,7 @@ FORECAST_DISCLAIMER_RE = re.compile(
     r"(prognoz\w*\s+nie\s+(?:jest|stanowi)\s+wiarygodnym\s+wskaźnikiem)",
     re.IGNORECASE,
 )
-TAX_RE = re.compile(r"(podatk\w*\s+Belki|zero\s+podatku|bez\s+podatku|korzyści\s+podatkow|ulga\s+podatkowa)", re.IGNORECASE)
+TAX_RE = re.compile(r"(podatk\w*\s+Belki|zero\s+podatku|bez\s+podatku|korzyści\s+podatkow|ulg[ęai]\s+podatkow\w*|odliczenie\s+podatkowe)", re.IGNORECASE)
 TAX_DISCLAIMER_RE = re.compile(
     r"(zależ[ąy]\s+od\s+indywidualnej\s+sytuacji\s+klienta|mogą\s+ulec\s+zmianie)",
     re.IGNORECASE,
@@ -96,8 +102,16 @@ async def analyze_module2(
     has_profit_claim = bool(PROFIT_CLAIM_RE.search(text))
     relevant = is_registered_direct or (doc.promoter_hint is None and has_profit_claim)
 
+    offer = assess_offer(text)
+    relevant = relevant or bool(offer.quotes)
     violated: list[ViolatedRule] = []
-    quotes: list[str] = []
+    quotes = [q[:260] for q in offer.quotes]
+    if offer.reason:
+        violated.append(ViolatedRule(
+            rule_id="M2_MONETARY_OFFER", rule_name="Obietnica zarobku w określonym czasie",
+            legal_basis="Wskaźnik analityczny do weryfikacji",
+            severity="high" if offer.floor >= 0.70 else "medium", reason=offer.reason,
+        ))
     weighted_penalty = 0.0
 
     def add_violation(rule_id: str, severity: str, reason: str, quote_hint: str | None = None) -> None:
@@ -119,12 +133,15 @@ async def analyze_module2(
     # Rule 3: Profit claim paired with substantive Polish risk warning
     has_pl_risk = bool(PL_RISK_WARNING_RE.search(text))
     has_en_risk = bool(EN_RISK_ONLY_RE.search(text))
-    if has_profit_claim and not has_pl_risk:
-        matching_sent = next((s for s in doc.sentences if PROFIT_CLAIM_RE.search(s)), doc.title)
+    promoted_benefit = bool(PRODUCT_RE.search(text) and INVITATION_RE.search(text) and BENEFIT_RE.search(text))
+    missing_risk = (has_profit_claim or promoted_benefit) and not has_pl_risk
+    if missing_risk:
+        relevant = True
+        matching_sent = next((s for s in doc.sentences if PROFIT_CLAIM_RE.search(s) or BENEFIT_RE.search(s)), doc.title)
         add_violation(
             "3",
             "high",
-            "Wykryto eksponowane twierdzenia o potencjalnych zyskach bez równorzędnej polskojęzycznej informacji o ryzyku.",
+            "Materiał przedstawia korzyści inwestowania. W analizowanej treści nie znaleziono ostrzeżenia o ryzyku inwestycyjnym. Sprawdź pełną reklamę.",
             matching_sent,
         )
 
@@ -221,12 +238,20 @@ async def analyze_module2(
         )
 
     # Rule 16: Tax information
-    if TAX_RE.search(text) and not TAX_DISCLAIMER_RE.search(text):
+    missing_tax_terms = bool(TAX_RE.search(text) and not TAX_DISCLAIMER_RE.search(text))
+    pension_tax_promotion = bool(
+        missing_tax_terms and re.search(r"\b(?:IKE|IKZE)\b", text, re.I)
+        and re.search(r"\b(?:wpłać|załóż|otwórz|zyskaj)\b", text, re.I)
+    )
+    relevant = relevant or pension_tax_promotion
+    if missing_tax_terms:
         sent = next((s for s in doc.sentences if TAX_RE.search(s)), None)
         add_violation(
             "16",
             "medium",
-            "Odwołanie do korzyści podatkowych bez informacji o zależności od indywidualnej sytuacji klienta i możliwości zmian prawa.",
+            ("Sprawdź, którego konta dotyczy opisana korzyść podatkowa i na jakich warunkach przysługuje klientowi."
+             if pension_tax_promotion else
+             "Odwołanie do korzyści podatkowych bez informacji o zależności od indywidualnej sytuacji klienta i możliwości zmian prawa."),
             sent,
         )
 
@@ -246,13 +271,21 @@ async def analyze_module2(
             sent,
         )
 
+    signals, passages, signal_floor = solicitation_signals(text)
+    relevant = relevant or bool(signals)
+    violated.extend(signals)
+    quotes = list(dict.fromkeys([*(s[:260] for s in passages), *quotes]))
+
     # Map accumulated penalty smoothly into [0.10, 0.97]
     if not violated:
         score = 0.12
     else:
         score = round(min(0.97, 0.28 + weighted_penalty * 0.72), 4)
+    # Deterministic floors (monetary offer, solicitation, missing risk / pension-tax promotion) belong to the
+    # rule score, so the AI fusion below can still apply its context veto / verified-evidence boost on top
+    score = max(score, offer.floor, signal_floor, 0.40 if missing_risk or pension_tax_promotion else 0.0)
 
-    if not quotes and doc.sentences:
+    if violated and not quotes and doc.sentences:
         quotes = [doc.sentences[0][:240]]
 
     model_used = "deterministic-uknf-18rules-fallback"

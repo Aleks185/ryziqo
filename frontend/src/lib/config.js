@@ -14,7 +14,7 @@ export const isMixedContent = () =>
 
 // Słowniki zgodne z CONTRACT.md (module_id: 1 | 2 | 3, status incydentu).
 export const MODULES = [1, 2, 3];
-export const STATUSES = ["new", "in_review", "confirmed", "false_positive", "dismissed"];
+export const STATUSES = ["new", "in_review", "referred", "confirmed", "false_positive"];
 export const MODULE_COLORS = { 1: "#2563EB", 2: "#D97706", 3: "#DC2626" };
 export const SAMPLE_URL_PREFIX = "manual://sample/";
 

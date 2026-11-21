@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useApp } from "@/lib/store";
 
@@ -11,7 +11,7 @@ const LINKS = [
 
 const ConnectionPill = () => {
   const { mode, wsStatus, t } = useApp();
-  const dot = mode === "online" ? (wsStatus === "connected" ? "bg-emerald-400" : "bg-amber-400") : mode === "demo" ? "bg-red-500" : "bg-slate-400";
+  const dot = mode === "online" ? (wsStatus === "connected" ? "bg-emerald-400" : "bg-amber-400") : mode === "demo" ? "bg-amber-400" : "bg-slate-400";
   return (
     <div data-testid="nav-connection-status" className="flex items-center gap-2 border border-[#2E5077] rounded-sm px-2.5 py-1 font-mono text-[11px] tracking-wide">
       <span className={`h-2 w-2 rounded-full ${dot} ${mode === "online" && wsStatus === "connected" ? "animate-pulse" : ""}`} />
@@ -22,6 +22,7 @@ const ConnectionPill = () => {
 };
 
 export const Header = () => {
+  const publicView = useLocation().pathname.replace(/\/$/, "") === "/public";
   const { lang, setLang, t } = useApp();
   return (
     <header className="no-print sticky top-0 z-40 bg-[#0B192C] text-white border-b border-[#1E3E62]">
@@ -33,7 +34,7 @@ export const Header = () => {
             <div className="text-[11px] text-slate-400 hidden sm:block">{t("app_sub")}</div>
           </div>
         </NavLink>
-        <nav className="flex flex-wrap gap-1 order-3 lg:order-none w-full lg:w-auto">
+        {!publicView && <nav className="flex flex-wrap gap-1 order-3 lg:order-none w-full lg:w-auto">
           {LINKS.map(([to, key, id]) => (
             <NavLink
               key={to}
@@ -47,9 +48,17 @@ export const Header = () => {
               {t(key)}
             </NavLink>
           ))}
-        </nav>
-        <div className="ml-auto flex items-center gap-3">
-          <ConnectionPill />
+        </nav>}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {!publicView && <ConnectionPill />}
+          <div className="flex border border-[#2E5077] rounded-sm">
+            {[[false, "/", "analyst"], [true, "/public", "citizen"]].map(([active, to, key]) => (
+              <Link key={key} to={to} aria-current={active === publicView ? "page" : undefined}
+                className={`px-2 py-1 text-xs font-semibold focus-ring ${active === publicView ? "bg-white text-[#0B192C]" : "text-slate-300"}`}>
+                {t(key)}
+              </Link>
+            ))}
+          </div>
           <div className="flex border border-[#2E5077] rounded-sm overflow-hidden" role="group" aria-label="Language">
             {["pl", "en"].map((l) => (
               <button

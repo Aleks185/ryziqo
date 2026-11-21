@@ -1,3 +1,4 @@
+import { exportRegister } from "@/lib/exportRegister";
 import { useNavigate } from "react-router-dom";
 import { SAMPLE_URL_PREFIX } from "@/lib/config";
 import { useApp } from "@/lib/store";
@@ -8,7 +9,13 @@ export const IncidentTable = ({ incidents }) => {
   const { t, lang } = useApp();
   const nav = useNavigate();
   return (
-    <Panel title={`${t("list_title")} (${incidents.length})`} testId="incident-table">
+    <Panel title={`${t("list_title")} (${incidents.length})`} testId="incident-table" right={
+      <div className="flex gap-2">{["csv", "json"].map(format => (
+        <button key={format} type="button" className="compact-action" onClick={() => exportRegister(incidents, format)}>
+          {t("export")} {format.toUpperCase()}
+        </button>
+      ))}</div>
+    }>
       {incidents.length === 0 ? (
         <div data-testid="incident-table-empty" className="py-10 text-center text-sm text-slate-500">{t("list_empty")}</div>
       ) : (
@@ -36,6 +43,7 @@ export const IncidentTable = ({ incidents }) => {
                   <td className="px-5 py-2.5 max-w-[320px]">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-[10px] font-bold text-slate-500 border border-slate-300 px-1 rounded-sm">{platformLabel(t, i.source_platform)}</span>
+                      {i.citizen && <span className="shrink-0 text-xs font-semibold rounded-sm border border-slate-300 bg-slate-100 px-2">{t("crowd")}</span>}
                       {i.source_url?.startsWith(SAMPLE_URL_PREFIX) && <span className="font-mono text-[10px] font-bold text-[#92400E] bg-[#FFFBEB] border border-[#FCD34D] px-1 rounded-sm">{t("sample_badge")}</span>}
                       <span className="truncate text-slate-700" title={i.source_url}>{i.title || i.source_url}</span>
                     </div>

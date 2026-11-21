@@ -6,7 +6,7 @@ import { Panel } from "./Badges";
 const LEVEL = { alert: "text-[#DC2626]", warn: "text-[#D97706]", info: "text-slate-300" };
 
 export const LiveLog = ({ limit = 12, full = false }) => {
-  const { events, mode, wsStatus, lang, t, clearEvents } = useApp();
+  const { events, mode, wsStatus, lang, t, clearEvents, cycling, runCycle } = useApp();
   const shown = full ? events : events.slice(0, limit);
   const state = mode === "online" ? wsStatus : "demo";
   return (
@@ -14,7 +14,8 @@ export const LiveLog = ({ limit = 12, full = false }) => {
       testId="live-crawler-log"
       title={t("log_title")}
       right={
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={runCycle} disabled={cycling} className="compact-action">{t(cycling ? "cycling" : "cycle")}</button>
           <span data-testid="live-log-state" className="font-mono text-[11px] font-bold uppercase text-slate-500">
             {state === "demo" ? "DEMO" : state}
           </span>

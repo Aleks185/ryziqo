@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Printer } from "lucide-react";
 import { STATUSES } from "@/lib/config";
@@ -81,13 +81,25 @@ const DomMetricsPanel = ({ dom }) => {
 
 const selectCls = "border border-[#CBD5E1] rounded-sm px-2 py-1.5 text-sm bg-white focus-ring";
 
+const NoteEditor = ({ inc }) => {
+  const { t, annotate } = useApp();
+  const saved = inc.analyst_note || "";
+  const [draft, setDraft] = useState(saved);
+  return <div>
+    <label className="block text-sm font-semibold">{t("note")}
+      <textarea rows={4} className={`${selectCls} w-full mt-1`} value={draft} onChange={e => setDraft(e.target.value)} />
+    </label>
+    <button type="button" disabled={draft === saved} className="compact-action" onClick={() => annotate(inc.id, { analyst_note: draft })}>{t("save_note")}</button>
+  </div>;
+};
+
 const CaseControls = ({ inc }) => {
   const { t, mode, updateStatus, setGroundTruth } = useApp();
   const gt = inc.ground_truth_label === true ? "true" : inc.ground_truth_label === false ? "false" : "none";
   return (
     <Panel title={t("status_label")} className="no-print">
       <div className="space-y-4">
-        <select data-testid="incident-status-select" value={inc.status} onChange={(e) => updateStatus(inc.id, e.target.value)} className={`${selectCls} w-full`}>
+        <select data-testid="incident-status-select" value={inc.status === "dismissed" ? "false_positive" : inc.status} onChange={(e) => updateStatus(inc.id, e.target.value)} className={`${selectCls} w-full`}>
           {STATUSES.map((s) => <option key={s} value={s}>{t(`status_${s}`)}</option>)}
         </select>
         {mode !== "online" && <div data-testid="incident-status-local-tag"><DemoTag /> <span className="text-xs text-slate-500">{t("status_local")}</span></div>}
@@ -99,6 +111,7 @@ const CaseControls = ({ inc }) => {
             <option value="false">{t("label_false")}</option>
           </select>
         </label>
+        <NoteEditor key={inc.id} inc={inc} />
         <button type="button" data-testid="incident-print-button" onClick={() => window.print()} className="w-full inline-flex items-center justify-center gap-2 bg-[#0B192C] text-white px-4 py-2 text-sm font-semibold rounded-sm hover:bg-[#1E3E62] transition-colors focus-ring">
           <Printer className="h-4 w-4" aria-hidden />{t("print_btn")}
         </button>
@@ -208,6 +221,10 @@ export default function IncidentDetail() {
           </Panel>
         </div>
       </div>
+      {inc.analyst_note && <section className="print-only">
+        <h2 className="font-semibold">{t("note")}</h2>
+        <p className="whitespace-pre-wrap break-words">{inc.analyst_note}</p>
+      </section>}
       <PrintSignature />
     </article>
   );

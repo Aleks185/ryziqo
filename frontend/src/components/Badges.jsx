@@ -47,7 +47,7 @@ export const StatusBadge = ({ status }) => {
 export const DemoTag = () => {
   const { t } = useApp();
   return (
-    <span data-testid="demo-result-tag" className="inline-block bg-[#991B1B] text-white font-mono text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded-sm">
+    <span data-testid="demo-result-tag" className="inline-block bg-amber-100 text-amber-950 font-mono text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded-sm">
       {t("demo_tag")}
     </span>
   );
@@ -56,7 +56,7 @@ export const DemoTag = () => {
 export const Panel = ({ title, children, right, className = "", testId }) => (
   <section data-testid={testId} className={`bg-white border border-[#CBD5E1] rounded-sm ${className}`}>
     {title && (
-      <header className="flex items-center justify-between gap-3 border-b border-[#E2E8F0] px-5 py-3">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E2E8F0] px-5 py-3">
         <h2 className="text-xs font-semibold uppercase tracking-[0.1em] text-[#475569]">{title}</h2>
         {right}
       </header>
