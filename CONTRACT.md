@@ -1,0 +1,216 @@
+# #InvestWatch — Zamrożony Kontrakt API i WebSocket (`CONTRACT.md`)
+
+**Wersja:** `1.0.0` (HackNation UKNF 2026)  
+**Zasada współpracy:** Po zamrożeniu nie zmieniamy jednostronnie nazw pól, typów ani ścieżek. Ewentualne rozszerzenia wyłącznie jako opcjonalne pola po obustronnej zgodzie.
+
+---
+
+## 1. Bazowe adresy
+
+- **Backend (dev lokalny):** `http://localhost:8000`
+- **Backend (Docker przez Nginx proxy frontendu):** ścieżki relatywne `/api/v1/...` oraz `/ws/alerts`
+- **Swagger / OpenAPI:** `http://localhost:8000/docs`
+
+---
+
+## 2. Model danych `Incident`
+
+Każdy rekord zwracany przez API i agregator wyników Modułów 1–3 ma ujednoliconą strukturę:
+
+```json
+{
+  "id": "inc_20261121_001",
+  "module_id": 2,
+  "module_name": "Weryfikacja zgodności i informacji o ryzyku",
+  "entity_name": "Alpha CFD Broker S.A.",
+  "promoter_name": null,
+  "knf_registry_status": "registered_pl",
+  "source_platform": "web",
+  "source_url": "mock://broker_promo_hidden_risk.html",
+  "title": "Zarabiaj nawet 40% rocznie na kontraktach CFD bez prowizji!",
+  "content_excerpt": "Otwórz rachunek w 2 minuty i zyskuj do 40% rocznie...",
+  "evidence_quotes": [
+    "Zyskaj nawet 40% rocznie — sprawdzone wyniki naszych klientów!",
+    "Kontrakty CFD są złożonymi instrumentami... (ukryte w stopce 8px, kontrast 2.1:1)"
+  ],
+  "violated_rules": [
+    {
+      "rule_id": "3",
+      "rule_name": "Informacja o ryzyku",
+      "legal_basis": "art. 44 ust. 2 lit. b rozporządzenia del. 2017/565",
+      "severity": "high",
+      "reason": "Twierdzenia o wysokich zyskach bez równorzędnego ostrzeżenia o ryzyku."
+    }
+  ],
+  "dom_metrics": {
+    "dominant_font_px": 18.0,
+    "risk_font_px": 8.0,
+    "font_ratio": 0.44,
+    "risk_hidden_in_footer": true,
+    "requires_click_to_view_risk": false,
+    "low_contrast_detected": true,
+    "responsive_overflow_detected": false
+  },
+  "risk_score": 0.89,
+  "risk_level": "high",
+  "status": "new",
+  "analyst_note": null,
+  "ground_truth_label": true,
+  "model_used": "gemma3:4b + uknf-rules-v1",
+  "is_demo_fallback": false,
+  "content_hash": "a3f19c...",
+  "storage_key": "a3f19c....json",
+  "detected_at": "2026-11-21T12:15:00Z",
+  "updated_at": "2026-11-21T12:15:00Z"
+}
+```
+
+### Słowniki wartości
+- `module_id`: `1` (Finfluencerzy i podmioty trzecie) | `2` (Zgodność i informacja o ryzyku — 18 reguł UKNF) | `3` (Shadow Advisory — art. 76 u.o.i.f.)
+- `knf_registry_status`: `"registered_pl"` | `"registered_eu_branch"` | `"registered_eu_crossborder"` | `"not_in_knf_snapshot"` | `"unknown"`
+- `source_platform`: `"web"` | `"facebook"` | `"instagram"` | `"tiktok"` | `"youtube"` | `"mock_demo"`
+- `risk_score`: liczba zmiennoprzecinkowa **`0.00` – `1.00`** (wskaźnik modelu AI + reguł; nie stanowi wiążącego rozstrzygnięcia prawnego).
+- `risk_level`: `"low"` (`< 0.40`) | `"medium"` (`0.40 – 0.69`) | `"high"` (`>= 0.70`) — domyślna etykieta; **Panel Kalibracji w UI przelicza flagowanie dynamicznie wg suwaka `threshold`**.
+- `status`: `"new"` | `"in_review"` | `"confirmed"` | `"false_positive"` | `"dismissed"`
+- `ground_truth_label`: `true` (rzeczywiste naruszenie referencyjne) | `false` (materiał poprawny / neutralny) | `null` (brak etykiety referencyjnej). Służy do wyliczania macierzy **TP / FP / TN / FN** w Panelu Kalibracji.
+
+---
+
+## 3. Endpointy REST
+
+### `GET /api/v1/health`
+Status serwisu, dostępność Ollama na hoście, tryb pracy (`live` vs `demo_fallback`) oraz data lokalnego snapshotu KNF.
+```json
+{
+  "status": "ok",
+  "ollama_available": false,
+  "ollama_model": "gemma3:4b",
+  "mode": "demo_fallback",
+  "knf_snapshot_date": "2026-11-21",
+  "knf_snapshot_note": "Lokalny snapshot demonstracyjny — nie zastępuje bieżącej weryfikacji w rejestrach KNF.",
+  "incidents_count": 14,
+  "scheduler_running": true
+}
+```
+
+### `GET /api/v1/incidents`
+Zwraca listę incydentów z opcjonalnym filtrowaniem.
+- Query params (wszystkie opcjonalne):
+  - `module_id`: `1` | `2` | `3`
+  - `source_platform`: string (np. `tiktok`, `instagram`, `web`)
+  - `status`: `new` | `in_review` | `confirmed` | `false_positive` | `dismissed`
+  - `min_risk_score`: float (`0.0`–`1.0`)
+  - `max_risk_score`: float (`0.0`–`1.0`)
+  - `date_from`: ISO-8601 (np. `2026-11-15T00:00:00Z`)
+  - `date_to`: ISO-8601
+  - `search`: pełnotekstowe szukanie po nazwie podmiotu, tytule, URL i cytatach
+  - `limit`: int (domyślnie `100`, max `500`)
+  - `offset`: int (domyślnie `0`)
+- Odpowiedź:
+```json
+{
+  "items": [ /* Incident[] */ ],
+  "total": 14,
+  "knf_snapshot_date": "2026-11-21",
+  "mode": "demo_fallback"
+}
+```
+
+### `GET /api/v1/incidents/{incident_id}`
+Zwraca pojedynczy obiekt `Incident` wraz z `raw_text_preview`.
+
+### `PATCH /api/v1/incidents/{incident_id}/status`
+Aktualizuje status incydentu w SQLite i rozgłasza zdarzenie `status_updated` przez WebSocket.
+- Request body:
+```json
+{
+  "status": "confirmed",
+  "analyst_note": "Potwierdzono brak ostrzeżenia o ryzyku przy obietnicy zysku."
+}
+```
+- Response: zaktualizowany obiekt `Incident`.
+
+### `GET /api/v1/stats`
+Zwraca zagregowane metryki do KPI i wykresów trendów (Recharts/Chart.js).
+- Query param: `threshold` (float, domyślnie `0.50`)
+- Odpowiedź:
+```json
+{
+  "threshold": 0.5,
+  "total_incidents": 14,
+  "flagged_count": 10,
+  "by_module": { "1": 4, "2": 6, "3": 4 },
+  "by_source": { "web": 8, "tiktok": 2, "instagram": 2, "facebook": 2 },
+  "by_status": { "new": 11, "in_review": 2, "confirmed": 1 },
+  "trend_by_day": [
+    { "date": "2026-11-18", "total": 2, "flagged": 1, "high_risk": 1 },
+    { "date": "2026-11-21", "total": 6, "flagged": 5, "high_risk": 4 }
+  ],
+  "top_violated_rules": [
+    { "rule_id": "3", "rule_name": "Informacja o ryzyku", "count": 4 }
+  ],
+  "calibration": {
+    "threshold": 0.5,
+    "labeled_total": 14,
+    "tp": 9,
+    "fp": 1,
+    "tn": 3,
+    "fn": 1,
+    "precision": 0.9,
+    "recall": 0.9,
+    "f1_score": 0.9
+  }
+}
+```
+
+### `POST /api/v1/crawl/trigger`
+Dodaje zadanie scrapowania i analizy do kolejki zadań backendu.
+- Request body:
+```json
+{
+  "mode": "mock_all",
+  "target_url": null,
+  "mock_file": null,
+  "module_ids": [1, 2, 3],
+  "use_playwright": false
+}
+```
+  - `mode`: `"mock_all"` (skanuje wszystkie lokalne strony demonstracyjne), `"mock_single"` (wymaga `mock_file`, np. `"broker_promo_hidden_risk.html"`), `"public_url"` (wymaga `target_url` — przechodzi walidację anty-SSRF!).
+- Odpowiedź (`202 Accepted`):
+```json
+{
+  "job_id": "job_20261121_abc123",
+  "status": "queued",
+  "mode": "mock_all",
+  "message": "Zadanie dodane do kolejki analizy."
+}
+```
+
+### `GET /api/v1/crawl/jobs`
+Zwraca listę zadań kolejki, dostępnych plików mock-demo oraz najbliższy termin uruchomienia APScheduler.
+
+### `GET /api/v1/knf-registry` & `GET /api/v1/rules`
+- `/api/v1/knf-registry`: lokalny snapshot podmiotów KNF (data, źródła URL z załączników UKNF, lista podmiotów).
+- `/api/v1/rules`: pełna lista 18 reguł UKNF z załącznika do Modułu 2 wraz z podstawami prawnymi.
+
+---
+
+## 4. Kontrakt WebSocket (`GET /ws/alerts`)
+
+Połączenie: `ws://localhost:8000/ws/alerts` (lub `wss://.../ws/alerts` przez proxy).  
+Klient może wysyłać opcjonalny tekst `"ping"` → serwer odpowiada `{"type": "pong", "timestamp": "..."}`.
+
+Format komunikatów serwera:
+```json
+{
+  "type": "connected" | "crawler_status" | "high_risk_alert" | "analysis_complete" | "status_updated" | "error",
+  "timestamp": "2026-11-21T13:15:02Z",
+  "job_id": "job_20261121_abc123",
+  "stage": "queued" | "fetching" | "preprocessing" | "analyzing" | "completed" | "error",
+  "source": "mock://broker_promo_hidden_risk.html",
+  "module_id": 2,
+  "incident_id": "inc_20261121_001",
+  "risk_score": 0.89,
+  "message": "Wykryto wysokie ryzyko (0.89) w Module 2: Alpha CFD Broker S.A."
+}
+```

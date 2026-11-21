@@ -1,0 +1,88 @@
+"""Strict anti-SSRF URL and DNS validator for public web scraping."""
+
+from __future__ import annotations
+
+import ipaddress
+import socket
+from urllib.parse import urlparse
+
+BLOCKED_HOSTNAMES = {
+    "localhost",
+    "localhost.localdomain",
+    "ip6-localhost",
+    "ip6-loopback",
+    "metadata.google.internal",
+    "metadata",
+    "host.docker.internal",
+}
+
+BLOCKED_SUFFIXES = (".local", ".localhost", ".internal", ".home.arpa")
+
+
+class SSRFError(ValueError):
+    """Raised when a URL fails anti-SSRF validation."""
+
+
+def _is_forbidden_ip(ip_str: str) -> bool:
+    ip = ipaddress.ip_address(ip_str)
+    # Handle IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1)
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        ip = ip.ipv4_mapped
+
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    )
+
+
+def validate_public_url(url: str) -> str:
+    """Validate that a public URL is HTTP(S) and resolves strictly to public IP addresses."""
+    if not url or not isinstance(url, str):
+        raise SSRFError("URL nie może być pusty.")
+
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in ("http", "https"):
+        raise SSRFError(f"Niedozwolony schemat URL: '{parsed.scheme}'. Dozwolone wyłącznie http/https.")
+
+    if parsed.username or parsed.password:
+        raise SSRFError("URL zawierający dane uwierzytelniające w nagłówku jest zablokowany.")
+
+    hostname = (parsed.hostname or "").strip().lower()
+    if not hostname:
+        raise SSRFError("Brak poprawnej nazwy hosta w URL.")
+
+    if hostname in BLOCKED_HOSTNAMES or any(hostname.endswith(sfx) for sfx in BLOCKED_SUFFIXES):
+        raise SSRFError(f"Host '{hostname}' jest zablokowany przez politykę anty-SSRF.")
+
+    # Direct IP literal check first
+    try:
+        ipaddress.ip_address(hostname)
+    except ValueError:
+        pass
+    else:
+        if _is_forbidden_ip(hostname):
+            raise SSRFError(f"Adres IP '{hostname}' należy do sieci prywatnej/lokalnej/metadata.")
+        return url.strip()
+
+    # Resolve DNS and check ALL returned IP addresses
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    try:
+        addr_infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise SSRFError(f"Nie udało się rozwiązać DNS dla hosta '{hostname}': {exc}") from exc
+
+    if not addr_infos:
+        raise SSRFError(f"Brak rekordów DNS dla hosta '{hostname}'.")
+
+    for _, _, _, _, sockaddr in addr_infos:
+        ip_str = sockaddr[0]
+        if _is_forbidden_ip(ip_str):
+            raise SSRFError(
+                f"Host '{hostname}' rozwiązuje się na niedozwolony adres '{ip_str}' (ochrona anty-SSRF)."
+            )
+
+    return url.strip()

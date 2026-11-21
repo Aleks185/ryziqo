@@ -1,0 +1,158 @@
+{
+  "source_document": "ZASÓB DLA UCZESTNIKÓW - InvestWatch - kryteria oceny informacji o ryzyku.docx",
+  "version": "2026-11-21",
+  "rules": [
+    {
+      "id": "1",
+      "name": "Identyfikacja firmy",
+      "description": "Sprawdza, czy materiał zawiera oficjalną nazwę firmy inwestycyjnej.",
+      "legal_basis": "art. 44 ust. 2 lit. a rozporządzenia del. 2017/565",
+      "check_type": "text_and_registry",
+      "weight": 0.14
+    },
+    {
+      "id": "2",
+      "name": "Oznaczenie reklamy",
+      "description": "Weryfikuje, czy materiał reklamowy/promocyjny jest jednoznacznie oznaczony jako taki.",
+      "legal_basis": "art. 24 ust. 3 MiFID II",
+      "check_type": "text_and_llm",
+      "weight": 0.12
+    },
+    {
+      "id": "3",
+      "name": "Informacja o ryzyku",
+      "description": "Wykrywa twierdzenia o potencjalnych zyskach i sprawdza, czy bezpośrednio towarzyszy im informacja o istotnym ryzyku.",
+      "legal_basis": "art. 44 ust. 2 lit. b rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.22
+    },
+    {
+      "id": "4",
+      "name": "Rozmiar czcionki ryzyka",
+      "description": "Porównuje wielkość czcionki informacji o ryzyku z przeważającą wielkością czcionki materiału.",
+      "legal_basis": "art. 44 ust. 2 lit. c rozporządzenia del. 2017/565",
+      "check_type": "dom_css",
+      "weight": 0.15
+    },
+    {
+      "id": "5",
+      "name": "Ekspozycja i kontrast ryzyka",
+      "description": "Analizuje umiejscowienie informacji o ryzyku pod kątem kontrastu, przesłonięcia przez inne elementy oraz czytelności.",
+      "legal_basis": "art. 44 ust. 2 lit. c i e rozporządzenia del. 2017/565",
+      "check_type": "dom_css",
+      "weight": 0.15
+    },
+    {
+      "id": "6",
+      "name": "Zakrywanie / ukrywanie ryzyka",
+      "description": "Wykrywa m.in. ryzyko ukryte w przypisach, sekcji „Legal” lub w miejscach o niskiej widoczności.",
+      "legal_basis": "art. 44 ust. 2 lit. e rozporządzenia del. 2017/565",
+      "check_type": "dom_css",
+      "weight": 0.16
+    },
+    {
+      "id": "7",
+      "name": "Dostępność za 1 kliknięciem",
+      "description": "Sprawdza, czy wyświetlanie informacji o ryzyku wymaga rozwinięcia, kliknięcia linku lub przejścia na inną warstwę.",
+      "legal_basis": "art. 44 ust. 2 lit. b i e rozporządzenia del. 2017/565",
+      "check_type": "dom_css",
+      "weight": 0.14
+    },
+    {
+      "id": "8",
+      "name": "Responsywność (różne urządzenia)",
+      "description": "Symuluje wyświetlenie materiału na ekranach o różnych wielkościach (desktop, tablet, telefon) i sprawdza, czy tekst nie jest ucinany lub skalowany poniżej czytelności.",
+      "legal_basis": "art. 44 ust. 2 lit. g rozporządzenia del. 2017/565",
+      "check_type": "dom_css",
+      "weight": 0.12
+    },
+    {
+      "id": "9",
+      "name": "Zrozumiałość dla grupy docelowej",
+      "description": "Ocenia, czy ostrzeżenie o ryzyku jest przedstawione językiem zrozumiałym dla przeciętnego odbiorcy grupy docelowej.",
+      "legal_basis": "art. 44 ust. 2 lit. d rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.1
+    },
+    {
+      "id": "10",
+      "name": "Spójność językowa",
+      "description": "Weryfikuje, czy informacje o ryzyku nie są podane w innym języku niż główny przekaz materiału.",
+      "legal_basis": "art. 44 ust. 2 lit. f rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.14
+    },
+    {
+      "id": "11",
+      "name": "Porównania produktów / usług",
+      "description": "Wykrywa porównania produktów i usług, weryfikuje źródło informacji, przyjęte założenia i flaguje naruszenia w raporcie.",
+      "legal_basis": "art. 44 ust. 3 rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.12
+    },
+    {
+      "id": "12a",
+      "name": "Wyniki historyczne — okres i zakres",
+      "description": "Sprawdza, czy prezentowane wyniki historyczne obejmują okres ostatnich 5 lat i pełne okresy 12-miesięczne oraz czy wskazano okres referencyjny i źródło.",
+      "legal_basis": "art. 44 ust. 4 rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.15
+    },
+    {
+      "id": "12b",
+      "name": "Wyniki historyczne — warunki i waluta",
+      "description": "Weryfikuje, czy zawarto ostrzeżenie o wpływie zmian kursów walutowych oraz czy wskazano wpływ prowizji, opłat i obciążeń na wyniki.",
+      "legal_basis": "art. 44 ust. 4 rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.14
+    },
+    {
+      "id": "13",
+      "name": "Dominacja wyników historycznych",
+      "description": "Sprawdza, czy wyniki historyczne nie stanowią najbardziej wyeksponowanego elementu informacji.",
+      "legal_basis": "art. 44 ust. 4 lit. a rozporządzenia del. 2017/565",
+      "check_type": "dom_and_text",
+      "weight": 0.14
+    },
+    {
+      "id": "14",
+      "name": "Ostrzeżenie przy wynikach historycznych",
+      "description": "Weryfikuje obecność wyraźnego zastrzeżenia, że wyniki historyczne nie stanowią wiarygodnego wskaźnika przyszłych wyników.",
+      "legal_basis": "art. 44 ust. 4 lit. d rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.16
+    },
+    {
+      "id": "15",
+      "name": "Prognozy przyszłych wyników",
+      "description": "Rozpoznaje prognozy i sprawdza, czy zawarto wyraźne ostrzeżenie, że prognoza nie jest wiarygodnym wskaźnikiem przyszłych wyników. Flaguje wykrycie prognozy.",
+      "legal_basis": "art. 44 ust. 6 rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.16
+    },
+    {
+      "id": "16",
+      "name": "Informacja podatkowa",
+      "description": "Jeśli reklama odwołuje się do traktowania podatkowego, sprawdza obecność wyraźnej informacji o zależności od indywidualnej sytuacji klienta i możliwości zmian.",
+      "legal_basis": "art. 44 ust. 7 rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.12
+    },
+    {
+      "id": "17",
+      "name": "Zakaz sugerowania aprobaty organu nadzoru",
+      "description": "Identyfikuje odwołania do KNF lub innego właściwego organu oraz sprawdza, czy są używane do sugerowania zatwierdzenia lub aprobaty produktu/usługi.",
+      "legal_basis": "art. 44 ust. 8 rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.22
+    },
+    {
+      "id": "18",
+      "name": "Nadzór jako argument bezpieczeństwa",
+      "description": "Wykrywa odwołania do organu nadzoru sugerujące bezpieczeństwo inwestycji (np. „inwestycja w pełni bezpieczna — spełniamy wymogi KNF”).",
+      "legal_basis": "art. 44 ust. 8 rozporządzenia del. 2017/565",
+      "check_type": "text_and_llm",
+      "weight": 0.25
+    }
+  ]
+}

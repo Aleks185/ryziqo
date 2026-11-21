@@ -1,0 +1,125 @@
+{
+  "snapshot_date": "2026-11-21",
+  "disclaimer": "Lokalny snapshot demonstracyjny oparty o publiczne kategorie rejestrów KNF (stan na 2026-11-21) oraz fikcyjne podmioty testowe dla mock-stron. Nie stanowi automatycznej weryfikacji bieżącego statusu prawnego w rejestrze KNF.",
+  "official_sources": {
+    "rejestr_firm_inwestycyjnych": "https://www.knf.gov.pl/podmioty/Podmioty_rynku_kapitalowego/Firmy_inwestycyjne_i_Agenci_firm_inwestycyjnych",
+    "banki_maklerskie": "https://www.knf.gov.pl/podmioty/Podmioty_rynku_kapitalowego/Firmy_inwestycyjne_i_Agenci_firm_inwestycyjnych/Banki_prowadzace_dzialalnosc_maklerska",
+    "domy_maklerskie": "https://www.knf.gov.pl/podmioty/Podmioty_rynku_kapitalowego/Firmy_inwestycyjne_i_Agenci_firm_inwestycyjnych/domy_maklerskie",
+    "oddzialy_zagraniczne": "https://www.knf.gov.pl/podmioty/Podmioty_rynku_kapitalowego/Firmy_inwestycyjne_i_Agenci_firm_inwestycyjnych/notyfikowane_firmy_inwestycyjne_oddzialy",
+    "zagraniczne_bez_oddzialu": "https://www.knf.gov.pl/podmioty/Podmioty_rynku_kapitalowego/Firmy_inwestycyjne_i_Agenci_firm_inwestycyjnych/notyfikowane_zagraniczne_firmy_inwestycyjne"
+  },
+  "entities": [
+    {
+      "official_name": "XTB S.A.",
+      "aliases": ["XTB", "X-Trade Brokers", "xtb.com"],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Dom Maklerski BOŚ S.A.",
+      "aliases": ["DM BOŚ", "Bossa", "bossa.pl"],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Biuro Maklerskie PKO Banku Polskiego",
+      "aliases": ["BM PKO BP", "PKO BP Makler"],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Biuro Maklerskie mBanku",
+      "aliases": ["eMakler", "BM mBank", "mInwestor"],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Santander Biuro Maklerskie",
+      "aliases": ["BM Santander"],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TMS Brokers (OANDA TMS Brokers S.A.)",
+      "aliases": ["OANDA TMS", "TMS Brokers"],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Saxo Bank A/S (notyfikacja transgraniczna)",
+      "aliases": ["Saxo Bank", "SaxoTrader"],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "DK",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Interactive Brokers Ireland Limited",
+      "aliases": ["Interactive Brokers", "IBKR"],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "IE",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "eToro (Europe) Ltd.",
+      "aliases": ["eToro"],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "CY",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Trading 212 Markets Ltd.",
+      "aliases": ["Trading 212", "Trading212"],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "CY",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NordicMarkets Polska Dom Maklerski S.A. [DEMO]",
+      "aliases": ["NordicMarkets", "NordicMarkets Polska", "NordicMarkets CFD"],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": true
+    },
+    {
+      "official_name": "Vistula Securities S.A. [DEMO]",
+      "aliases": ["Vistula Securities", "Vistula Broker", "Vistula ETF"],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": true
+    },
+    {
+      "official_name": "EuroTrade Direct Europe Ltd. [DEMO]",
+      "aliases": ["EuroTrade Direct", "EuroTrade", "EuroTrade App"],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "CY",
+      "is_synthetic_demo": true
+    },
+    {
+      "official_name": "BalticInvest Oddział w Polsce [DEMO]",
+      "aliases": ["BalticInvest", "BalticInvest Polska"],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "DE",
+      "is_synthetic_demo": true
+    }
+  ]
+}

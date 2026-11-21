@@ -1,0 +1,645 @@
+[
+  {
+    "id": "demo_m1_001",
+    "module_id": 1,
+    "module_name": "Monitoring ekosystemu zewnętrznego (Finfluencerzy)",
+    "entity_name": "EuroTrade Direct Europe Ltd. [DEMO]",
+    "promoter_name": "@krypto_luksus_pl (Finfluencer TikTok)",
+    "knf_registry_status": "registered_eu_crossborder",
+    "source_platform": "tiktok",
+    "source_url": "mock://finfluencer_tiktok_cfd.html",
+    "title": "Jak zrobiłem 12 000 zł w tydzień na apce EuroTrade! Link w BIO!",
+    "content_excerpt": "Wszyscy pytają na czym gram złoto i NASDAQ z dźwignią 1:30. Wbijajcie z mojego linku partnerskiego do EuroTrade Direct — zero prowizji i bonus powitalny! Pasywny dochód dla każdego.",
+    "evidence_quotes": [
+      "Wbijajcie z mojego linku partnerskiego do EuroTrade Direct — zero prowizji i bonus powitalny!",
+      "Jak zrobiłem 12 000 zł w tydzień na apce EuroTrade! Brak oznaczenia #reklama / #współpracapłatna."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "M1_UNDISCLOSED_AD",
+        "rule_name": "Brak jednoznacznego oznaczenia współpracy reklamowej",
+        "legal_basis": "art. 24 ust. 3 MiFID II / praktyki finfluencerów",
+        "severity": "high",
+        "reason": "Link afiliacyjny promujący zagraniczną firmę inwestycyjną bez oznaczenia reklamy i bez ostrzeżenia o ryzyku CFD."
+      },
+      {
+        "rule_id": "M1_CROSSBORDER_PROMO",
+        "rule_name": "Polskojęzyczna promocja transgranicznej firmy inwestycyjnej",
+        "legal_basis": "Zakres Modułu 1 UKNF",
+        "severity": "medium",
+        "reason": "Zidentyfikowano promocję EuroTrade Direct Europe Ltd. (podmiot zagraniczny bez oddziału) przez osobę trzecią."
+      }
+    ],
+    "dom_metrics": null,
+    "risk_score": 0.91,
+    "risk_level": "high",
+    "status": "new",
+    "analyst_note": null,
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "8c13daf09b940e9396587b1a",
+    "storage_key": null,
+    "detected_at": "2026-11-18T10:20:00Z",
+    "updated_at": "2026-11-18T10:20:00Z"
+  },
+  {
+    "id": "demo_m1_002",
+    "module_id": 1,
+    "module_name": "Monitoring ekosystemu zewnętrznego (Finfluencerzy)",
+    "entity_name": "Vistula Securities S.A. [DEMO]",
+    "promoter_name": "@finanse_na_luzie (Instagram)",
+    "knf_registry_status": "registered_pl",
+    "source_platform": "instagram",
+    "source_url": "mock://finfluencer_instagram_etf.html",
+    "title": "Mój kod polecający do Vistula Broker — darmowa akcja na start #współpraca",
+    "content_excerpt": "Oznaczenie #współpraca w pierwszym wersie. Pokazuję jak założyć konto IKE w Vistula Securities i kupić ETF na S&P 500. Inwestowanie wiąże się z ryzykiem utraty kapitału.",
+    "evidence_quotes": [
+      "Mój kod polecający do Vistula Broker — darmowa akcja na start #współpraca",
+      "W poście obecny link afiliacyjny, ale ostrzeżenie o ryzyku jest skrótowe na samym końcu opisu."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "M1_AFFILIATE_MONITORING",
+        "rule_name": "Współpraca afiliacyjna z firmą inwestycyjną",
+        "legal_basis": "Zakres Modułu 1 UKNF",
+        "severity": "medium",
+        "reason": "Zidentyfikowano oznaczoną współpracę reklamową — wymagany monitoring proporcjonalności przekazu."
+      }
+    ],
+    "dom_metrics": null,
+    "risk_score": 0.55,
+    "risk_level": "medium",
+    "status": "in_review",
+    "analyst_note": "Przypadek graniczny — ma hashtag #współpraca, do oceny zespół nadzoru.",
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "9ddbe667e0a279de351f167f",
+    "storage_key": null,
+    "detected_at": "2026-11-19T14:05:00Z",
+    "updated_at": "2026-11-19T14:05:00Z"
+  },
+  {
+    "id": "demo_m1_003",
+    "module_id": 1,
+    "module_name": "Monitoring ekosystemu zewnętrznego (Finfluencerzy)",
+    "entity_name": "Brak reklamowanej firmy inwestycyjnej",
+    "promoter_name": "@budzet_domowy_edu (YouTube)",
+    "knf_registry_status": "unknown",
+    "source_platform": "youtube",
+    "source_url": "mock://finfluencer_edu_neutral.html",
+    "title": "Jak działa procent składany i inflacja — lekcja ekonomii",
+    "content_excerpt": "W dzisiejszym odcinku tłumaczę czym różni się lokata od obligacji skarbowych oraz jak budować poduszkę finansową. Brak linków afiliacyjnych i brak promocji brokerów.",
+    "evidence_quotes": [
+      "Materiał czysto edukacyjny bez wskazywania konkretnej firmy inwestycyjnej ani ofert afiliacyjnych."
+    ],
+    "violated_rules": [],
+    "dom_metrics": null,
+    "risk_score": 0.14,
+    "risk_level": "low",
+    "status": "dismissed",
+    "analyst_note": "Treść edukacyjna bez naruszeń.",
+    "ground_truth_label": false,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "8f254ce6bd2044ac483e613b",
+    "storage_key": null,
+    "detected_at": "2026-11-19T17:30:00Z",
+    "updated_at": "2026-11-19T17:30:00Z"
+  },
+  {
+    "id": "demo_m1_004",
+    "module_id": 1,
+    "module_name": "Monitoring ekosystemu zewnętrznego (Finfluencerzy)",
+    "entity_name": "NordicMarkets Polska Dom Maklerski S.A. [DEMO]",
+    "promoter_name": "Portal PorównajBrokera24.pl",
+    "knf_registry_status": "registered_pl",
+    "source_platform": "facebook",
+    "source_url": "mock://finfluencer_facebook_ranking.html",
+    "title": "Ranking najlepszych platform 2026 — NordicMarkets #1 bez ryzyka!",
+    "content_excerpt": "Sprawdź nasz ranking! NordicMarkets Polska gwarantuje najniższe spready i szybki zysk na rynku Forex. Kliknij baner i odbierz dostęp VIP.",
+    "evidence_quotes": [
+      "NordicMarkets Polska gwarantuje najniższe spready i szybki zysk na rynku Forex.",
+      "Brak informacji o afiliacji i brak procentowego ostrzeżenia o stratach klientów detalicznych CFD."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "M1_UNDISCLOSED_AD",
+        "rule_name": "Brak jednoznacznego oznaczenia współpracy reklamowej",
+        "legal_basis": "art. 24 ust. 3 MiFID II / praktyki finfluencerów",
+        "severity": "high",
+        "reason": "Treść zawiera linki partnerskie/kody polecające bez oznaczenia #reklama / #współpraca."
+      },
+      {
+        "rule_id": "3",
+        "rule_name": "Brak informacji o ryzyku przy obietnicy zysku",
+        "legal_basis": "art. 44 ust. 2 lit. b rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Promocja zysków/dźwigni bez równorzędnego ostrzeżenia o ryzyku utraty kapitału."
+      }
+    ],
+    "dom_metrics": null,
+    "risk_score": 0.97,
+    "risk_level": "high",
+    "status": "new",
+    "analyst_note": null,
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "d3e252f9ee0dc82ad8c280d3",
+    "storage_key": null,
+    "detected_at": "2026-11-20T09:15:00Z",
+    "updated_at": "2026-11-20T09:15:00Z"
+  },
+  {
+    "id": "demo_m2_001",
+    "module_id": 2,
+    "module_name": "Weryfikacja zgodności i informacji o ryzyku",
+    "entity_name": "NordicMarkets Polska Dom Maklerski S.A. [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "registered_pl",
+    "source_platform": "web",
+    "source_url": "mock://broker_promo_hidden_risk.html",
+    "title": "Zarabiaj do 38% rocznie na kontraktach CFD — zacznij w 60 sekund!",
+    "content_excerpt": "Otwórz konto w NordicMarkets Polska i pomnażaj kapitał na złocie, ropie i indeksach. Ostrzeżenie o ryzyku zostało umieszczone w zwijanej zakładce Legal czcionką 8px w kolorze #cccccc na białym tle.",
+    "evidence_quotes": [
+      "Zarabiaj do 38% rocznie na kontraktach CFD — zacznij w 60 sekund!",
+      "Nota prawna w sekcji Legal (font-size: 8px vs 20px główny tekst, kolor #cccccc, wymaga kliknięcia)."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "3",
+        "rule_name": "Informacja o ryzyku",
+        "legal_basis": "art. 44 ust. 2 lit. b rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Eksponowane twierdzenie o zyskach (38% rocznie) bez bezpośredniego ostrzeżenia o ryzyku."
+      },
+      {
+        "rule_id": "4",
+        "rule_name": "Rozmiar czcionki ryzyka",
+        "legal_basis": "art. 44 ust. 2 lit. c rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Czcionka ostrzeżenia (8px) jest istotnie mniejsza niż przeważająca czcionka materiału (20px)."
+      },
+      {
+        "rule_id": "5",
+        "rule_name": "Ekspozycja i kontrast ryzyka",
+        "legal_basis": "art. 44 ust. 2 lit. c i e rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Niski kontrast tekstu ostrzeżenia (#cccccc na #ffffff)."
+      },
+      {
+        "rule_id": "6",
+        "rule_name": "Zakrywanie / ukrywanie ryzyka",
+        "legal_basis": "art. 44 ust. 2 lit. e rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Ostrzeżenie ukryte w przypisie / sekcji Legal."
+      },
+      {
+        "rule_id": "7",
+        "rule_name": "Dostępność za 1 kliknięciem",
+        "legal_basis": "art. 44 ust. 2 lit. b i e rozporządzenia del. 2017/565",
+        "severity": "medium",
+        "reason": "Wymaga rozwinięcia elementu <details> aby przeczytać informację o ryzyku."
+      }
+    ],
+    "dom_metrics": {
+      "dominant_font_px": 20.0,
+      "risk_font_px": 8.0,
+      "font_ratio": 0.4,
+      "risk_hidden_in_footer": true,
+      "requires_click_to_view_risk": true,
+      "low_contrast_detected": true,
+      "responsive_overflow_detected": false
+    },
+    "risk_score": 0.94,
+    "risk_level": "high",
+    "status": "confirmed",
+    "analyst_note": "Klasyczne naruszenie reguł 3, 4, 5, 6 i 7 (rozp. 2017/565).",
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "5125007280bb88990c4f2774",
+    "storage_key": null,
+    "detected_at": "2026-11-18T16:40:00Z",
+    "updated_at": "2026-11-18T16:40:00Z"
+  },
+  {
+    "id": "demo_m2_002",
+    "module_id": 2,
+    "module_name": "Weryfikacja zgodności i informacji o ryzyku",
+    "entity_name": "BalticInvest Oddział w Polsce [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "registered_eu_branch",
+    "source_platform": "web",
+    "source_url": "mock://broker_promo_knf_abuse.html",
+    "title": "W pełni bezpieczna inwestycja — spełniamy rygorystyczne wymogi KNF!",
+    "content_excerpt": "Nasza strategia obligacyjna i akcyjna jest w pełni bezpieczna, ponieważ działamy pod nadzorem KNF, co gwarantuje ochronę Twoich zysków. Prognozujemy 18% zwrotu w 2027 r.",
+    "evidence_quotes": [
+      "Nasza inwestycja jest w pełni bezpieczna — spełniamy rygorystyczne wymogi nadzorcze KNF.",
+      "Prognozujemy 18% zwrotu w 2027 r. (brak zastrzeżenia, że prognoza nie jest wiarygodnym wskaźnikiem)."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "15",
+        "rule_name": "Prognozy przyszłych wyników",
+        "legal_basis": "art. 44 ust. 6 rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Wykryto prognozę przyszłych wyników bez obowiązkowego ostrzeżenia o braku jej wiarygodności."
+      },
+      {
+        "rule_id": "17",
+        "rule_name": "Zakaz sugerowania aprobaty organu nadzoru",
+        "legal_basis": "art. 44 ust. 8 rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Odwołanie do KNF sugerujące zatwierdzenie lub gwarancję oferowanego produktu."
+      },
+      {
+        "rule_id": "18",
+        "rule_name": "Nadzór jako argument bezpieczeństwa",
+        "legal_basis": "art. 44 ust. 8 rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Wykorzystanie nadzoru KNF jako argumentu rzekomego pełnego bezpieczeństwa inwestycji."
+      }
+    ],
+    "dom_metrics": {
+      "dominant_font_px": 16.0,
+      "risk_font_px": null,
+      "font_ratio": null,
+      "risk_hidden_in_footer": false,
+      "requires_click_to_view_risk": false,
+      "low_contrast_detected": false,
+      "responsive_overflow_detected": false
+    },
+    "risk_score": 0.7336,
+    "risk_level": "high",
+    "status": "new",
+    "analyst_note": null,
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "a35d437cf7a69968efd10a83",
+    "storage_key": null,
+    "detected_at": "2026-11-19T11:10:00Z",
+    "updated_at": "2026-11-19T11:10:00Z"
+  },
+  {
+    "id": "demo_m2_003",
+    "module_id": 2,
+    "module_name": "Weryfikacja zgodności i informacji o ryzyku",
+    "entity_name": "Vistula Securities S.A. [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "registered_pl",
+    "source_platform": "web",
+    "source_url": "mock://broker_promo_historical_5y.html",
+    "title": "+64% w ostatnie 14 miesięcy! Sprawdź nasz portfel amerykańskich spółek AI!",
+    "content_excerpt": "Nasz koszyk technologiczny w USD zarobił +64% od września 2025 do listopada 2026. Zero podatku Belki na IKE! Risk warning: Capital at risk.",
+    "evidence_quotes": [
+      "+64% w ostatnie 14 miesięcy — brak pełnych 5 lat w okresach 12-miesięcznych i brak źródła danych.",
+      "Zero podatku Belki na IKE — brak informacji o zależności od indywidualnej sytuacji podatkowej.",
+      "Risk warning: Capital at risk — ostrzeżenie podane w języku angielskim w polskojęzycznej reklamie."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "12a",
+        "rule_name": "Wyniki historyczne — okres i zakres",
+        "legal_basis": "art. 44 ust. 4 rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Okres 14 miesięcy nie spełnia wymogu 5 lat opartych na pełnych okresach 12-miesięcznych."
+      },
+      {
+        "rule_id": "12b",
+        "rule_name": "Wyniki historyczne — warunki i waluta",
+        "legal_basis": "art. 44 ust. 4 rozporządzenia del. 2017/565",
+        "severity": "medium",
+        "reason": "Portfel w USD bez ostrzeżenia o ryzyku walutowym i wpływie prowizji."
+      },
+      {
+        "rule_id": "10",
+        "rule_name": "Spójność językowa",
+        "legal_basis": "art. 44 ust. 2 lit. f rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Główny przekaz po polsku, ostrzeżenie o ryzyku po angielsku ('Capital at risk')."
+      },
+      {
+        "rule_id": "16",
+        "rule_name": "Informacja podatkowa",
+        "legal_basis": "art. 44 ust. 7 rozporządzenia del. 2017/565",
+        "severity": "medium",
+        "reason": "Odwołanie do korzyści podatkowej bez zastrzeżenia o indywidualnej sytuacji i możliwości zmian prawa."
+      }
+    ],
+    "dom_metrics": {
+      "dominant_font_px": 18.0,
+      "risk_font_px": 11.0,
+      "font_ratio": 0.61,
+      "risk_hidden_in_footer": false,
+      "requires_click_to_view_risk": false,
+      "low_contrast_detected": false,
+      "responsive_overflow_detected": false
+    },
+    "risk_score": 0.86,
+    "risk_level": "high",
+    "status": "new",
+    "analyst_note": null,
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "d52cd38d6922e8b9e2347f22",
+    "storage_key": null,
+    "detected_at": "2026-11-20T13:25:00Z",
+    "updated_at": "2026-11-20T13:25:00Z"
+  },
+  {
+    "id": "demo_m2_004",
+    "module_id": 2,
+    "module_name": "Weryfikacja zgodności i informacji o ryzyku",
+    "entity_name": "Vistula Securities S.A. [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "registered_pl",
+    "source_platform": "web",
+    "source_url": "mock://broker_promo_compliant.html",
+    "title": "Materiał reklamowy: Rachunek maklerski Vistula Securities S.A.",
+    "content_excerpt": "Informacja reklamowa. Vistula Securities S.A. oferuje dostęp do akcji i ETF. Inwestowanie w instrumenty finansowe wiąże się z ryzykiem utraty części lub całości kapitału. Wyniki historyczne (5 pełnych okresów 12-miesięcznych) nie stanowią wiarygodnego wskaźnika przyszłych wyników.",
+    "evidence_quotes": [
+      "Wyraźne oznaczenie 'Informacja reklamowa', pełna nazwa firmy, proporcjonalna czcionka ostrzeżenia (16px vs 16px)."
+    ],
+    "violated_rules": [],
+    "dom_metrics": {
+      "dominant_font_px": 16.0,
+      "risk_font_px": 16.0,
+      "font_ratio": 1.0,
+      "risk_hidden_in_footer": false,
+      "requires_click_to_view_risk": false,
+      "low_contrast_detected": false,
+      "responsive_overflow_detected": false
+    },
+    "risk_score": 0.12,
+    "risk_level": "low",
+    "status": "dismissed",
+    "analyst_note": "Materiał zgodny z kryteriami rozp. 2017/565.",
+    "ground_truth_label": false,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "1163308c7c851348ccbe95fd",
+    "storage_key": null,
+    "detected_at": "2026-11-20T15:50:00Z",
+    "updated_at": "2026-11-20T15:50:00Z"
+  },
+  {
+    "id": "demo_m2_005",
+    "module_id": 2,
+    "module_name": "Weryfikacja zgodności i informacji o ryzyku",
+    "entity_name": "BalticInvest Oddział w Polsce [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "registered_eu_branch",
+    "source_platform": "web",
+    "source_url": "mock://broker_promo_borderline.html",
+    "title": "Promocja: Niższe prowizje na ETF — sprawdź porównanie z rynkiem",
+    "content_excerpt": "Materiał marketingowy BalticInvest Oddział w Polsce. Niższe opłaty niż średnia rynkowa (wg zestawienia własnego). Inwestycje na rynkach kapitałowych obarczone są ryzykiem utraty kapitału.",
+    "evidence_quotes": [
+      "Niższe opłaty niż średnia rynkowa (wg zestawienia własnego — brak wskazania pełnej metodologii i daty porównania)."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "4",
+        "rule_name": "Rozmiar czcionki ryzyka",
+        "legal_basis": "art. 44 ust. 2 lit. c rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Czcionka informacji o ryzyku (11.0px) stanowi jedynie 69% dominującej czcionki (16.0px)."
+      },
+      {
+        "rule_id": "11",
+        "rule_name": "Porównania produktów / usług",
+        "legal_basis": "art. 44 ust. 3 rozporządzenia del. 2017/565",
+        "severity": "medium",
+        "reason": "Porównanie oferty z rynkiem bez wskazania źródła danych i przyjętych założeń."
+      }
+    ],
+    "dom_metrics": {
+      "dominant_font_px": 16.0,
+      "risk_font_px": 11.0,
+      "font_ratio": 0.69,
+      "risk_hidden_in_footer": false,
+      "requires_click_to_view_risk": false,
+      "low_contrast_detected": false,
+      "responsive_overflow_detected": false
+    },
+    "risk_score": 0.4744,
+    "risk_level": "medium",
+    "status": "in_review",
+    "analyst_note": "Przypadek graniczny do demonstracji suwaka kalibracji (FP/FN).",
+    "ground_truth_label": false,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "5d92f77bdab18fe8ed0e6a1b",
+    "storage_key": null,
+    "detected_at": "2026-11-21T08:10:00Z",
+    "updated_at": "2026-11-21T08:10:00Z"
+  },
+  {
+    "id": "demo_m2_006",
+    "module_id": 2,
+    "module_name": "Weryfikacja zgodności i informacji o ryzyku",
+    "entity_name": "NordicMarkets Polska Dom Maklerski S.A. [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "registered_pl",
+    "source_platform": "instagram",
+    "source_url": "mock://broker_promo_mobile_cutoff.html",
+    "title": "Aplikacja mobilna NordicMarkets — handluj 24/5!",
+    "content_excerpt": "Odkryj możliwości inwestycji mobilnych. Ostrzeżenie o ryzyku ma ustaloną szerokość 980px bez zawijania i jest ucinane na ekranie telefonu 375px.",
+    "evidence_quotes": [
+      "Szerokość kontenera ostrzeżenia przekracza viewport mobilny (overflow-x: hidden) — tekst ryzyka ucięty na telefonie."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "4",
+        "rule_name": "Rozmiar czcionki ryzyka",
+        "legal_basis": "art. 44 ust. 2 lit. c rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Czcionka informacji o ryzyku (11.0px) stanowi jedynie 69% dominującej czcionki (16.0px)."
+      },
+      {
+        "rule_id": "5",
+        "rule_name": "Ekspozycja i kontrast ryzyka",
+        "legal_basis": "art. 44 ust. 2 lit. c i e rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Wykryto niski kontrast / niską czytelność elementu z informacją o ryzyku."
+      },
+      {
+        "rule_id": "8",
+        "rule_name": "Responsywność (różne urządzenia)",
+        "legal_basis": "art. 44 ust. 2 lit. g rozporządzenia del. 2017/565",
+        "severity": "medium",
+        "reason": "Blok informacji o ryzyku przekracza szerokość ekranu mobilnego i ulega ucięciu."
+      }
+    ],
+    "dom_metrics": {
+      "dominant_font_px": 16.0,
+      "risk_font_px": 11.0,
+      "font_ratio": 0.69,
+      "risk_hidden_in_footer": false,
+      "requires_click_to_view_risk": false,
+      "low_contrast_detected": true,
+      "responsive_overflow_detected": true
+    },
+    "risk_score": 0.5824,
+    "risk_level": "medium",
+    "status": "new",
+    "analyst_note": null,
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "7c3b309005df27364e9a3e2b",
+    "storage_key": null,
+    "detected_at": "2026-11-21T09:40:00Z",
+    "updated_at": "2026-11-21T09:40:00Z"
+  },
+  {
+    "id": "demo_m3_001",
+    "module_id": 3,
+    "module_name": "Identyfikacja usług nieautoryzowanych (Shadow Advisory)",
+    "entity_name": "Aurelia Private Wealth Consulting Sp. z o.o. [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "not_in_knf_snapshot",
+    "source_platform": "web",
+    "source_url": "mock://shadow_wealth_management.html",
+    "title": "Indywidualna budowa portfela akcji i obligacji — Aurelia Wealth Consulting",
+    "content_excerpt": "Na podstawie Twojej sytuacji majątkowej i profilu ryzyka przygotujemy spersonalizowaną listę konkretnych akcji, ETF-ów i obligacji korporacyjnych do kupna i sprzedaży. Opłata sukcesowa 15% od zysku.",
+    "evidence_quotes": [
+      "Na podstawie Twojej sytuacji majątkowej przygotujemy spersonalizowaną rekomendację konkretnych akcji, ETF-ów i obligacji do kupna i sprzedaży.",
+      "Podmiot nie figuruje w lokalnym snapshocie autoryzowanych firm inwestycyjnych KNF."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "M3_ART76_PERSONAL_REC",
+        "rule_name": "Indywidualna rekomendacja inwestycyjna bez zezwolenia",
+        "legal_basis": "art. 76 ustawy o obrocie instrumentami finansowymi",
+        "severity": "high",
+        "reason": "Oferowanie spersonalizowanych rekomendacji nabycia/zbycia papierów wartościowych (art. 2 i 3 u.o.i.f.) na bazie sytuacji klienta przez podmiot spoza rejestru KNF."
+      }
+    ],
+    "dom_metrics": null,
+    "risk_score": 0.93,
+    "risk_level": "high",
+    "status": "new",
+    "analyst_note": null,
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "cb4d9e157385e52cce19ffd4",
+    "storage_key": null,
+    "detected_at": "2026-11-19T19:00:00Z",
+    "updated_at": "2026-11-19T19:00:00Z"
+  },
+  {
+    "id": "demo_m3_002",
+    "module_id": 3,
+    "module_name": "Identyfikacja usług nieautoryzowanych (Shadow Advisory)",
+    "entity_name": "Warsaw Elite Family Office Partners [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "not_in_knf_snapshot",
+    "source_platform": "web",
+    "source_url": "mock://shadow_family_office.html",
+    "title": "Multi-Family Office — aktywne zarządzanie portfelem i dobór instrumentów pochodnych",
+    "content_excerpt": "Dla klientów z aktywami powyżej 2 mln zł świadczymy kompleksowe doradztwo inwestycyjne: wskazujemy kiedy wejść w kontrakty terminowe, opcje walutowe oraz certyfikaty inwestycyjne.",
+    "evidence_quotes": [
+      "Świadczymy kompleksowe doradztwo inwestycyjne: wskazujemy kiedy wejść w kontrakty terminowe, opcje walutowe oraz certyfikaty inwestycyjne.",
+      "Brak wpisu w lokalnym snapshocie rejestru firm inwestycyjnych KNF."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "M3_ART76_PERSONAL_REC",
+        "rule_name": "Świadczenie doradztwa inwestycyjnego bez zezwolenia",
+        "legal_basis": "art. 76 oraz art. 2 ust. 1 pkt 2 lit. c u.o.i.f.",
+        "severity": "high",
+        "reason": "Wprost deklarowane doradztwo w zakresie instrumentów pochodnych (opcje, kontrakty terminowe) i certyfikatów inwestycyjnych."
+      }
+    ],
+    "dom_metrics": null,
+    "risk_score": 0.88,
+    "risk_level": "high",
+    "status": "new",
+    "analyst_note": null,
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "df728e4268eff9ed516c4b3b",
+    "storage_key": null,
+    "detected_at": "2026-11-20T18:10:00Z",
+    "updated_at": "2026-11-20T18:10:00Z"
+  },
+  {
+    "id": "demo_m3_003",
+    "module_id": 3,
+    "module_name": "Identyfikacja usług nieautoryzowanych (Shadow Advisory)",
+    "entity_name": "Mentoring Finansowy Jan Nowak [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "not_in_knf_snapshot",
+    "source_platform": "facebook",
+    "source_url": "mock://shadow_mentoring_borderline.html",
+    "title": "Konsultacje 1-na-1: przegląd Twojego portfela ETF i plan na emeryturę",
+    "content_excerpt": "Podczas indywidualnej rozmowy 1-na-1 przeanalizuję Twój obecny portfel ETF i powiem, które fundusze warto dokupić, a które sprzedać. Spotkanie ma charakter edukacyjny.",
+    "evidence_quotes": [
+      "Przeanalizuję Twój obecny portfel ETF i powiem, które fundusze warto dokupić, a które sprzedać.",
+      "Zastrzeżenie 'charakter edukacyjny' stoi w sprzeczności z ofertą indywidualnych wskazań kupna/sprzedaży."
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "M3_ART76_PERSONAL_REC",
+        "rule_name": "Podejrzenie nieautoryzowanego doradztwa inwestycyjnego",
+        "legal_basis": "art. 76 oraz art. 2 i 3 ustawy o obrocie instrumentami finansowymi",
+        "severity": "high",
+        "reason": "Oferta zawiera przesłanki indywidualnej rekomendacji nabycia/zbycia/trzymania instrumentów finansowych (etf, obligacji) przez podmiot spoza snapshotu KNF."
+      },
+      {
+        "rule_id": "M3_DISGUISED_EDUCATION",
+        "rule_name": "Doradztwo inwestycyjne pod pozorem edukacji",
+        "legal_basis": "art. 76 ustawy o obrocie instrumentami finansowymi",
+        "severity": "medium",
+        "reason": "Deklaracja charakteru edukacyjnego koliduje z ofertą spersonalizowanych wskazań inwestycyjnych."
+      }
+    ],
+    "dom_metrics": null,
+    "risk_score": 0.9,
+    "risk_level": "high",
+    "status": "new",
+    "analyst_note": null,
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "d521cdf494d15dd2a69c0fec",
+    "storage_key": null,
+    "detected_at": "2026-11-21T07:55:00Z",
+    "updated_at": "2026-11-21T07:55:00Z"
+  },
+  {
+    "id": "demo_m3_004",
+    "module_id": 3,
+    "module_name": "Identyfikacja usług nieautoryzowanych (Shadow Advisory)",
+    "entity_name": "Kancelaria Podatkowa i Księgowa Sigma [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "not_in_knf_snapshot",
+    "source_platform": "web",
+    "source_url": "mock://shadow_general_education.html",
+    "title": "Doradztwo podatkowe i rozliczanie PIT-38 z giełdy",
+    "content_excerpt": "Pomagamy inwestorom indywidualnym rozliczyć podatek od zysków kapitałowych (PIT-38) oraz prowadzimy szkolenia z rachunkowości spółek. Nie świadczymy usług doradztwa inwestycyjnego ani nie rekomendujemy zakupu instrumentów finansowych.",
+    "evidence_quotes": [
+      "Wyłącznie usługi rozliczeń podatkowych PIT-38 i rachunkowości — brak cech rekomendacji inwestycyjnej z art. 76 u.o.i.f."
+    ],
+    "violated_rules": [],
+    "dom_metrics": null,
+    "risk_score": 0.18,
+    "risk_level": "low",
+    "status": "dismissed",
+    "analyst_note": "Brak przesłanek shadow advisory (rozliczenia podatkowe).",
+    "ground_truth_label": false,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "da2516cc1303969cc61c5350",
+    "storage_key": null,
+    "detected_at": "2026-11-21T10:15:00Z",
+    "updated_at": "2026-11-21T10:15:00Z"
+  }
+]
