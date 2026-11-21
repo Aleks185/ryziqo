@@ -11,15 +11,17 @@ const tones = {
   low: "border-slate-300 bg-white text-slate-800",
 };
 
-function Verdict({ inc }) {
+function Verdict({ inc, report }) {
   const { t, lang } = useApp();
-  const level = riskLevel(inc.risk_score);
+  const matched = report?.result_origin === "fast_path";
+  const level = matched ? "high" : riskLevel(inc.risk_score);
   const findings = [...(inc.findings || [])].sort((a, b) => b.weight - a.weight)
     .map(f => RULE_LABELS[lang][f.rule_id]);
   const evidence = [...new Set([...findings, ...(inc.violated_rules || []).map(r => r.reason),
     ...(inc.quotes || []).map(q => q.text), ...(inc.evidence_quotes || [])].filter(Boolean))].slice(0, 3);
   return <section role="status" className={`border-l-4 p-5 space-y-3 ${tones[level]}`}>
-    {inc.is_demo_fallback && <p className="text-xs font-semibold">{t("local_check")}</p>}
+    {matched && <p className="text-sm font-semibold">{report.summary}</p>}
+    {!matched && inc.is_demo_fallback && <p className="text-xs font-semibold">{t("local_check")}</p>}
     <h2 className="font-semibold">{t(`public_${level}`)}</h2>
     {evidence.length > 0 && <div><h3 className="text-sm font-semibold">{t("flags")}</h3>
       <ul className="list-disc pl-5">{evidence.map(item => <li key={item}>{item}</li>)}</ul></div>}
@@ -35,6 +37,7 @@ export default function Citizen() {
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [report, setReport] = useState(null);
   const [result, setResult] = useState(null);
   const needsText = kind === "text" || (kind === "url" && mode !== "online");
   async function submit(event) {
@@ -43,6 +46,7 @@ export default function Citizen() {
     if (kind === "image" && !["image/png", "image/jpeg", "image/webp"].includes(file?.type)) return setError("image_bad");
     if (kind === "image" && file.size > 10 * 1024 * 1024) return setError("image_size");
     if (kind === "image" && mode !== "online") return setError("image_unavailable");
+    setReport(null);
     setBusy(true);
     setError("");
     setResult(null);
@@ -50,7 +54,7 @@ export default function Citizen() {
       const items = await analyze({
         kind, file, content: content.trim(), url: url.trim(),
         source_url: kind === "url" ? url.trim() : null, title: kind === "image" ? file.name.slice(0, 240) : null,
-        module_ids: MODULES, citizen: true,
+        module_ids: MODULES, citizen: true, onReport: setReport,
       });
       if (!items.length) throw new Error();
       setResult(items.reduce((highest, item) => item.risk_score > highest.risk_score ? item : highest));
@@ -75,6 +79,6 @@ export default function Citizen() {
       </fieldset>
     </form></Panel>
     {error && <p role="alert" className="text-amber-950">{t(error)}</p>}
-    {result && <Verdict inc={result} />}
+    {result && <Verdict inc={result} report={report} />}
   </div>;
 }

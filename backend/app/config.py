@@ -17,6 +17,11 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    report_trusted_proxy: str = "frontend"
+    report_limit_per_minute: int = 30
+    hosting_asn_db: str = ""
+    hosting_country_db: str = ""
+
     app_env: str = "development"
     app_host: str = "0.0.0.0"
     app_port: int = 8000

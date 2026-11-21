@@ -88,7 +88,13 @@ class LabelUpdateRequest(BaseModel):
 ModuleIds = list[Literal[1, 2, 3]]
 
 
-class AnalyzeTextRequest(BaseModel):
+class ReportInput(BaseModel):
+    source_channel: Literal["api", "analyst_panel", "public_form"] = "api"
+    platform: Literal["Meta / Facebook", "Google Ads", "YouTube", "TikTok", "X", "Strona WWW", "Komunikator / SMS", "Inne"] | None = None
+    force_full: bool = False
+
+
+class AnalyzeTextRequest(ReportInput):
     content: str = Field(min_length=20, max_length=20_000)
     title: str | None = Field(default=None, max_length=240)
     source_url: str | None = Field(
@@ -100,13 +106,13 @@ class AnalyzeTextRequest(BaseModel):
     ground_truth_label: bool | None = None
 
 
-class AnalyzeScreenshotRequest(BaseModel):
+class AnalyzeScreenshotRequest(ReportInput):
     image_base64: str = Field(min_length=4, max_length=13981016)
     title: str | None = Field(default=None, max_length=240)
     module_ids: ModuleIds = Field(default_factory=lambda: [1, 2, 3], min_length=1)
 
 
-class AnalyzeUrlRequest(BaseModel):
+class AnalyzeUrlRequest(ReportInput):
     url: str = Field(min_length=8, max_length=2048)
     module_ids: ModuleIds = Field(default_factory=lambda: [1, 2, 3], min_length=1)
     use_playwright: bool = False
@@ -119,6 +125,8 @@ class ReportFinding(BaseModel):
 
 
 class AnalysisReport(BaseModel):
+    report_id: str | None = None
+    result_origin: str | None = None
     source_type: Literal["text", "url", "screenshot"]
     status: Literal["completed"] = "completed"
     risk_score: int = Field(ge=0, le=100)

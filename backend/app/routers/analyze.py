@@ -16,10 +16,11 @@ from fastapi.responses import StreamingResponse
 from app.ai.vision_analyzer import VISION_SCHEMA, VISION_SYSTEM_PROMPT, VisionFindings
 from app.analysis_queue import current_job, TERMINAL, status
 from app.database import utc_now_iso
+from app.threat_intel import input_meta, enrich_page
 from app.image_processor import normalize_screenshot
 from app.models import AnalysisReport, AnalyzeResponse, AnalyzeScreenshotRequest, AnalyzeTextRequest, AnalyzeUrlRequest, WebSocketAlertEvent
 from app.scraper.fetcher import build_manual_text_page
-from app.scraper.ssrf import SSRFError, validate_public_url
+from app.scraper.ssrf import SSRFError, validate_authority, validate_public_url
 
 logger = logging.getLogger("investwatch.analyze")
 
@@ -49,7 +50,7 @@ def _mode(request: Request) -> str:
 
 def cache_key(request, body, kind, payload):
     model = request.app.state.ollama
-    options = body.model_dump(exclude={"content", "image_base64"})
+    options = body.model_dump(exclude={"content", "image_base64", "source_channel", "force_full", "platform"})
     options["module_ids"] = sorted(set(body.module_ids))
     parts = [kind, hashlib.sha256(payload.encode()).hexdigest(), options, model.active_model,
              model.vision_model_override, model.vision_enabled, model.is_available, "prompt-pl-v4", "preprocess-v3"]
@@ -94,6 +95,60 @@ def finish(request, items, kind, key):
     return response
 
 
+async def dispatch(request, body):
+    intel = request.app.state.intel
+    queue = request.app.state.analysis_queue
+    started = time.monotonic()
+    identity = intel.admit(request)
+    if isinstance(body, AnalyzeUrlRequest):
+        try:
+            validate_authority(body.url)
+        except SSRFError as exc:
+            raise HTTPException(400,str(exc)) from exc
+    slots = request.app.state.signature_slots
+    if slots.locked():
+        raise HTTPException(429, "Trwa przygotowanie innych zgłoszeń.")
+    async with slots:
+        meta = {**await asyncio.to_thread(input_meta, body), **identity}
+        def known():
+            if body.force_full:
+                return None
+            match, count = intel.confirmed(meta)
+            if match is None:
+                return None
+            response = AnalyzeResponse.model_validate_json(match["response_json"])
+            previous_summary = response.report.summary
+            response.report.source_type = meta["source_type"]
+            response.report.summary = f"Dopasowano do potwierdzonego zagrożenia w bazie zgłoszeń (liczba wcześniejszych zgłoszeń: {count}). {previous_summary}"
+            response = intel.save(meta, body, response, "fast_path", time.monotonic()-started, match)
+            return queue.completed(response)
+
+        hit = known()
+        if hit:
+            return hit
+        if isinstance(body, AnalyzeUrlRequest):
+            page = await fetch_url(request, body)
+            request.state.fetched_page = page
+            await asyncio.to_thread(enrich_page,meta,page,request.app.state.settings)
+            hit = known()
+            if hit:
+                return hit
+
+    async def operation():
+        job = current_job.get()
+        job.history = intel.context(meta)
+        job.force_full = body.force_full
+        start = time.monotonic()
+        fn = run_url if isinstance(body, AnalyzeUrlRequest) else run_text
+        response = await fn(request, body)
+        origin = ("cache" if job.metrics["cache_hit"] else
+                  "ollama" if any(not i.is_demo_fallback for i in response.items) else "rules")
+        if not meta["excerpt"] and response.items:
+            meta["excerpt"] = response.items[0].content_excerpt
+        return intel.save(meta, body, response, origin, time.monotonic()-start)
+    return queue.submit(operation)
+
+
 def get_job(request, job_id):
     job = request.app.state.analysis_queue.jobs.get(job_id)
     if job is None:
@@ -103,8 +158,9 @@ def get_job(request, job_id):
 
 @router.post("/jobs", status_code=202)
 async def submit_job(request: Request, body: AnalyzeTextRequest | AnalyzeScreenshotRequest | AnalyzeUrlRequest):
-    operation = run_url if isinstance(body, AnalyzeUrlRequest) else run_text
-    job = request.app.state.analysis_queue.submit(lambda: operation(request, body))
+    job = await dispatch(request, body)
+    if job.result is not None:
+        return {"job_id":job.id,"result":job.result.model_dump(mode="json")}
     return {"job_id": job.id}
 
 
@@ -143,7 +199,7 @@ async def events(request: Request, job_id: str):
 
 @router.post("/text", response_model=AnalyzeResponse)
 async def analyze_text(request: Request, body: AnalyzeTextRequest | AnalyzeScreenshotRequest) -> AnalyzeResponse:
-    job = request.app.state.analysis_queue.submit(lambda: run_text(request, body))
+    job = await dispatch(request, body)
     await job.task
     if job.error:
         raise job.error
@@ -160,7 +216,7 @@ async def run_text(request: Request, body: AnalyzeTextRequest | AnalyzeScreensho
     await request.app.state.ollama.check_health()
     kind = "screenshot" if isinstance(body, AnalyzeScreenshotRequest) else "text"
     key = cache_key(request, body, kind, body.image_base64 if kind == "screenshot" else body.content)
-    cached = lookup(db, key)
+    cached = None if body.force_full else lookup(db, key)
     if cached:
         if isinstance(body, AnalyzeTextRequest) and body.ground_truth_label is not None:
             for item in cached.items:
@@ -206,7 +262,7 @@ async def run_text(request: Request, body: AnalyzeTextRequest | AnalyzeScreensho
 
 @router.post("/url", response_model=AnalyzeResponse)
 async def analyze_url(request: Request, body: AnalyzeUrlRequest) -> AnalyzeResponse:
-    job = request.app.state.analysis_queue.submit(lambda: run_url(request, body))
+    job = await dispatch(request, body)
     await job.task
     if job.error:
         raise job.error
@@ -219,14 +275,23 @@ async def run_url(request: Request, body: AnalyzeUrlRequest) -> AnalyzeResponse:
     """Fetch one public URL (anti-SSRF, size/redirect limits) and analyze it synchronously."""
     worker = request.app.state.worker
     status("fetching")
+    page = request.state.fetched_page
+    await request.app.state.ollama.check_health()
+    status("preprocessing")
+    key = cache_key(request, body, "url", json.dumps([page.final_url, page.payload_sha256, page.raw_html,
+                      [hashlib.sha256(s).hexdigest() for s in page.screenshots or []]]))
+    cached = None if body.force_full else lookup(request.app.state.db, key)
+    if cached:
+        await _broadcast_complete(request, page.source_url, [i.id for i in cached.items])
+        return cached
+    items = await worker.analyze_page(page, _unique_modules(body.module_ids))
+    await _broadcast_complete(request, page.source_url, [i.id for i in items])
+    return finish(request, items, "url", key)
+
+
+async def fetch_url(request, body):
     fetcher = request.app.state.fetcher
 
-    try:
-        await asyncio.to_thread(validate_public_url, body.url)
-    except SSRFError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    await request.app.state.ollama.check_health()
     try:
         page = await fetcher.fetch_public_url(body.url, use_playwright=body.use_playwright)
     except SSRFError as exc:
@@ -239,13 +304,4 @@ async def run_url(request: Request, body: AnalyzeUrlRequest) -> AnalyzeResponse:
         logger.info("Nie udało się pobrać %s: %s", body.url, exc)
         raise HTTPException(status_code=502, detail=f"Nie udało się pobrać strony: {exc}") from exc
 
-    status("preprocessing")
-    key = cache_key(request, body, "url", json.dumps([page.final_url, page.payload_sha256, page.raw_html,
-                      [hashlib.sha256(s).hexdigest() for s in page.screenshots or []]]))
-    cached = lookup(request.app.state.db, key)
-    if cached:
-        await _broadcast_complete(request, page.source_url, [i.id for i in cached.items])
-        return cached
-    items = await worker.analyze_page(page, _unique_modules(body.module_ids))
-    await _broadcast_complete(request, page.source_url, [i.id for i in items])
-    return finish(request, items, "url", key)
+    return page

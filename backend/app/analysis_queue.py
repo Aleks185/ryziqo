@@ -50,9 +50,23 @@ class AnalysisQueue:
         self.jobs = {}
         self.lock = asyncio.Lock()  # asyncio.Lock grants access to waiters in FIFO order
 
-    def submit(self, operation):
+    def completed(self, result):
+        self.prune()
+        job = Job()
+        job.result = result
+        job.task = asyncio.get_running_loop().create_future()
+        job.task.set_result(None)
+        job.emit("status", "completed")
+        job.emit("completed", result.model_dump(mode="json"))
+        self.jobs[job.id] = job
+        return job
+
+    def prune(self):
         now = time.monotonic()
         self.jobs = {k: j for k, j in self.jobs.items() if j.stage not in TERMINAL or now-j.updated < 120}
+
+    def submit(self, operation):
+        self.prune()
         if sum(j.stage not in TERMINAL for j in self.jobs.values()) >= 9:
             raise HTTPException(429, "Kolejka analiz jest pełna. Spróbuj ponownie później.")
         job = Job()

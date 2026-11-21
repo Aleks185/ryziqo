@@ -58,8 +58,8 @@ def pinned_request(url, headers):
             "extensions": {"sni_hostname": target.raw_host.decode("ascii")}}
 
 
-def validate_public_url(url: str) -> str:
-    """Validate that a public URL is HTTP(S) and resolves strictly to public IP addresses."""
+def validate_authority(url: str) -> str:
+    """Check user-supplied URL syntax and literal addresses without contacting DNS."""
     if not url or not isinstance(url, str):
         raise SSRFError("URL nie może być pusty.")
 
@@ -93,6 +93,17 @@ def validate_public_url(url: str) -> str:
             raise SSRFError(f"Adres IP '{hostname}' należy do sieci prywatnej/lokalnej/metadata.")
         return ValidatedURL(url.strip(), hostname)
 
+    if "." not in hostname.rstrip("."):
+        raise SSRFError("Niedozwolona wewnętrzna nazwa hosta.")
+    return url.strip()
+
+
+def validate_public_url(url: str) -> str:
+    checked = validate_authority(url)
+    if isinstance(checked, ValidatedURL):
+        return checked
+    parsed = urlparse(checked)
+    hostname = parsed.hostname
     # Resolve DNS and check ALL returned IP addresses
     port = parsed.port or (443 if parsed.scheme == "https" else 80)
     try:

@@ -82,6 +82,12 @@ async def update_incident_status(
     if updated is None:
         raise HTTPException(status_code=404, detail=f"Incydent '{incident_id}' nie istnieje.")
 
+    verdict = {"confirmed":"confirmed_fake","false_positive":"false_positive","in_review":"requires_review",
+               "dismissed":"false_positive"}.get(updated.status,"new")
+    with request.app.state.intel.connection() as c:
+        c.execute("""UPDATE threat_reports SET verdict_status=?, analyst_notes=? WHERE id=(
+            SELECT t.id FROM threat_reports t,json_each(t.incident_ids) j WHERE j.value=?
+            ORDER BY t.created_at DESC,t.rowid DESC LIMIT 1)""",(verdict,updated.analyst_note or "",incident_id))
     await ws_manager.broadcast(
         WebSocketAlertEvent(
             type="status_updated",

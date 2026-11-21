@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
+from app.threat_intel import Intelligence
+from app.routers import casework, intelligence
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -58,8 +61,16 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
             fetcher=fetcher,
             ws_manager=ws_manager,
         )
+        app.state.intel = Intelligence(db)
+        worker.report_registry = app.state.intel
         await worker.start()
-
+        app.state.intel.import_history()
+        app.state.signature_slots = asyncio.Semaphore(4)
+        async def expire_identifiers():
+            while True:
+                await asyncio.sleep(3600)
+                await asyncio.to_thread(app.state.intel.cleanup)
+        retention = asyncio.create_task(expire_identifiers())
         app.state.analysis_queue = AnalysisQueue()
         app.state.settings = settings
         app.state.db = db
@@ -79,6 +90,8 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            retention.cancel()
+            await asyncio.gather(retention, return_exceptions=True)
             await app.state.analysis_queue.close()
             await worker.stop()
 
@@ -103,6 +116,8 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
     app.include_router(incidents.router)
     app.include_router(crawl.router)
     app.include_router(analyze.router)
+    app.include_router(intelligence.router)
+    app.include_router(casework.router)
     app.include_router(watchlist.router)
     app.include_router(reports.router)
     app.include_router(ws.router)

@@ -64,6 +64,8 @@ class FetchedPage:
     status_code: int
     fetched_at: str | None = None
     payload_sha256: str | None = None
+    redirect_chain: list[str] | None = None
+    target_server_ip: str | None = None
     used_playwright: bool = False
     is_mock_source: bool = False
     playwright_dom_metrics: dict[str, object] | None = None
@@ -186,6 +188,7 @@ class PageFetcher:
         }
 
         timeout = httpx.Timeout(self.settings.crawler_timeout_seconds)
+        chain = [str(current_url)]
         raw_bytes = bytearray()
         status_code = 200
         proxy = self.pick_proxy()
@@ -211,6 +214,7 @@ class PageFetcher:
                         if hop >= self.settings.crawler_max_redirects:
                             raise SSRFError("Przekroczono maksymalną liczbę przekierowań HTTP.")
                         next_url = urljoin(current_url, resp.headers["location"])
+                        chain.append(next_url)
                         current_url = await asyncio.to_thread(validate_public_url, next_url)
                         continue
 
@@ -241,6 +245,7 @@ class PageFetcher:
             html = raw_bytes.decode(encoding, errors="replace")
         except LookupError:
             html = raw_bytes.decode("utf-8", errors="replace")
+        server_ip = getattr(current_url, "address", None) if not proxy else None
         pw_metrics: dict[str, object] | None = None
         screenshots: list[bytes] | None = None
         used_pw = False
@@ -266,6 +271,7 @@ class PageFetcher:
             status_code=status_code,
             fetched_at=datetime.now(timezone.utc).isoformat(),
             payload_sha256=hashlib.sha256(raw_bytes).hexdigest(),
+            redirect_chain=chain, target_server_ip=server_ip,
             used_playwright=used_pw,
             is_mock_source=False,
             playwright_dom_metrics=pw_metrics,

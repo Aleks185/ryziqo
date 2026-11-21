@@ -10,6 +10,7 @@ import IncidentDetail from "@/pages/IncidentDetail";
 import Calibration from "@/pages/Calibration";
 import LogPage from "@/pages/LogPage";
 
+import { Reports, ReportDetails, Campaigns, Diagnostics } from "@/pages/Intelligence";
 import Citizen from "@/pages/Citizen";
 
 function App() {
@@ -25,6 +26,10 @@ function App() {
               <Route path="/public" element={<Citizen />} />
               <Route path="/analyze" element={<Analyze />} />
               <Route path="/incidents/:id" element={<IncidentDetail />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/reports/:id" element={<ReportDetails />} />
+              <Route path="/campaigns" element={<Campaigns />} />
+              <Route path="/diagnostics" element={<Diagnostics />} />
               <Route path="/calibration" element={<Calibration />} />
               <Route path="/log" element={<LogPage />} />
             </Routes>

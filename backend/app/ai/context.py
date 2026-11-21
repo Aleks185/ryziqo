@@ -35,6 +35,10 @@ async def request_llm_assessment(
     """Ask the local LLM for a structured, schema-constrained assessment; None in fallback mode."""
     if not ollama.is_available:
         return None
+    from app.analysis_queue import current_job
+    history = getattr(current_job.get(), "history", "")
+    if history:
+        metadata = {**metadata, "Historia zgłoszeń": history}
     system = build_system_prompt(module_id)
     examples = ctx.rag_examples.get(module_id, [])
     budget = min(ctx.prompt_budget_chars, 3200)
@@ -67,4 +71,12 @@ async def request_llm_assessment(
         system, user,
         json_schema=build_llm_json_schema(module_id),
     )
-    return parse_llm_assessment(raw, module_id)
+    assessment = parse_llm_assessment(raw, module_id)
+    if assessment is None and getattr(current_job.get(), "force_full", False):
+        compact_schema = build_llm_json_schema(module_id)
+        compact_schema["properties"]["signals"]["maxItems"] = 2
+        for key in ("summary_reason", "reasoning"):
+            compact_schema["properties"][key]["maxLength"] = 160
+        raw = await ollama.generate_json(system, user, json_schema=compact_schema)
+        assessment = parse_llm_assessment(raw, module_id)
+    return assessment

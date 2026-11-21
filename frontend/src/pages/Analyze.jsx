@@ -70,6 +70,8 @@ export default function Analyze() {
     window.addEventListener("paste", paste);
     return () => window.removeEventListener("paste", paste);
   });
+  const [platform, setPlatform] = useState("");
+  const [forceFull, setForceFull] = useState(false);
   const [url, setUrl] = useState("");
   const [modules, setModules] = useState([...MODULES]);
   const [state, setState] = useState({ phase: "idle" });
@@ -96,7 +98,7 @@ export default function Analyze() {
       let report;
       const items = await analyze({
         onReport: value => { report = value; },
-        kind, file, signal: controller.current.signal,
+        kind, file, platform, force_full: forceFull, signal: controller.current.signal,
         onStatus: stage => setState({phase: "loading", stage: stage === "preprocessing" && kind === "image" ? "image_processing" : stage}),
         content,
         url,
@@ -154,6 +156,13 @@ export default function Analyze() {
             </div>
           )}
         </Panel>
+        {online && <Panel><label className="block text-sm">{t("intel_platform")}
+          <select className={inputCls} value={platform} onChange={e=>setPlatform(e.target.value)}>
+            <option value="">{t("intel_auto")}</option>
+            {["Meta / Facebook","Google Ads","YouTube","TikTok","X","Strona WWW","Komunikator / SMS","Inne"].map(p=><option key={p}>{p}</option>)}
+          </select></label>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={forceFull} onChange={e=>setForceFull(e.target.checked)} />{t("intel_force")}</label>
+        </Panel>}
         <Panel title={t("modules_label")}>
           <div className="grid sm:grid-cols-3 gap-3">
             {MODULES.map((m) => (
@@ -200,7 +209,7 @@ const ResultPanel = ({ state }) => {
                     {inc.is_demo_fallback && <DemoTag />}
                   </div>
                 </div>
-                <Link to={`/incidents/${inc.id}`} data-testid="analyze-result-detail-link" className="mt-3 inline-block text-sm font-semibold underline text-[#0B192C] focus-ring">
+                <Link to={`/incidents/${inc.id}${state.report?.report_id ? "?report="+state.report.report_id : ""}`} data-testid="analyze-result-detail-link" className="mt-3 inline-block text-sm font-semibold underline text-[#0B192C] focus-ring">
                   {t("go_detail")} →
                 </Link>
               </li>

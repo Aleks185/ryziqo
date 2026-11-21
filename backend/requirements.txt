@@ -7,3 +7,7 @@ apscheduler==3.11.3
 pydantic==2.14.4
 pydantic-settings==2.16.3
 python-dotenv==1.2.4
+
+Pillow==13.0.0
+tldextract==5.4.0
+maxminddb==3.3.0

@@ -9,6 +9,10 @@ services:
     ports:
       - "${APP_PORT:-8000}:8000"
     environment:
+      REPORT_TRUSTED_PROXY: "${REPORT_TRUSTED_PROXY:-frontend}"
+      REPORT_LIMIT_PER_MINUTE: "${REPORT_LIMIT_PER_MINUTE:-30}"
+      HOSTING_ASN_DB: "${HOSTING_ASN_DB:-}"
+      HOSTING_COUNTRY_DB: "${HOSTING_COUNTRY_DB:-}"
       APP_ENV: "${APP_ENV:-production}"
       DATA_DIR: "/app/data_seed"
       DATABASE_PATH: "/data/investwatch.db"

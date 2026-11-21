@@ -1,3 +1,4 @@
+import { ThreatOverview } from "./Intelligence";
 import { useState } from "react";
 import { ALERT_THRESHOLD, MODULES } from "@/lib/config";
 import { useApp } from "@/lib/store";
@@ -56,6 +57,7 @@ export default function Dashboard() {
         <TrendChart incidents={list} />
         <LiveLog limit={10} />
       </div>
+      <ThreatOverview />
       <IncidentTable incidents={list} />
     </div>
   );

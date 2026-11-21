@@ -1,5 +1,11 @@
 const DICT = {
   pl: {
+    intel_reports: "Baza zgłoszeń",
+    intel_campaigns: "Kampanie",
+    intel_diag: "Diagnostyka systemu",
+    intel_platform: "Platforma emisji",
+    intel_auto: "Wykryj automatycznie",
+    intel_force: "Wymuś ponowną pełną analizę AI",
     local_check: "Ocena demonstracyjna na podstawie wpisanego tekstu",
     image_bad: "Wybierz plik PNG, JPEG lub WebP.",
     stage_pending: "Sprawdzanie danych...",
@@ -196,6 +202,12 @@ const DICT = {
     action_error: "Nie udało się zapisać zmiany w backendzie",
   },
   en: {
+    intel_reports: "Report registry",
+    intel_campaigns: "Campaigns",
+    intel_diag: "System diagnostics",
+    intel_platform: "Ad platform",
+    intel_auto: "Detect automatically",
+    intel_force: "Force a new full AI analysis",
     local_check: "Demonstration check based on the text entered",
     image_bad: "Choose a PNG, JPEG or WebP file.",
     stage_pending: "Checking input...",
@@ -395,6 +407,12 @@ const DICT = {
 
 export const RULE_LABELS = {
   pl: {
+    intel_reports: "Baza zgłoszeń",
+    intel_campaigns: "Kampanie",
+    intel_diag: "Diagnostyka systemu",
+    intel_platform: "Platforma emisji",
+    intel_auto: "Wykryj automatycznie",
+    intel_force: "Wymuś ponowną pełną analizę AI",
     m1_affiliate: "Kod polecający / link afiliacyjny",
     m1_unmarked: "Brak oznaczenia współpracy reklamowej",
     m1_guaranteed: "Obietnica gwarantowanego zysku lub braku ryzyka",
@@ -409,6 +427,12 @@ export const RULE_LABELS = {
     m3_management: "Oferta zarządzania cudzym kapitałem / kopiowania transakcji",
   },
   en: {
+    intel_reports: "Report registry",
+    intel_campaigns: "Campaigns",
+    intel_diag: "System diagnostics",
+    intel_platform: "Ad platform",
+    intel_auto: "Detect automatically",
+    intel_force: "Force a new full AI analysis",
     m1_affiliate: "Referral code / affiliate link",
     m1_unmarked: "No advertising disclosure",
     m1_guaranteed: "Promise of guaranteed profit or no risk",

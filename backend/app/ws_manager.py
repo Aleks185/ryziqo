@@ -37,7 +37,9 @@ class AlertWebSocketManager:
             self._connections.discard(websocket)
 
     async def broadcast(self, event: WebSocketAlertEvent) -> None:
-        payload = event.model_dump()
+        await self.broadcast_payload(event.model_dump())
+
+    async def broadcast_payload(self, payload: dict[str, Any]) -> None:
         async with self._lock:
             targets = list(self._connections)
         if not targets:

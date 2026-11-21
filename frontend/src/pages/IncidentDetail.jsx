@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { IncidentEvidence } from "./Intelligence";
 import { Link, useParams } from "react-router-dom";
 import { Printer } from "lucide-react";
 import { STATUSES } from "@/lib/config";
@@ -208,6 +209,7 @@ export default function IncidentDetail() {
           <CaseControls inc={inc} />
           <EntityPanel inc={inc} />
           <DomMetricsPanel dom={inc.dom_metrics} />
+          {mode === "online" && <IncidentEvidence incident={id} />}
           <Panel title={t("meta")} testId="incident-meta">
             <dl>
               <Row label={t("meta_created")}>{formatDate(inc.detected_at, lang)}</Row>
