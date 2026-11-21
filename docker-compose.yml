@@ -91,7 +91,7 @@ services:
   # Opcjonalny metawyszukiwarka do odkrywania nowych treści: docker compose --profile discovery up -d
   # (ustaw DISCOVERY_ENABLED=true w .env). Bez portu na hoście — dostępna tylko dla backendu.
   searxng:
-    image: "searxng/searxng:${SEARXNG_IMAGE_TAG:-latest}"
+    image: "searxng/searxng:${SEARXNG_IMAGE_TAG:-2026.11.21-c6ee3e9fd}"
     container_name: investwatch-searxng
     profiles: ["discovery"]
     environment:

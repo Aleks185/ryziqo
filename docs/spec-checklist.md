@@ -48,7 +48,7 @@ Stan na 2026-11-21. Testy backendu: `160 passed`.
 - [ ] (opcjonalnie) **Film do 3 minut**
 
 ### Automatyczny crawling internetu
-- [ ] Sprawdzić discovery na żywo: `docker compose --profile discovery up` z `DISCOVERY_ENABLED=true`, `POST /api/v1/discovery/run` (przypiąć tag obrazu `SEARXNG_IMAGE_TAG`)
+- [x] Discovery sprawdzone na żywo (2026-11-21): SearXNG `2026.11.21-c6ee3e9fd` (tag przypięty), 3 frazy → 30 wyników → 6 nowych URL-i w kolejce → 6 przeanalizowanych; strony afiliacyjne wykryte (M1), oficjalne strony brokera bez fałszywych alarmów
 - [ ] Zweryfikować URL-e w `data/watchlist_seed.json` (czy strony odpowiadają i nie blokują w `robots.txt`)
 - [ ] (warto rozważyć) Publiczne profile social mediów w seedzie (teraz tylko strony brokerów)
 

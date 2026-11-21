@@ -199,7 +199,8 @@ class KNFRegistrySnapshot:
                     domains.add(host[4:] if host.startswith("www.") else host)
         return domains
 
-    def _is_legit_host(self, token: str) -> bool:
+    def is_official_host(self, token: str) -> bool:
+        """True for a registry entity's own domain or its subdomain (online.bossa.pl → bossa.pl)."""
         host = token.lower().rstrip(".")
         return any(host == d or host.endswith(f".{d}") for d in self._legit_domains)
 
@@ -229,7 +230,7 @@ class KNFRegistrySnapshot:
             folded_parts = [_alnum(p) for p in parts]
             if _alnum(token) in legit or "".join(folded_parts) in legit:
                 continue
-            if is_domain and self._is_legit_host(token):  # online.bossa.pl is bossa.pl, not a look-alike
+            if is_domain and self.is_official_host(token):  # online.bossa.pl is bossa.pl, not a look-alike
                 continue
             for key, entry in keys:
                 hit_kind: str | None = None

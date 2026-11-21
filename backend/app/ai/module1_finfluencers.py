@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from urllib.parse import urlparse
 
 from app.ai.context import AnalysisContext, request_llm_assessment
 from app.ai.fusion import fuse_module_result, has_commercial_cta
@@ -75,7 +76,10 @@ async def analyze_module1(
     is_social = doc.source_platform in ("tiktok", "instagram", "facebook", "youtube", "x")
     promoter = doc.promoter_hint or (doc.social.promoter if doc.social else None)
     has_promoter = bool(promoter) or is_social
-    has_affiliate = bool(AFFILIATE_RE.search(text))
+    # The firm's own website (xtb.com describing its referral programme) is first-party
+    # communication — Module 2's scope — not third-party / finfluencer promotion.
+    first_party = not has_promoter and registry.is_official_host(urlparse(doc.source_url).hostname or "")
+    has_affiliate = bool(AFFILIATE_RE.search(text)) and not first_party
     has_disclosure = bool(AD_DISCLOSURE_RE.search(text))
     # Three or more hype emoji (🚀💰📈🔥...) count as a profit-hype signal even without keywords
     has_hype = bool(HYPE_PROFIT_RE.search(text)) or doc.finance_emoji_count >= 3
