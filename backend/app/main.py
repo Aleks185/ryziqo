@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from app.threat_intel import Intelligence
-from app.routers import casework, intelligence
+from app.routers import intelligence
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -128,7 +128,6 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
     app.include_router(crawl.router)
     app.include_router(analyze.router)
     app.include_router(intelligence.router)
-    app.include_router(casework.router)
     app.include_router(watchlist.router)
     app.include_router(discovery.router)
     app.include_router(reports.router)

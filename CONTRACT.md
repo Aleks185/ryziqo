@@ -303,22 +303,3 @@ Format komunikatów serwera:
 | `1.2.0` | Filtr `risk_level` w `GET /api/v1/incidents`; endpointy `/api/v1/watchlist*` i `GET /api/v1/reports/{module_id}`; nowa wartość `source_platform: "x"`. Bez zmian istniejących pól, typów i ścieżek. |
 | `1.1.0` | Dodane endpointy `POST /api/v1/analyze/text`, `POST /api/v1/analyze/url`, `PATCH /api/v1/incidents/{incident_id}/label`; nowa wartość `source_platform: "manual"`; `analysis_complete` może zawierać `extra.incident_ids`. Bez zmian istniejących pól, typów i ścieżek. |
 | `1.0.0` | Zamrożenie kontraktu: model `Incident`, REST (`/health`, `/incidents`, `/status`, `/stats`, `/crawl/*`, `/knf-registry`, `/rules`), WebSocket `/ws/alerts`. |
-
-## Rejestr spraw i kampanie IP (/api)
-
-Te ścieżki służą widokom rejestru i teczki. Istniejące ścieżki /api/v1 nadal obsługują analizę, Fast-Path i historię dowodową. Zapis zakończonej analizy tworzy wpis rejestru w tej samej transakcji. Identyfikator wpisu odpowiada report_id analizy. Przy pierwszym uruchomieniu migracja kopiuje wcześniejsze analizy. Brak danych o docelowym IP pozostawia puste pole i wyklucza takie wpisy z grupowania.
-
-| Metoda i ścieżka | Wynik |
-|---|---|
-| GET /api/reports | Tablica zgłoszeń od najnowszego. Filtry source, reviewed, minRisk, maxRisk (granice włącznie) i q można łączyć. |
-| POST /api/reports | Utworzony rekord (201). Wymaga title i content. Opcjonalnie przyjmuje domain, url, ip_address, source, risk_score, artifacts, raw_technical_data, human_reviewed. |
-| PATCH /api/reports/{id}/review | Zwraca rekord. Puste żądanie przełącza flagę, obiekt z human_reviewed ustawia ją jawnie. |
-| GET /api/dashboard/stats | active_campaigns, unreviewed_reports, monitored_ips, noise_reduction_percent (odsetek zgłoszeń, których analityk nie otwiera osobno, bo kampania z n zgłoszeń to jedna pozycja). |
-| GET /api/campaigns | Lista kampanii malejąco według ryzyka. Dwa zgłoszenia o tym samym IP lub jedno z ryzykiem co najmniej 90/100 aktywują kampanię. Ryzyko kampanii to najwyższe ryzyko zgłoszenia plus 2 za każde kolejne zgłoszenie (maks. 100). |
-| GET /api/campaigns/{id} | Metryki, actor_profile, graph, timeline, notes oraz reports z danymi technicznymi. |
-| POST /api/campaigns/{id}/notes | Utworzona notatka (201). Wymaga content, opcjonalnie author. |
-| DELETE /api/campaigns/{id}/notes/{noteId} | 204 po usunięciu, 404 dla obcej lub brakującej notatki. |
-| POST /api/system/seed-demo | Tylko gdy endpointy demo są włączone (domyślnie poza APP_ENV=production, wymuszenie przez ENABLE_DEMO_ENDPOINTS), inaczej 404. Atomowo zastępuje zawartość rejestru spraw i notatki zestawem demonstracyjnym. Archiwum analiz /api/v1 jest odrębne. |
-| POST /api/system/simulate-attack | Tylko gdy endpointy demo są włączone, inaczej 404. Dodaje demonstracyjny rekord (201). Po zatwierdzeniu transakcji rozsyła przez /ws/alerts zdarzenie NEW_REPORT z campaignId, reportId, timestamp i message. |
-
-Źródła mają wartości CITIZEN_FORM, CRAWLER, ANALYST_PANEL lub EXTERNAL_API. Dla bezpośredniego POST domyślnym źródłem jest ANALYST_PANEL. Pole ip_address przyjmuje wyłącznie publiczny adres serwera reklamodawcy. Adres prywatny, lokalny lub dokumentacyjny zostaje odrzucony, a brak adresu pozostawia puste pole. Adres żądania (połączenie zgłaszającego) nigdy nie jest zapisywany jako IP kampanii. Pole raw_technical_data.ip_source przyjmuje wartości payload, rejected_non_public lub none.

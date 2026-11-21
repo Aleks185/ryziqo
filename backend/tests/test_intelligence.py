@@ -74,3 +74,16 @@ def test_shared_server_ip_does_not_merge_campaigns():
     assert where=="(0)" and args==[]
     where,args=Intelligence.relation({"target_server_ip":"104.16.0.1"},"context")
     assert args==["104.16.0.1"]
+
+
+def test_startup_drops_removed_case_register(tmp_path):
+    with _build_test_client(tmp_path) as client:
+        db=client.app.state.db
+    with db._connect() as c:
+        c.executescript("""CREATE TABLE case_reports(id TEXT); CREATE TABLE campaign_notes(id TEXT);
+                           INSERT INTO intel_config VALUES ('case_backfill','1');""")
+    with _build_test_client(tmp_path) as client:
+        with client.app.state.db._connect() as c:
+            tables={r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            assert not {"case_reports","campaign_notes"} & tables
+            assert not c.execute("SELECT 1 FROM intel_config WHERE key='case_backfill'").fetchone()

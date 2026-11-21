@@ -22,7 +22,6 @@ import tldextract
 from fastapi import HTTPException
 from PIL import Image, ImageOps
 
-from app import ip_campaigns
 from app.database import utc_now_iso
 from app.models import AnalyzeResponse, AnalyzeScreenshotRequest, AnalyzeUrlRequest
 
@@ -166,7 +165,13 @@ class Intelligence:
             c.execute("INSERT OR IGNORE INTO intel_config VALUES ('hmac',?)",(secrets.token_hex(32),))
             self.secret = bytes.fromhex(c.execute("SELECT value FROM intel_config WHERE key='hmac'").fetchone()[0])
         with db._connect() as c:
-            ip_campaigns.initialize(c)
+            # The separate IP case register (/api) was removed; drop its copies of reports, which
+            # could hold reporter-derived addresses outside the retention applied to threat_reports.
+            c.executescript("""
+            DROP TABLE IF EXISTS campaign_notes;
+            DROP TABLE IF EXISTS case_reports;
+            DELETE FROM intel_config WHERE key='case_backfill';
+            """)
         self.cleanup()
 
     def import_history(self, selected=None):
@@ -195,7 +200,7 @@ class Intelligence:
             report=AnalysisReport(source_type=meta["source_type"],summary=item.title,risk_score=round(100*item.risk_score),
                 findings=[{"module_id":item.module_id,"reasons":[r.reason for r in item.violated_rules],"evidence":item.evidence_quotes}],
                 limitations=["Historyczny zapis incydentu."])
-            self.save(meta,body,AnalyzeResponse(report=report,items=[item],mode="demo_fallback" if item.is_demo_fallback else "live"),"history",0,crawler=selected is not None or item.source_url.startswith("mock://"))
+            self.save(meta,body,AnalyzeResponse(report=report,items=[item],mode="demo_fallback" if item.is_demo_fallback else "live"),"history",0)
             state={"confirmed":"confirmed_fake","false_positive":"false_positive","in_review":"requires_review"}.get(item.status,"new")
             with self.connection() as c:
                 c.execute("UPDATE threat_reports SET verdict_status=?,analyst_notes=? WHERE id=?",(state,item.analyst_note or "",report.report_id))
@@ -270,7 +275,7 @@ class Intelligence:
         if not rows: return ""
         return ("Powiązane zgłoszenia: "+", ".join(f"{r[0]} {r[1]}/100" for r in rows))[:145]
 
-    def save(self,meta,body,response,origin,duration,match=None,crawler=False):
+    def save(self,meta,body,response,origin,duration,match=None):
         report=response.report
         report.report_id=uuid.uuid4().hex
         report.result_origin=origin
@@ -293,5 +298,4 @@ class Intelligence:
                 if old!=group: c.execute("UPDATE threat_reports SET campaign_id=? WHERE campaign_id=?",(group,old))
             data["campaign_id"]=group
             c.execute(f"INSERT INTO threat_reports ({','.join(data)}) VALUES ({','.join('?' for _ in data)})",tuple(data.values()))
-            ip_campaigns.import_analysis(c, data, getattr(body, "content", None), crawler)
         return response
