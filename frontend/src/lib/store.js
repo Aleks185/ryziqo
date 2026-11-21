@@ -8,6 +8,8 @@ import { translate } from "./i18n";
 import { SAMPLES } from "./samples";
 
 const Ctx = createContext(null);
+// Pola IncidentDetail, których nie ma w GET /incidents (CONTRACT.md §2)
+const DETAIL_FIELDS = ["raw_text_preview", "quote_checks", "prompt_injection_snippets", "hidden_text_snippets"];
 export const useApp = () => useContext(Ctx);
 
 const useWebSocket = (enabled, onMessage, setWsStatus, pushEvent) => {
@@ -160,10 +162,10 @@ export function AppProvider({ children }) {
 
   const loadRemote = useCallback(async () => {
     const res = await backend.listIncidents();
-    // Lista nie zawiera raw_text_preview — zachowujemy go z wcześniej pobranych szczegółów.
+    // Lista nie zawiera pól IncidentDetail — zachowujemy je z wcześniej pobranych szczegółów.
     setIncidents((prev) => {
-      const previews = new Map(prev.filter((i) => i.raw_text_preview).map((i) => [i.id, i.raw_text_preview]));
-      return (res.items || []).map((i) => (previews.has(i.id) ? { ...i, raw_text_preview: previews.get(i.id) } : i));
+      const details = new Map(prev.filter((i) => i.raw_text_preview || i.quote_checks).map((i) => [i.id, Object.fromEntries(DETAIL_FIELDS.map((k) => [k, i[k]]))]));
+      return (res.items || []).map((i) => (details.has(i.id) ? { ...i, ...details.get(i.id) } : i));
     });
     setKnfSnapshotDate(res.knf_snapshot_date || null);
   }, []);
@@ -249,20 +251,22 @@ export function AppProvider({ children }) {
 
   /** Analiza na żądanie. Zwraca listę incydentów (CONTRACT.md: AnalyzeResponse.items). */
   const analyze = useCallback(
-    async ({ kind, file, content, url, platform, force_full, onStatus, onReport, signal, module_ids, title = null, source_url = null, ground_truth_label = null, citizen = false }) => {
+    async ({ kind, file, content, url, platform, force_full, onStatus, onReport, signal, module_ids, title = null, source_url = null, ground_truth_label = null, citizen = false, share }) => {
       let items;
       if (kind === "image" && mode !== "online") throw Object.assign(new Error("Vision unavailable"), { status: 503 });
       if (mode === "online") {
         const source_channel = citizen ? "public_form" : "analyst_panel";
-        const res = onStatus ? await backend.streamAnalysis({kind, source_channel, platform, force_full, file, content, url, title, source_url, module_ids, ground_truth_label}, onStatus, signal) : kind === "url"
-          ? await backend.analyzeUrl({ source_channel, url, module_ids })
-          : kind === "image" ? await backend.analyzeImage({ source_channel, file, title, module_ids })
-          : await backend.analyzeText({ source_channel, content, title, source_url, module_ids, ground_truth_label });
+        const res = onStatus ? await backend.streamAnalysis({kind, source_channel, platform, force_full, file, content, url, title, source_url, module_ids, ground_truth_label, share}, onStatus, signal) : kind === "url"
+          ? await backend.analyzeUrl({ source_channel, url, module_ids, share })
+          : kind === "image" ? await backend.analyzeImage({ source_channel, file, title, module_ids, share })
+          : await backend.analyzeText({ source_channel, content, title, source_url, module_ids, ground_truth_label, share });
         items = res.items || [];
         onReport?.(res.report);
       } else {
         items = [await buildDemoIncident({ content, module_ids, title, source_url, ground_truth_label })];
       }
+      // "Tylko sprawdź": wynik nie trafia do rejestru, więc nie dodajemy go do listy incydentów
+      if (share?.share_mode === "none") return items;
       items.forEach((inc) => {
         pushEvent(mode === "online" ? "analysis.completed" : "analysis.local", `M${inc.module_id} · ${inc.entity_name}`, inc.risk_score >= ALERT_THRESHOLD ? "alert" : "info", inc.risk_score);
         upsert(inc);

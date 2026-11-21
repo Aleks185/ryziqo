@@ -1,6 +1,6 @@
 import { API_URL } from "./config";
 
-// Klient REST zgodny z CONTRACT.md v1.3.0.
+// Klient REST zgodny z CONTRACT.md v1.4.0.
 async function req(path, { body, method = "GET", signal, timeout = 90000 } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
@@ -40,9 +40,9 @@ function encodeImage(file) {
 }
 
 async function streamAnalysis(input, onStatus, signal) {
-  const {kind, file, url, content, module_ids, title, source_url, ground_truth_label} = input;
-  const body = kind === "image" ? {image_base64: await encodeImage(file), module_ids, title}
-    : kind === "url" ? {url, module_ids} : {content, module_ids, title, source_url, ground_truth_label};
+  const {kind, file, url, content, module_ids, title, source_url, ground_truth_label, share = {}} = input;
+  const body = {...share, ...(kind === "image" ? {image_base64: await encodeImage(file), module_ids, title}
+    : kind === "url" ? {url, module_ids} : {content, module_ids, title, source_url, ground_truth_label})};
   signal.throwIfAborted();
   const {job_id, result} = await req("/analyze/jobs", {method: "POST", body: {...body, platform: input.platform || null, force_full: !!input.force_full, source_channel: input.source_channel || "analyst_panel"}});
   if (result) return result;
@@ -73,13 +73,21 @@ export const backend = {
   health: () => req("/health", { timeout: 2500 }),
   listIncidents: () => req("/incidents?limit=500"),
   getIncident: (id) => req(`/incidents/${encodeURIComponent(id)}`),
-  analyzeText: ({ content, title, source_url, module_ids, ground_truth_label, source_channel }) =>
-    req("/analyze/text", { method: "POST", body: { content, title, source_url, module_ids, ground_truth_label, source_channel } }),
-  async analyzeImage({ file, title, module_ids, source_channel }) {
+  analyzeText: ({ content, title, source_url, module_ids, ground_truth_label, source_channel, share = {} }) =>
+    req("/analyze/text", { method: "POST", body: { content, title, source_url, module_ids, ground_truth_label, source_channel, ...share } }),
+  async analyzeImage({ file, title, module_ids, source_channel, share = {} }) {
     const image_base64 = await encodeImage(file);
-    return req("/analyze/text", { method: "POST", timeout: 305000, body: { image_base64, title, module_ids, source_channel } });
+    return req("/analyze/text", { method: "POST", timeout: 305000, body: { image_base64, title, module_ids, source_channel, ...share } });
   },
-  analyzeUrl: ({ url, module_ids, source_channel }) => req("/analyze/url", { method: "POST", body: { url, module_ids, source_channel } }),
+  analyzeUrl: ({ url, module_ids, source_channel, share = {} }) => req("/analyze/url", { method: "POST", body: { url, module_ids, source_channel, ...share } }),
+  getSimilar: (id) => req(`/incidents/${encodeURIComponent(id)}/similar`),
+  getVersions: (id) => req(`/incidents/${encodeURIComponent(id)}/versions`),
+  async downloadEvidencePack(id) {
+    const res = await fetch(`${API_URL}/incidents/${encodeURIComponent(id)}/evidence-pack`);
+    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
+    const match = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") || "");
+    return { blob: await res.blob(), filename: match ? match[1] : `evidence_pack_${id}.zip` };
+  },
   setStatus: (id, status) =>
     req(`/incidents/${encodeURIComponent(id)}/status`, { method: "PATCH", body: { status } }),
   setLabel: (id, ground_truth_label) =>

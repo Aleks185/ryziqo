@@ -51,6 +51,8 @@ export default function Calibration() {
   const [busy, setBusy] = useState(false);
   const labeled = incidents.filter((i) => typeof i.ground_truth_label === "boolean");
   const m = confusion(labeled, th);
+  // Ta sama pula co RAG w backendzie: etykieta albo status potwierdzony / fałszywy alarm
+  const verified = incidents.filter((i) => typeof i.ground_truth_label === "boolean" || ["confirmed", "false_positive"].includes(i.status)).length;
   const curve = useMemo(
     () => Array.from({ length: 21 }, (_, i) => {
       const x = i / 20;
@@ -73,10 +75,12 @@ export default function Calibration() {
       <div className="flex flex-wrap gap-6 text-sm">
         <span>{t("labeled")}: <b data-testid="calib-labeled-count" className="font-mono">{labeled.length}</b></span>
         <span>{t("unlabeled")}: <b data-testid="calib-unlabeled-count" className="font-mono">{incidents.length - labeled.length}</b></span>
+        <span>{t("rag_decisions")}: <b data-testid="calib-rag-decisions" className="font-mono">{verified}</b></span>
         <button type="button" data-testid="calib-load-samples-button" onClick={load} disabled={busy} className="ml-auto border border-[#0B192C] text-[#0B192C] px-3 py-1.5 text-sm font-semibold rounded-sm hover:bg-[#0B192C] hover:text-white transition-colors focus-ring disabled:opacity-50">
           {t("calib_load")}
         </button>
       </div>
+      <p className="text-xs text-slate-500 -mt-3">{t("rag_decisions_hint")}</p>
       {labeled.length === 0 ? (
         <div data-testid="calib-empty" className="border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-600">{t("calib_empty")}</div>
       ) : (

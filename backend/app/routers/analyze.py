@@ -16,7 +16,8 @@ from fastapi.responses import StreamingResponse
 from app.ai.vision_analyzer import VISION_SCHEMA, VISION_SYSTEM_PROMPT, VisionFindings
 from app.analysis_queue import current_job, TERMINAL, status
 from app.database import utc_now_iso
-from app.threat_intel import input_meta, enrich_page
+from app.threat_intel import input_meta, enrich_page, mask_personal_data
+from app.ocr import read_text as ocr_read_text
 from app.image_processor import normalize_screenshot
 from app.models import AnalysisReport, AnalyzeResponse, AnalyzeScreenshotRequest, AnalyzeTextRequest, AnalyzeUrlRequest, WebSocketAlertEvent
 from app.scraper.fetcher import build_manual_text_page
@@ -50,7 +51,8 @@ def _mode(request: Request) -> str:
 
 def cache_key(request, body, kind, payload):
     model = request.app.state.ollama
-    options = body.model_dump(exclude={"content", "image_base64", "source_channel", "force_full", "platform"})
+    options = body.model_dump(exclude={"content", "image_base64", "source_channel", "force_full", "platform",
+                                       "share_mode", "reporter_display_name", "reporter_key"})
     options["module_ids"] = sorted(set(body.module_ids))
     parts = [kind, hashlib.sha256(payload.encode()).hexdigest(), options, model.active_model,
              model.vision_model_override, model.vision_enabled, model.is_available, "prompt-pl-v4", "preprocess-v3"]
@@ -71,7 +73,7 @@ def lookup(db, key):
     return response
 
 
-def finish(request, items, kind, key):
+def finish(request, items, kind, key, cache=True, extra_limitations=()):
     score = round(max((item.risk_score for item in items), default=0) * 100)
     findings = []
     summaries = []
@@ -81,7 +83,7 @@ def finish(request, items, kind, key):
         findings.append({"module_id": item.module_id, "reasons": descriptions, "evidence": quotes})
         summaries.extend(q[5:] for q in item.evidence_quotes if q.startswith("[AI] "))
     summary = " ".join(dict.fromkeys(summaries)) or f"Ocena ryzyka materiału wynosi {score}/100."
-    limitations = ["Wynik wspomaga ocenę analityka i wymaga weryfikacji źródła."]
+    limitations = ["Wynik wspomaga ocenę analityka i wymaga weryfikacji źródła.", *extra_limitations]
     fallback = [str(item.module_id) for item in items if item.is_demo_fallback]
     if fallback:
         limitations.append("Ocena na podstawie reguł w modułach: " + ", ".join(fallback) + ".")
@@ -89,7 +91,7 @@ def finish(request, items, kind, key):
                             summary=summary,
                             limitations=limitations)
     response = AnalyzeResponse(items=items, mode=_mode(request), report=report)
-    if items and (response.mode == "demo_fallback" or any(not i.is_demo_fallback for i in items)):
+    if cache and items and (response.mode == "demo_fallback" or any(not i.is_demo_fallback for i in items)):
         now = time.time()
         request.app.state.db.cache_response(key, response.model_dump_json(), now + (900 if kind == "url" else 86400), now)
     return response
@@ -99,7 +101,10 @@ async def dispatch(request, body):
     intel = request.app.state.intel
     queue = request.app.state.analysis_queue
     started = time.monotonic()
-    identity = await asyncio.to_thread(intel.admit, request)
+    identity = await asyncio.to_thread(intel.identity, request, body)
+    persist = body.persist
+    if body.source_channel == "public_form" and getattr(body, "content", None):
+        body.content = mask_personal_data(body.content)
     is_url = isinstance(body, AnalyzeUrlRequest)
     if is_url:
         try:
@@ -121,6 +126,9 @@ async def dispatch(request, body):
         previous_summary = response.report.summary
         response.report.source_type = meta["source_type"]
         response.report.summary = f"Dopasowano do potwierdzonego zagrożenia w bazie zgłoszeń (liczba wcześniejszych zgłoszeń: {count}). {previous_summary}"
+        if not persist:
+            response.report.result_origin = "fast_path"
+            return response
         return intel.save(meta, body, response, "fast_path", time.monotonic()-started, match)
 
     hit = await asyncio.to_thread(known)
@@ -141,9 +149,12 @@ async def dispatch(request, body):
                 return hit
         job.history = await asyncio.to_thread(intel.context, meta)
         fn = run_url if is_url else run_text
-        response = await fn(request, body)
+        response = await fn(request, body, persist)
         origin = ("cache" if job.metrics["cache_hit"] else
                   "ollama" if any(not i.is_demo_fallback for i in response.items) else "rules")
+        if not persist:
+            response.report.result_origin = origin
+            return response
         if not meta["excerpt"] and response.items:
             meta["excerpt"] = response.items[0].content_excerpt
         return await asyncio.to_thread(intel.save, meta, body, response, origin, time.monotonic()-start)
@@ -209,7 +220,7 @@ async def analyze_text(request: Request, body: AnalyzeTextRequest | AnalyzeScree
     return job.result
 
 
-async def run_text(request: Request, body: AnalyzeTextRequest | AnalyzeScreenshotRequest) -> AnalyzeResponse:
+async def run_text(request: Request, body: AnalyzeTextRequest | AnalyzeScreenshotRequest, persist: bool = True) -> AnalyzeResponse:
     """Analyze pasted text (ad copy, post, video description) with Modules 1–3."""
     worker = request.app.state.worker
     db = request.app.state.db
@@ -217,7 +228,7 @@ async def run_text(request: Request, body: AnalyzeTextRequest | AnalyzeScreensho
     await request.app.state.ollama.check_health()
     kind = "screenshot" if isinstance(body, AnalyzeScreenshotRequest) else "text"
     key = cache_key(request, body, kind, body.image_base64 if kind == "screenshot" else body.content)
-    cached = None if body.force_full else lookup(db, key)
+    cached = None if body.force_full or not persist else lookup(db, key)
     if cached:
         if isinstance(body, AnalyzeTextRequest) and body.ground_truth_label is not None:
             for item in cached.items:
@@ -227,6 +238,7 @@ async def run_text(request: Request, body: AnalyzeTextRequest | AnalyzeScreensho
         await _broadcast_complete(request, cached.items[0].source_url, [i.id for i in cached.items])
         return cached
     status("preprocessing")
+    limitations: list[str] = []
     if isinstance(body, AnalyzeScreenshotRequest):
         image = await normalize_screenshot(body.image_base64)
         current_job.get().metrics["preprocessing_s"] += time.monotonic() - current_job.get().updated
@@ -238,19 +250,29 @@ async def run_text(request: Request, body: AnalyzeTextRequest | AnalyzeScreensho
             {"type": "object", "properties": {"text": {"type": "string"}, **VISION_SCHEMA["properties"]},
              "required": ["text", *VISION_SCHEMA["required"]]},
         )
+        pixels = base64.b64decode(image)
         if reading is None:
-            raise HTTPException(503, "Model wizyjny jest niedostępny.")
+            # Local OCR fallback: the text is read, but logos / visual endorsement are not assessed
+            ocr_text = await asyncio.to_thread(ocr_read_text, pixels)
+            if ocr_text is None:
+                raise HTTPException(503, "Model wizyjny jest niedostępny.")
+            reading = {"text": ocr_text}
+            limitations.append("Odczyt lokalnym OCR bez modelu wizyjnego: logotypy i grafiki nie były oceniane.")
         content = reading.get("text")
         if not isinstance(content, str) or not content.strip():
             raise HTTPException(422, "Nie udało się odczytać reklamy z obrazu.")
-        pixels = base64.b64decode(image)
+        if body.source_channel == "public_form":
+            content = mask_personal_data(content)
         digest = hashlib.sha256(pixels).hexdigest()
         page = build_manual_text_page(content, body.title, "manual://screenshot/" + digest)
         page.screenshots = [pixels]
-        page.vision_findings = VisionFindings.model_validate(reading).model_dump()
+        if not limitations:
+            page.vision_findings = VisionFindings.model_validate(reading).model_dump()
     else:
         page = build_manual_text_page(body.content, body.title, body.source_url)
-    items = await worker.analyze_page(page, _unique_modules(body.module_ids))
+    items = await worker.analyze_page(page, _unique_modules(body.module_ids), persist=persist)
+    if not persist:
+        return finish(request, items, kind, key, cache=False, extra_limitations=limitations)
 
     if isinstance(body, AnalyzeTextRequest) and body.ground_truth_label is not None:
         for inc in items:
@@ -258,7 +280,7 @@ async def run_text(request: Request, body: AnalyzeTextRequest | AnalyzeScreensho
         items = [db.get_incident(inc.id) or inc for inc in items]
 
     await _broadcast_complete(request, page.source_url, [i.id for i in items])
-    return finish(request, items, kind, key)
+    return finish(request, items, kind, key, extra_limitations=limitations)
 
 
 @router.post("/url", response_model=AnalyzeResponse)
@@ -272,7 +294,7 @@ async def analyze_url(request: Request, body: AnalyzeUrlRequest) -> AnalyzeRespo
     return job.result
 
 
-async def run_url(request: Request, body: AnalyzeUrlRequest) -> AnalyzeResponse:
+async def run_url(request: Request, body: AnalyzeUrlRequest, persist: bool = True) -> AnalyzeResponse:
     """Analyze the page fetched by `dispatch` (anti-SSRF, size/redirect limits applied by the fetcher)."""
     worker = request.app.state.worker
     page = request.state.fetched_page
@@ -280,11 +302,13 @@ async def run_url(request: Request, body: AnalyzeUrlRequest) -> AnalyzeResponse:
     status("preprocessing")
     key = cache_key(request, body, "url", json.dumps([page.final_url, page.payload_sha256, page.raw_html,
                       [hashlib.sha256(s).hexdigest() for s in page.screenshots or []]]))
-    cached = None if body.force_full else lookup(request.app.state.db, key)
+    cached = None if body.force_full or not persist else lookup(request.app.state.db, key)
     if cached:
         await _broadcast_complete(request, page.source_url, [i.id for i in cached.items])
         return cached
-    items = await worker.analyze_page(page, _unique_modules(body.module_ids))
+    items = await worker.analyze_page(page, _unique_modules(body.module_ids), persist=persist)
+    if not persist:
+        return finish(request, items, "url", key, cache=False)
     await _broadcast_complete(request, page.source_url, [i.id for i in items])
     return finish(request, items, "url", key)
 

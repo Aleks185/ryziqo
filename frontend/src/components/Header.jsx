@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, ClipboardList, FileSearch, Gauge, LayoutDashboard, Menu, Network, ScanSearch, ShieldAlert } from "lucide-react";
+import { Activity, ClipboardList, FileSearch, Gauge, LayoutDashboard, Menu, Network, ScanSearch, Share2, ShieldAlert } from "lucide-react";
 import { Link, NavLink, useLocation, useMatch } from "react-router-dom";
 import { Logo } from "./Logo";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
@@ -10,6 +10,7 @@ const LINKS = [
   ["/analyze", "nav_analyze", "nav-analyze", FileSearch],
   ["/reports", "intel_reports", "nav-reports", ClipboardList],
   ["/campaigns", "intel_campaigns", "nav-campaigns", Network],
+  ["/graph", "nav_graph", "nav-graph", Share2],
   ["/diagnostics", "intel_diag", "nav-diagnostics", Activity],
   ["/calibration", "nav_calibration", "nav-calibration", Gauge],
   ["/log", "nav_log", "nav-log", ScanSearch],

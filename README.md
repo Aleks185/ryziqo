@@ -88,7 +88,9 @@ Wszystkie parametry znajdują się w [.env.example](.env.example). Sekrety są i
 | `CRAWLER_CRON` | puste | Wyrażenie crontab (UTC) zastępujące interwał, np. `*/30 * * * *` |
 | `CRAWLER_PROXIES` | puste | Lista proxy rotowanych per żądanie (`http://...`, `socks5://...`) |
 | `DEDUP_SIMILARITY_THRESHOLD` | `0.92` | Próg podobieństwa embeddingów przy ponownym skanie tego samego URL |
+| `EVIDENCE_TSA_URL` | *(puste)* | Serwer znaczników czasu RFC 3161 dla paczek dowodowych ZIP (np. `https://freetsa.org/tsr`); puste = bez znacznika |
 | `INSTALL_PLAYWRIGHT` | `false` | Build-arg Dockera: Chromium dla stron renderowanych JS |
+| `INSTALL_OCR` | `true` | Build-arg Dockera: lokalny OCR (RapidOCR) dla zrzutów ekranu, gdy nie działa model wizyjny |
 | `CRAWLER_USE_PLAYWRIGHT_FALLBACK` | `false` | Renderuj w Chromium strony z małą ilością tekstu (SPA) |
 | `CRAWLER_PLAYWRIGHT_MIN_TEXT_CHARS` | `400` | Próg widocznego tekstu uruchamiający render |
 | `HIGH_RISK_ALERT_THRESHOLD` | `0.65` | Próg emisji alertów `high_risk_alert` na `/ws/alerts` (w Dockerze także próg alertów w panelu) |

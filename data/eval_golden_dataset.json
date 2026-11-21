@@ -6,6 +6,7 @@
     {"id": "mock-broker-historical-5y", "category": "classic", "expected_module": 2, "ground_truth_label": true, "mock_file": "broker_promo_historical_5y.html"},
     {"id": "mock-broker-knf-abuse", "category": "classic", "expected_module": 2, "ground_truth_label": true, "mock_file": "broker_promo_knf_abuse.html"},
     {"id": "mock-broker-mobile-cutoff", "category": "classic", "expected_module": 2, "ground_truth_label": true, "mock_file": "broker_promo_mobile_cutoff.html"},
+    {"id": "mock-broker-prompt-injection", "category": "adversarial", "expected_module": 2, "ground_truth_label": true, "mock_file": "broker_promo_prompt_injection.html"},
     {"id": "mock-broker-compliant", "category": "hard_negative", "expected_module": 2, "ground_truth_label": false, "mock_file": "broker_promo_compliant.html"},
     {"id": "mock-broker-borderline", "category": "hard_negative", "expected_module": 2, "ground_truth_label": false, "mock_file": "broker_promo_borderline.html"},
     {"id": "mock-fin-tiktok-cfd", "category": "classic", "expected_module": 1, "ground_truth_label": true, "mock_file": "finfluencer_tiktok_cfd.html"},

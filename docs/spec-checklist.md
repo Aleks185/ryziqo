@@ -1,7 +1,7 @@
 # Checklista zgodności ze specyfikacją UKNF (Ryziqo)
 
 Źródła: `Opis Wyzwania HackNation UKNF 19.11.pdf` + 4 załączniki DOCX (kryteria ryzyka, tematy 1–3).
-Stan na 2026-11-21 (wieczór). Testy backendu: `175 passed`. Benchmark fallback: P 0,958 / R 0,676 / F1 0,793. Stos Docker w wersji API 1.3.0 uruchomiony i sprawdzony (backend, frontend, SearXNG).
+Stan na 2026-11-21 (wieczór). Testy backendu: `194 passed`. Benchmark fallback (53 przypadki): P 0,960 / R 0,686 / F1 0,800. Stos Docker w wersji API 1.3.0 uruchomiony i sprawdzony (backend, frontend, SearXNG).
 
 ## ✅ Zrobione
 
@@ -85,15 +85,18 @@ Stan na 2026-11-21 (wieczór). Testy backendu: `175 passed`. Benchmark fallback:
 ### Wyróżniki ponad specyfikację (priorytet wg ROI)
 Uporządkowane od najwyższego stosunku efektu na demo / wartości dla UKNF do nakładu pracy:
 
-- [ ] **P1 (Najwyższe ROI) — Odsłonięcie gotowych mechanizmów AI w UI** — backend już je posiada, ale nie są widoczne dla Jury:
-  - **Prompt Injection**: badge w `frontend/src/pages/IncidentDetail.jsx` („Wykryto próbę manipulacji audytem AI”) + dedykowany mock w `data/mock_sites/` z ukrytym białym tekstem próbującym oszukać model.
-  - **RAG / klony kampanii i Human-in-the-Loop**: sekcja „Podobne wcześniejsze decyzje / możliwe klony” w karcie incydentu oraz licznik zweryfikowanych decyzji analityków korygujących prompty w `frontend/src/pages/Calibration.jsx`.
-  - **Anti-Hallucination**: oznaczenie przy cytatach, że zostały dosłownie zweryfikowane w treści źródłowej.
-- [ ] **P2 (Bardzo wysokie ROI, częściowo zrobione: upload zrzutu i odczyt przez VLM działają) — Zgłoszenie obywatelskie ze zrzutu ekranu (OCR/VLM) → alert na żywo** (rozszerza punkt z sekcji Dashboard dla `frontend/src/pages/Citizen.jsx`): lokalny OCR (`rapidocr-onnxruntime` lub VLM w Ollama) wyciąga tekst i wykrywa wizualne podszywanie się (np. fałszywe logo KNF/NBP, drobny druk), zwraca prosty werdykt obywatelowi, a po zaznaczeniu zgody wysyła zanonimizowany incydent na żywo przez WebSocket do kolejki analityka.
+- [x] **P1 — Mechanizmy AI widoczne w UI** (karta incydentu `IncidentDetail.jsx`):
+  - **Prompt injection**: baner „Wykryto próbę manipulacji audytem AI” z wykrytymi poleceniami i ukrytym tekstem (`prompt_injection_snippets`, `hidden_text_snippets` w `IncidentDetail`); mock `data/mock_sites/broker_promo_prompt_injection.html` (biały tekst, `font-size:0`), dopisany do seeda demo i golden datasetu.
+  - **RAG / klony i Human-in-the-Loop**: panel „Podobne wcześniejsze decyzje / możliwe klony” (`GET /incidents/{id}/similar`, oznaczenie KLON) oraz licznik „Decyzje analityków użyte przez RAG” w `Calibration.jsx` (`verified_decisions` w `/stats`).
+  - **Anti-Hallucination**: przy każdym cytacie oznaczenie „zweryfikowany dosłownie / ≈ / sygnał systemu” (`quote_checks` z `verify_quote_in_document`).
+- [x] **P2 — Zgłoszenie obywatelskie ze zrzutu ekranu → alert na żywo** (`Citizen.jsx`): odczyt przez VLM (z wykrywaniem logo KNF/NBP, reguła 17), a bez modelu wizyjnego lokalny OCR RapidOCR (`backend/app/ocr.py`, build-arg `INSTALL_OCR`). Obywatel wybiera: tylko werdykt (nic nie jest zapisywane), przekazanie anonimowe (bez IP/UA) albo podpisane pseudonimem z losowym kluczem przeglądarki (HMAC), co przygotowuje dane pod ranking prawdziwych zgłoszeń. PESEL i numery kart są maskowane. Przekazane zgłoszenia wysokiego ryzyka idą do analityka przez WebSocket (`high_risk_alert`).
+  - [ ] Ranking zgłaszających (dane już są: `reporter_display_name`, `reporter_key_hash` w `threat_reports`)
+  - [ ] Sprawdzić jakość OCR dla polskich znaków na prawdziwych zrzutach (model PP-OCRv4 ch/en może gubić diakrytyki)
 - [ ] **P3 (Wysokie ROI) — Generator projektu pisma nadzorczego / notatki pod Listę Ostrzeżeń** — 1 klik z karty incydentu (DOCX/MD) bazujący na istniejących `violated_rules`, `legal_basis`, zweryfikowanych cytatach i statusie w rejestrze KNF: szkic wezwania do wyjaśnień (Moduł 1/2) albo notatki pod wpis na Listę Ostrzeżeń / art. 178 u.o.i.f. (Moduł 3).
-- [ ] **P4 (Wysokie ROI) — Paczka dowodowa „Chain of Custody” (ZIP + SHA-256) i diff wersji („Znikające ostrzeżenie”)** — eksport `evidence_pack_<id>.zip` z `OBJECT_STORE_DIR` (surowy HTML, zrzuty ekranu, JSON ekstrakcji, nagłówki/przekierowania + manifest `SHA-256`, opcjonalnie znacznik czasu RFC 3161) oraz porównywanie kolejnych snapshotów tego samego URL z alertem przy usunięciu lub zmniejszeniu klauzuli ryzyka.
+- [x] **P4 — Paczka dowodowa „Chain of Custody” i „Znikające ostrzeżenie”**: przycisk w karcie incydentu pobiera `evidence_pack_<id>.zip` (`GET /incidents/{id}/evidence-pack`: HTML, JSON ekstrakcji, zrzuty, incydent, zgłoszenie z przekierowaniami/IP, historia wersji, `manifest.json` z SHA-256 i `manifest.sha256`; opcjonalnie znacznik RFC 3161 przez `EVIDENCE_TSA_URL`). Panel „Historia wersji strony” (`GET /incidents/{id}/versions`) z diffem zdań; przy usunięciu ostrzeżenia lub zmniejszeniu jego czcionki o ≥ 25% między skanami reguła `RISK_WARNING_REMOVED` (wynik ≥ 0,75, alert WS).
+  - [ ] Sprawdzić RFC 3161 na prawdziwym TSA (np. `https://freetsa.org/tsr`) i weryfikację `openssl ts -verify`
 - [ ] **P5 (Średnio-wysokie ROI) — Wizualny „X-Ray” naruszeń na zrzutach ekranu (Desktop / Tablet / Mobile)** (łączy się z Regułą 8 w sekcji wyżej) — nakładanie przez Playwright ramek (bounding boxes) na obietnicę zysku vs ukrytą klauzulę ryzyka (z metrykami fontu i kontrastu) i zestawienie 3 widoków (`1280`, `768`, `375 px`) obok siebie w `IncidentDetail.jsx`.
-- [ ] **P6 (Średnie ROI / mocny efekt „wow”) — Graf powiązań kampanii i sieci finfluencerów** — interaktywny graf łączący `promoter_name`, rozwinięte skrócone linki / kody polecające (`CRAWLER_EXPAND_SHORT_LINKS`), domeny-klony (embeddingi) oraz docelowy podmiot KNF / Listę Ostrzeżeń w mapę sieci dystrybucji.
+- [x] **P6 — Graf powiązań kampanii i sieci finfluencerów**: strona „Mapa powiązań” (`/graph`, `d3-force` + SVG: zoom, przeciąganie, podświetlanie sąsiadów, klik otwiera kartę incydentu lub kampanię). Dane z `GET /api/v1/intelligence/graph`: promotorzy, podmioty z rejestru, domeny docelowe linków (także rozwinięte skróty), kody polecające z parametrów linków, kampanie z bazy zgłoszeń, Lista Ostrzeżeń i krawędzie klonów. W trybie DEMO graf z lokalnych incydentów.
 - [ ] **P7 (Niższe ROI / bardziej złożone, ale spektakularne na demo) — Analiza krótkiego wideo i audio z TikToka / Reels** — lokalny `faster-whisper` (transkrypcja mowy z reklam „link w bio”) + wybrane klatki (np. migająca plansza końcowa z drobnym druczkiem) przekazane do VLM (`vision_analyzer.py`) i dalej do standardowego pipeline'u Modułów 1–3.
 
 ### Przed oceną Jury

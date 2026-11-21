@@ -76,6 +76,38 @@ def image_signature(encoded):
     return hashlib.sha256(raw).hexdigest(), phash
 
 
+PESEL_RE = re.compile(r"(?<!\d)\d{11}(?!\d)")
+CARD_RE = re.compile(r"(?<!\d)(?:\d[ -]?){12,18}\d(?!\d)")
+
+
+def _valid_pesel(digits):
+    weights = (1, 3, 7, 9, 1, 3, 7, 9, 1, 3)
+    return (10 - sum(int(d) * w for d, w in zip(digits, weights)) % 10) % 10 == int(digits[10])
+
+
+def _luhn(digits):
+    total = 0
+    for i, ch in enumerate(reversed(digits)):
+        n = int(ch) * (2 if i % 2 else 1)
+        total += n - 9 if n > 9 else n
+    return total % 10 == 0
+
+
+def mask_personal_data(text):
+    """Mask the reporter's own identifiers (PESEL, payment card numbers) in citizen submissions.
+
+    Phone numbers, e-mails and IBANs stay: in scam adverts they are the fraudster's contact data,
+    i.e. evidence. Only checksum-valid numbers are masked, so prices and amounts are untouched.
+    """
+    if not text:
+        return text
+    text = PESEL_RE.sub(lambda m: "[PESEL]" if _valid_pesel(m.group()) else m.group(), text)
+    def card(m):
+        digits = re.sub(r"\D", "", m.group())
+        return "[NUMER KARTY]" if 13 <= len(digits) <= 19 and _luhn(digits) else m.group()
+    return CARD_RE.sub(card, text)
+
+
 def input_meta(body):
     kind = "url" if isinstance(body, AnalyzeUrlRequest) else "screenshot" if isinstance(body, AnalyzeScreenshotRequest) else "text"
     text = getattr(body, "content", "")
@@ -162,6 +194,10 @@ class Intelligence:
             CREATE INDEX IF NOT EXISTS threat_campaign ON threat_reports(campaign_id);
             CREATE INDEX IF NOT EXISTS threat_created ON threat_reports(created_at);
             """)
+            existing={r[1] for r in c.execute("PRAGMA table_info(threat_reports)")}
+            for column in ("reporter_display_name","reporter_key_hash"):
+                if column not in existing:
+                    c.execute(f"ALTER TABLE threat_reports ADD COLUMN {column} TEXT")
             c.execute("INSERT OR IGNORE INTO intel_config VALUES ('hmac',?)",(secrets.token_hex(32),))
             self.secret = bytes.fromhex(c.execute("SELECT value FROM intel_config WHERE key='hmac'").fetchone()[0])
         with db._connect() as c:
@@ -225,6 +261,16 @@ class Intelligence:
             c.execute("INSERT INTO report_quota VALUES (?,?)",(hashed,now))
         return dict(reporter_ip=ip,reporter_ip_hash=hashed,reporter_user_agent=request.headers.get("user-agent","")[:400],
                     created_at=utc_now_iso())
+
+    def identity(self, request, body):
+        """Reporter identifiers to store, according to the citizen's choice (`share_mode`)."""
+        found = self.admit(request)
+        if body.share_mode in ("none", "anonymous"):
+            found.update(reporter_ip=None, reporter_ip_hash=None, reporter_user_agent=None)
+        found["reporter_display_name"] = body.reporter_display_name
+        found["reporter_key_hash"] = (hmac.new(self.secret, body.reporter_key.encode(), hashlib.sha256).hexdigest()
+                                      if body.reporter_key else None)
+        return found
 
     def connection(self):
         c = self.db._connect()
