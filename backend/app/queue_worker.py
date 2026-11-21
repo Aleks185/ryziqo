@@ -21,7 +21,8 @@ from app.ai.ollama_client import OllamaClient
 from app.ai.preprocessor import preprocess_html
 from app.ai.retrieval import Retriever
 from app.config import Settings
-from app.database import Database, utc_now_iso
+from app.database import Database, score_to_risk_level, utc_now_iso
+from app.evidence import detect_warning_change
 from app.discovery import DiscoveryService
 from app.knf_registry import KNFRegistrySnapshot
 from app.models import CrawlTriggerRequest, IncidentDetail, WebSocketAlertEvent
@@ -387,19 +388,21 @@ class CrawlQueueWorker:
         )
 
     async def analyze_page(
-        self, page: FetchedPage, module_ids: list[int], job_id: str | None = None
+        self, page: FetchedPage, module_ids: list[int], job_id: str | None = None, persist: bool = True
     ) -> list[IncidentDetail]:
         """Preprocess, store and analyze one page; persist incidents and emit WebSocket alerts.
 
         Shared by the crawl queue and the synchronous /api/v1/analyze/* endpoints.
         Returns the incidents as stored in the database (existing analyst status/labels preserved).
+        With persist=False (citizen check without sharing) nothing is written and no alert is sent.
         """
-        await self._emit_stage(
-            job_id,
-            "preprocessing",
-            page.source_url,
-            f"Czyszczenie HTML, analiza DOM/CSS i wektoryzacja: {page.source_url}",
-        )
+        if persist:
+            await self._emit_stage(
+                job_id,
+                "preprocessing",
+                page.source_url,
+                f"Czyszczenie HTML, analiza DOM/CSS i wektoryzacja: {page.source_url}",
+            )
         started = time.monotonic()
         doc = preprocess_html(
             raw_html=page.raw_html,
@@ -428,39 +431,58 @@ class CrawlQueueWorker:
         if ollama_emb:
             doc.embedding = ollama_emb
 
-        storage_key = self.db.save_content_object(
-            content_hash=doc.content_hash,
-            source_url=doc.source_url,
-            source_platform=doc.source_platform,
-            raw_html=page.raw_html,
-            normalized_text=doc.normalized_text,
-            embedding=doc.embedding,
-            local_embedding=doc.local_embedding,
-            extracted={
-                "title": doc.title,
-                "vision_findings": doc.vision_findings,
-                "final_url": page.final_url,
-                "fetched_at": page.fetched_at,
-                "payload_sha256": page.payload_sha256,
-                "used_playwright": page.used_playwright,
-                "social": doc.social.to_dict() if doc.social else None,
-                "dom_metrics": doc.dom_metrics.model_dump(),
-                "hidden_text_snippets": doc.hidden_text_snippets,
-                "prompt_injection_snippets": doc.injection_snippets,
-                "obfuscation_detected": doc.obfuscation_detected,
-                "outbound_links": doc.outbound_links[:30],
-                "resolved_links": doc.resolved_links,
-            },
-        )
-        if doc.screenshots:
-            self.db.save_screenshots(doc.content_hash, doc.screenshots)
+        warning_change = None
+        storage_key = None
+        if persist:
+            if page.source_url.startswith(("http://", "https://", "mock://")):
+                previous = next(
+                    (v for v in reversed(self.db.list_snapshots(doc.source_url, limit=5))
+                     if v["content_hash"] != doc.content_hash),
+                    None,
+                )
+                if previous is not None:
+                    warning_change = detect_warning_change(
+                        previous,
+                        {
+                            "normalized_text": doc.normalized_text,
+                            "dom_metrics": doc.dom_metrics.model_dump(),
+                            "fetched_at": utc_now_iso(),
+                        },
+                    )
+            storage_key = self.db.save_content_object(
+                content_hash=doc.content_hash,
+                source_url=doc.source_url,
+                source_platform=doc.source_platform,
+                raw_html=page.raw_html,
+                normalized_text=doc.normalized_text,
+                embedding=doc.embedding,
+                local_embedding=doc.local_embedding,
+                extracted={
+                    "title": doc.title,
+                    "vision_findings": doc.vision_findings,
+                    "final_url": page.final_url,
+                    "fetched_at": page.fetched_at,
+                    "payload_sha256": page.payload_sha256,
+                    "used_playwright": page.used_playwright,
+                    "social": doc.social.to_dict() if doc.social else None,
+                    "dom_metrics": doc.dom_metrics.model_dump(),
+                    "hidden_text_snippets": doc.hidden_text_snippets,
+                    "prompt_injection_snippets": doc.injection_snippets,
+                    "obfuscation_detected": doc.obfuscation_detected,
+                    "outbound_links": doc.outbound_links[:30],
+                    "resolved_links": doc.resolved_links,
+                },
+            )
+            if doc.screenshots:
+                self.db.save_screenshots(doc.content_hash, doc.screenshots)
 
-        await self._emit_stage(
-            job_id,
-            "analyzing",
-            page.source_url,
-            f"Analiza AI/reguł (Moduły {module_ids}): {doc.title[:80]}",
-        )
+        if persist:
+            await self._emit_stage(
+                job_id,
+                "analyzing",
+                page.source_url,
+                f"Analiza AI/reguł (Moduły {module_ids}): {doc.title[:80]}",
+            )
         incidents = await run_analytical_pipeline(
             doc=doc,
             module_ids=module_ids,
@@ -472,6 +494,15 @@ class CrawlQueueWorker:
             multi_module_mode=self.settings.aggregator_multi_module_mode,
             secondary_min_score=self.settings.aggregator_secondary_min_score,
         )
+
+        if warning_change is not None and incidents:
+            target = next((i for i in incidents if i.module_id == 2), incidents[0])
+            target.violated_rules.append(warning_change.rule())
+            target.risk_score = round(max(target.risk_score, 0.75), 4)
+            target.risk_level = score_to_risk_level(target.risk_score)
+
+        if not persist:
+            return [IncidentDetail(**inc.model_dump()) for inc in incidents]
 
         saved: list[IncidentDetail] = []
         for inc in incidents:

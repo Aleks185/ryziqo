@@ -5,13 +5,17 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import Response
 
+from app.ai.retrieval import RAG_MIN_SIMILARITY, best_similarity, source_domain
 from app.database import utc_now_iso
+from app.evidence import build_evidence_pack, version_history
 from app.models import (
     Incident,
     IncidentDetail,
     IncidentListResponse,
     LabelUpdateRequest,
+    SimilarIncident,
     StatsResponse,
     StatusUpdateRequest,
     WebSocketAlertEvent,
@@ -67,6 +71,97 @@ async def get_incident(request: Request, incident_id: str) -> IncidentDetail:
     if inc is None:
         raise HTTPException(status_code=404, detail=f"Incydent '{incident_id}' nie istnieje.")
     return inc
+
+
+def _require_incident(request: Request, incident_id: str) -> IncidentDetail:
+    inc = request.app.state.db.get_incident(incident_id)
+    if inc is None:
+        raise HTTPException(status_code=404, detail=f"Incydent '{incident_id}' nie istnieje.")
+    return inc
+
+
+@router.get("/incidents/{incident_id}/similar", response_model=list[SimilarIncident])
+async def similar_incidents(
+    request: Request, incident_id: str, limit: int = Query(default=5, ge=1, le=20)
+) -> list[SimilarIncident]:
+    """Analyst-verified incidents closest to this one (the RAG few-shot pool and campaign clones)."""
+    db = request.app.state.db
+    inc = _require_incident(request, incident_id)
+    vectors = db.get_snapshot_vectors(inc.content_hash)
+    if not vectors:
+        return []
+    threshold = request.app.state.settings.ai_clone_similarity_threshold
+    domain = source_domain(inc.source_url)
+    scored = []
+    for row in db.list_verified_incident_vectors(exclude_content_hash=inc.content_hash):
+        if row["id"] == inc.id:
+            continue
+        sim = best_similarity(vectors, row["vectors"])
+        if sim >= RAG_MIN_SIMILARITY:  # same floor as the RAG few-shot selection
+            scored.append((sim, row))
+    scored.sort(key=lambda t: t[0], reverse=True)
+    statuses = {}
+    for _, row in scored[:limit]:
+        other = db.get_incident(row["id"])
+        statuses[row["id"]] = other.status if other else "new"
+    return [
+        SimilarIncident(
+            incident_id=row["id"],
+            module_id=row["module_id"],
+            title=row["title"],
+            source_url=row["source_url"],
+            similarity=round(sim, 4),
+            label=row["label"],
+            status=statuses[row["id"]],
+            analyst_note=row["analyst_note"],
+            is_clone=row["label"] is True and sim >= threshold and source_domain(row["source_url"]) != domain,
+        )
+        for sim, row in scored[:limit]
+    ]
+
+
+@router.get("/incidents/{incident_id}/versions")
+async def incident_versions(request: Request, incident_id: str) -> dict:
+    """Stored snapshots of the incident's URL with risk-warning presence and the last diff."""
+    inc = _require_incident(request, incident_id)
+    return version_history(request.app.state.db.list_snapshots(inc.source_url), inc.content_hash)
+
+
+def _latest_threat_report(request: Request, incident_id: str) -> dict | None:
+    from app.routers.intelligence import public_row
+
+    with request.app.state.intel.connection() as c:
+        row = c.execute(
+            """SELECT t.* FROM threat_reports t, json_each(t.incident_ids) j WHERE j.value = ?
+               ORDER BY t.created_at DESC, t.rowid DESC LIMIT 1""",
+            (incident_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    report = public_row(row)
+    return report
+
+
+@router.get("/incidents/{incident_id}/evidence-pack")
+async def evidence_pack(request: Request, incident_id: str) -> Response:
+    """ZIP with the stored evidence and a SHA-256 manifest (optionally RFC 3161 time-stamped)."""
+    db = request.app.state.db
+    inc = _require_incident(request, incident_id)
+    versions = version_history(db.list_snapshots(inc.source_url), inc.content_hash)
+    data = await build_evidence_pack(
+        incident=inc,
+        object_store=db.object_store_dir,
+        report=_latest_threat_report(request, incident_id),
+        versions=versions,
+        app_version=request.app.version,
+        tsa_url=request.app.state.settings.evidence_tsa_url or None,
+    )
+    safe_id = "".join(ch for ch in inc.id if ch.isalnum() or ch in "-_")[:80] or "incident"
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="evidence_pack_{safe_id}.zip"'},
+    )
 
 
 @router.patch("/incidents/{incident_id}/status", response_model=Incident)

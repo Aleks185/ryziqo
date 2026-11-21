@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from app.analysis_queue import TERMINAL
+from app.graph import build_graph
 
 router = APIRouter(prefix="/api/v1/intelligence", tags=["intelligence"])
 Verdict = Literal["new","confirmed_fake","requires_review","false_positive"]
@@ -20,14 +21,14 @@ def public_row(row):
     r=dict(row)
     # Reporter identifiers (even truncated to a network) are personal data and the API has no
     # authentication, so they are kept server-side for rate limiting and retention only.
-    for key in ("reporter_ip","response_json","reporter_ip_hash","reporter_user_agent"):
+    for key in ("reporter_ip","response_json","reporter_ip_hash","reporter_user_agent","reporter_key_hash"):
         r.pop(key,None)
     for key in ("redirect_chain","detected_entities","incident_ids","ai_report_json"):
         if key in r: r[key]=json.loads(r[key])
     return r
 
 
-LIST_FIELDS="id,created_at,source_channel,source_type,target_url,canonical_domain,platform,target_server_ip,campaign_id,detected_entities,risk_score,verdict_status,excerpt,origin,incident_ids"
+LIST_FIELDS="id,created_at,source_channel,reporter_display_name,source_type,target_url,canonical_domain,platform,target_server_ip,campaign_id,detected_entities,risk_score,verdict_status,excerpt,origin,incident_ids"
 
 
 @router.get("/reports")
@@ -84,6 +85,12 @@ def review_campaign(request:Request,campaign_id:str,body:Review):
         count=c.execute("UPDATE threat_reports SET verdict_status=? WHERE campaign_id=?",(body.verdict_status,campaign_id)).rowcount
     if not count: raise HTTPException(404,"Nie znaleziono kampanii.")
     return {"updated":count}
+
+
+@router.get("/graph")
+def graph(request:Request,min_score:float=Query(0.5,ge=0.0,le=1.0),limit:int=Query(200,ge=1,le=500)):
+    """Relationship map: incidents, promoters, entities, link targets, referral codes, campaigns."""
+    return build_graph(request.app.state.db,request.app.state.intel,min_score=min_score,limit=limit)
 
 
 @router.get("/diagnostics")

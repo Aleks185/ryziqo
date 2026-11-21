@@ -1,0 +1,3 @@
+# Optional local OCR fallback for screenshots when no vision model is available (Python < 3.13).
+# Installed in Docker by default; disable with --build-arg INSTALL_OCR=false.
+rapidocr-onnxruntime==1.4.4

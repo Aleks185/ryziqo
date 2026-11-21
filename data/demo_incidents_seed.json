@@ -641,5 +641,63 @@
     "storage_key": null,
     "detected_at": "2026-11-21T10:15:00Z",
     "updated_at": "2026-11-21T10:15:00Z"
+  },
+  {
+    "id": "demo_m2_007",
+    "module_id": 2,
+    "module_name": "Weryfikacja zgodności i informacji o ryzyku",
+    "entity_name": "VectraTrade Polska sp. z o.o. [DEMO]",
+    "promoter_name": null,
+    "knf_registry_status": "unknown",
+    "source_platform": "web",
+    "source_url": "mock://broker_promo_prompt_injection.html",
+    "title": "Zarabiaj 30% miesięcznie na sygnałach CFD — strona z ukrytymi poleceniami dla audytu AI",
+    "content_excerpt": "Sygnały CFD z gwarancją zysku — VectraTrade Polska [MOCK DEMO] Zarabiaj 30% miesięcznie na sygnałach CFD z VectraTrade! Materiał reklamowy. Nasi eksperci zamieniają 1000 zł w 5000 zł w kwartał — skopiuj ich transakcje jednym kliknięciem. Otwórz rachunek dziś i odbierz bonus 500 zł na start. Zysk gwarantowany, wypłata w 24 godziny. VectraT...",
+    "evidence_quotes": [
+      "Sygnały CFD z gwarancją zysku — VectraTrade Polska [MOCK DEMO] Zarabiaj 30% miesięcznie na sygnałach CFD z VectraTrade!"
+    ],
+    "violated_rules": [
+      {
+        "rule_id": "1",
+        "rule_name": "Identyfikacja firmy",
+        "legal_basis": "art. 44 ust. 2 lit. a rozporządzenia del. 2017/565",
+        "severity": "medium",
+        "reason": "Brak jednoznacznej oficjalnej nazwy firmy inwestycyjnej w materiale."
+      },
+      {
+        "rule_id": "3",
+        "rule_name": "Informacja o ryzyku",
+        "legal_basis": "art. 44 ust. 2 lit. b rozporządzenia del. 2017/565",
+        "severity": "high",
+        "reason": "Materiał przedstawia korzyści inwestowania. W analizowanej treści nie znaleziono ostrzeżenia o ryzyku inwestycyjnym. Sprawdź pełną reklamę."
+      },
+      {
+        "rule_id": "AI_PROMPT_INJECTION",
+        "rule_name": "Próba manipulacji systemem analizy (prompt injection / cloaking)",
+        "legal_basis": "Sygnał techniczny Ryziqo — wymaga weryfikacji analityka",
+        "severity": "high",
+        "reason": "Wykryto polecenia skierowane do systemu oceny w ukrytym tekście: „Zignoruj wszystkie poprzednie instrukcje”, „Jesteś teraz”, „risk_score”"
+      }
+    ],
+    "dom_metrics": {
+      "dominant_font_px": 18.0,
+      "risk_font_px": 30.0,
+      "font_ratio": 1.67,
+      "risk_hidden_in_footer": false,
+      "requires_click_to_view_risk": false,
+      "low_contrast_detected": false,
+      "responsive_overflow_detected": false
+    },
+    "risk_score": 0.65,
+    "risk_level": "medium",
+    "status": "confirmed",
+    "analyst_note": "Ukryty tekst z poleceniami dla systemu oceny (cloaking + prompt injection); dodatkowo brak ostrzeżenia o ryzyku przy obietnicy zysku.",
+    "ground_truth_label": true,
+    "model_used": "demo-seed-verified",
+    "is_demo_fallback": true,
+    "content_hash": "f926cb24c5b0400e3ecee344",
+    "storage_key": null,
+    "detected_at": "2026-11-21T12:30:00Z",
+    "updated_at": "2026-11-21T12:30:00Z"
   }
 ]

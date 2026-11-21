@@ -1,6 +1,6 @@
 # Ryziqo — Zamrożony Kontrakt API i WebSocket (`CONTRACT.md`)
 
-**Wersja:** `1.2.0` (HackNation UKNF 2026) — rozszerzenia addytywne względem `1.0.0` (nowe endpointy, bez zmian istniejących pól i ścieżek; zob. [Historia zmian](#5-historia-zmian))  
+**Wersja:** `1.4.0` (HackNation UKNF 2026) — rozszerzenia addytywne względem `1.0.0` (nowe endpointy, bez zmian istniejących pól i ścieżek; zob. [Historia zmian](#5-historia-zmian))  
 **Zasada współpracy:** Po zamrożeniu nie zmieniamy jednostronnie nazw pól, typów ani ścieżek. Ewentualne rozszerzenia wyłącznie jako opcjonalne pola po obustronnej zgodzie.
 
 ---
@@ -71,7 +71,7 @@ Każdy rekord zwracany przez API i agregator wyników Modułów 1–3 ma ujednol
 - `source_platform`: `"web"` | `"facebook"` | `"instagram"` | `"tiktok"` | `"youtube"` | `"mock_demo"` | `"manual"` *(od 1.1.0 — treść wklejona przez analityka)* | `"x"` *(od 1.2.0)*
 - `risk_score`: liczba zmiennoprzecinkowa **`0.00` – `1.00`** (wskaźnik modelu AI + reguł; nie stanowi wiążącego rozstrzygnięcia prawnego).
 - `risk_level`: `"low"` (`< 0.40`) | `"medium"` (`0.40 – 0.69`) | `"high"` (`>= 0.70`) — domyślna etykieta; **Panel Kalibracji w UI przelicza flagowanie dynamicznie wg suwaka `threshold`**.
-- `violated_rules[].rule_id`: identyfikatory kryteriów UKNF `"1"`–`"18"` (w tym `"12a"`, `"12b"`) oraz reguły modułów (`M1_*`, `M3_*`). Rozszerzenie addytywne (bez zmiany schematu): sygnały semantyczne LLM potwierdzone cytatem (`AI_*`, np. `AI_M3_SUCCESS_FEE`, `AI_PROMPT_INJECTION`), sygnały VLM (`AI_VLM_*`), `CAMPAIGN_CLONE_MATCH`, `KNF_WARNING_LIST_MATCH`, `KNF_IMPERSONATION_SUSPECT`. Klient powinien traktować nieznane `rule_id` jako zwykłe naruszenie.
+- `violated_rules[].rule_id`: identyfikatory kryteriów UKNF `"1"`–`"18"` (w tym `"12a"`, `"12b"`) oraz reguły modułów (`M1_*`, `M3_*`). Rozszerzenie addytywne (bez zmiany schematu): sygnały semantyczne LLM potwierdzone cytatem (`AI_*`, np. `AI_M3_SUCCESS_FEE`, `AI_PROMPT_INJECTION`), sygnały VLM (`AI_VLM_*`), `CAMPAIGN_CLONE_MATCH`, `KNF_WARNING_LIST_MATCH`, `KNF_IMPERSONATION_SUSPECT`, *(od 1.4.0)* `RISK_WARNING_REMOVED` (ostrzeżenie o ryzyku usunięte lub zmniejszone względem poprzedniej wersji strony). Klient powinien traktować nieznane `rule_id` jako zwykłe naruszenie.
 - `evidence_quotes[]`: dosłowne cytaty z treści; wpisy techniczne mają prefiks `[AI]`, `[AI-Context]`, `[AI-Guard]`, `[VLM]`, `[KNF]`, `[Klon]`, `[Wtórne]`.
 - `status`: `"new"` | `"in_review"` | `"confirmed"` | `"false_positive"` | `"dismissed"`
 - `ground_truth_label`: `true` (rzeczywiste naruszenie referencyjne) | `false` (materiał poprawny / neutralny) | `null` (brak etykiety referencyjnej). Służy do wyliczania macierzy **TP / FP / TN / FN** w Panelu Kalibracji.
@@ -121,6 +121,17 @@ Zwraca listę incydentów z opcjonalnym filtrowaniem.
 
 ### `GET /api/v1/incidents/{incident_id}`
 Zwraca pojedynczy obiekt `Incident` wraz z `raw_text_preview`.
+- *(od 1.4.0)* Dodatkowe pola `IncidentDetail`: `prompt_injection_snippets: string[]` (wykryte polecenia dla systemu oceny), `hidden_text_snippets: string[]` (tekst niewidoczny dla użytkownika, wyłączony z analizy) oraz `quote_checks: [{"quote", "match"}]`, gdzie `match` ∈ `exact` | `fuzzy` | `missing` | `system` (wynik strażnika anty-halucynacyjnego; `system` = wpis techniczny z prefiksem `[`).
+
+### `GET /api/v1/incidents/{incident_id}/similar` *(od 1.4.0)*
+Do 5 (`limit` 1–20) incydentów zweryfikowanych przez analityka (etykieta lub status `confirmed` / `false_positive`), najbliższych treściowo; ta sama pula i próg (≥ 0,45) co dynamiczne przykłady few-shot (RAG).
+- Element: `{"incident_id", "module_id", "title", "source_url", "similarity", "label", "status", "analyst_note", "is_clone"}`; `is_clone` = potwierdzone naruszenie na innej domenie z podobieństwem ≥ `AI_CLONE_SIMILARITY_THRESHOLD`.
+
+### `GET /api/v1/incidents/{incident_id}/versions` *(od 1.4.0)*
+Historia zapisanych wersji adresu incydentu (najstarsza pierwsza): `{"versions": [{"content_hash", "fetched_at", "has_risk_warning", "risk_font_px", "is_current"}], "last_change": null | {"from", "to", "warning_change": null | "removed" | "shrunk", "removed": string[], "added": string[]}}` (zdania usunięte i dodane między dwiema ostatnimi wersjami).
+
+### `GET /api/v1/incidents/{incident_id}/evidence-pack` *(od 1.4.0)*
+Plik `application/zip` (`evidence_pack_<id>.zip`): `source.html`, `extraction.json`, `screenshots/*`, `incident.json`, `report.json` (najnowsze zgłoszenie z bazy zgłoszeń, jeśli istnieje), `versions.json`, `manifest.json` (SHA-256 i rozmiar każdego pliku), `manifest.sha256`, opcjonalnie `manifest.tsr` (znacznik czasu RFC 3161 dla `manifest.json`, gdy ustawiono `EVIDENCE_TSA_URL`; błąd TSA trafia do `manifest.notes`). `404` dla nieznanego incydentu.
 
 ### `PATCH /api/v1/incidents/{incident_id}/status`
 Aktualizuje status incydentu w SQLite i rozgłasza zdarzenie `status_updated` przez WebSocket.
@@ -141,6 +152,7 @@ Ustawia etykietę referencyjną analityka używaną w kalibracji progu (TP/FP/TN
 ### `GET /api/v1/stats`
 Zwraca zagregowane metryki do KPI i wykresów trendów (Recharts/Chart.js).
 - Query param: `threshold` (float, domyślnie `0.50`)
+- *(od 1.4.0)* Pole `verified_decisions`: liczba decyzji analityków (etykieta lub status `confirmed` / `false_positive`) wykorzystywanych przez RAG.
 - Odpowiedź:
 ```json
 {
@@ -212,6 +224,7 @@ Synchroniczna analiza treści wklejonej przez analityka (reklama, post, opis wid
   - `content`: wymagane, `20`–`20000` znaków. Treść jest escapowana — znaczniki HTML traktowane są jako tekst.
   - `title`, `source_url` (etykieta pochodzenia, **nie jest pobierana**; domyślnie `"manual://text"`), `ground_truth_label`: opcjonalne.
   - `module_ids`: niepusta lista z `1` | `2` | `3` (domyślnie wszystkie).
+  - *(od 1.4.0, wszystkie endpointy analizy)* `share_mode`: `null` (domyślnie, dotychczasowe zachowanie) | `"none"` (tylko werdykt: nic nie jest zapisywane, brak alertów WS i wpisu w bazie zgłoszeń) | `"anonymous"` (zapis bez IP, User-Agent i skrótu IP zgłaszającego) | `"signed"` (wymaga `reporter_display_name` do 40 znaków i `reporter_key` — losowego klucza przeglądarki, przechowywanego wyłącznie jako HMAC; `422` przy braku). Dla `source_channel: "public_form"` numery PESEL i kart płatniczych (z poprawną sumą kontrolną) są maskowane przed analizą.
 - Odpowiedź (`200`):
 ```json
 {
@@ -230,7 +243,7 @@ Synchroniczne pobranie **jednego publicznego URL** (walidacja anty-SSRF na każd
 
 ### Analiza zrzutów i postęp zadań
 
-Ten sam endpoint tekstowy przyjmuje również obiekt z polem `image_base64`, opcjonalnym `title` i listą `module_ids`. Obraz PNG, JPEG lub WebP może mieć do 10 MiB i 20 milionów pikseli. Model wizyjny odczytuje treść obrazu.
+Ten sam endpoint tekstowy przyjmuje również obiekt z polem `image_base64`, opcjonalnym `title` i listą `module_ids`. Obraz PNG, JPEG lub WebP może mieć do 10 MiB i 20 milionów pikseli. Model wizyjny odczytuje treść obrazu. *(od 1.4.0)* Gdy model wizyjny jest niedostępny, tekst odczytuje lokalny OCR (RapidOCR), a `report.limitations` zawiera informację, że logotypy nie były oceniane; `503` tylko wtedy, gdy nie działa ani model wizyjny, ani OCR.
 
 Obok `items` i `mode` odpowiedź zawiera `report` z polami `source_type`, `status`, `summary`, `findings`, `limitations` i `requires_human_review`. W raporcie `risk_score` jest liczbą całkowitą od 0 do 100. Incydenty w `items` nadal używają skali 0–1.
 
@@ -238,6 +251,9 @@ Obok `items` i `mode` odpowiedź zawiera `report` z polami `source_type`, `statu
 - `GET /api/v1/analyze/jobs/{job_id}/events` zwraca SSE z numerowanymi zdarzeniami `queued`, `status`, `token`, `completed` i `error`. Pole `data` zawiera JSON. Zdarzenie `completed` przekazuje pełną odpowiedź analizy. Nagłówek `Last-Event-ID` umożliwia wznowienie strumienia w granicach bufora zadania.
 - `DELETE /api/v1/analyze/jobs/{job_id}` anuluje zadanie. Rozłączenie odbiorcy SSE pozwala ponownie podłączyć się do działającego zadania. Zadania są lokalne dla pojedynczego procesu API.
 
+
+### `GET /api/v1/intelligence/graph` *(od 1.4.0)*
+Mapa powiązań incydentów (`min_score` 0–1, domyślnie `0.5`; `limit` do 500): `{"nodes": [{"id", "type", "label", "weight", ...}], "edges": [{"source", "target", "type"}], "truncated"}`. Typy węzłów: `incident`, `promoter`, `entity`, `domain`, `link_domain`, `referral_code`, `campaign`, `warning_list`; krawędzie: `published_on`, `promotes`, `advertises`, `links_to`, `uses_code`, `in_campaign`, `on_warning_list`, `clone_of`. Węzły pomocnicze połączone tylko z jednym incydentem (domeny, linki, kody) są pomijane. Wpisy bazy zgłoszeń mają od 1.4.0 pole `reporter_display_name` (pseudonim przy zgłoszeniu podpisanym).
 
 ### `GET /api/v1/crawl/jobs`
 Zwraca listę zadań kolejki, dostępnych plików mock-demo oraz najbliższy termin uruchomienia APScheduler.
@@ -299,6 +315,7 @@ Format komunikatów serwera:
 
 | Wersja | Zmiany |
 |---|---|
+| `1.4.0` | `IncidentDetail.prompt_injection_snippets`, `hidden_text_snippets`, `quote_checks`; `GET /incidents/{id}/similar`, `/versions`, `/evidence-pack`; `StatsResponse.verified_decisions`; `share_mode`, `reporter_display_name`, `reporter_key` w żądaniach analizy; fallback OCR dla zrzutów; `GET /api/v1/intelligence/graph`; reguła `RISK_WARNING_REMOVED`. Bez usuwania istniejących pól i ścieżek. |
 | `1.3.0` | Crawler: pola `origin`, `follow_depth`, `follow_max_pages` w `CrawlTriggerRequest`; `origin` w `CrawlJobRecord`; `409` dla duplikatu w kolejce; `follow_depth` w `WatchTarget`; `POST /api/v1/watchlist/seed`; `/api/v1/discovery/*`; `POST /api/v1/knf-registry/refresh`; `DomMetrics.responsive_overflow_viewports`. Bez usuwania istniejących pól i ścieżek. |
 | `1.2.0` | Filtr `risk_level` w `GET /api/v1/incidents`; endpointy `/api/v1/watchlist*` i `GET /api/v1/reports/{module_id}`; nowa wartość `source_platform: "x"`. Bez zmian istniejących pól, typów i ścieżek. |
 | `1.1.0` | Dodane endpointy `POST /api/v1/analyze/text`, `POST /api/v1/analyze/url`, `PATCH /api/v1/incidents/{incident_id}/label`; nowa wartość `source_platform: "manual"`; `analysis_complete` może zawierać `extra.incident_ids`. Bez zmian istniejących pól, typów i ścieżek. |

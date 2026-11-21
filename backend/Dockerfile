@@ -2,6 +2,8 @@ FROM python:3.12-slim
 
 # Optional headless Chromium for JS-rendered pages (adds ~400 MB): --build-arg INSTALL_PLAYWRIGHT=true
 ARG INSTALL_PLAYWRIGHT=false
+# Local OCR fallback for screenshots without a vision model (~120 MB with OpenCV/ONNX Runtime)
+ARG INSTALL_OCR=true
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -11,8 +13,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Copy dependency lists first for layer caching (runtime only — no test tooling in the image)
-COPY backend/requirements.txt backend/requirements-playwright.txt /app/
+COPY backend/requirements.txt backend/requirements-playwright.txt backend/requirements-ocr.txt /app/
 RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+
+RUN if [ "$INSTALL_OCR" = "true" ]; then \
+        apt-get update \
+        && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+        && rm -rf /var/lib/apt/lists/* \
+        && pip install -r /app/requirements-ocr.txt; \
+    fi
 
 RUN if [ "$INSTALL_PLAYWRIGHT" = "true" ]; then \
         pip install -r /app/requirements-playwright.txt \

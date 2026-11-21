@@ -15,6 +15,7 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
 | `beautifulsoup4` | Parser HTML i ekstrakcja metryk DOM/CSS | MIT |
 | `apscheduler` | Harmonogram cyklicznych zadań (Cron/Interval) | MIT |
 | `playwright` (opcjonalnie, `INSTALL_PLAYWRIGHT=true`) + Chromium | Render stron JS, computed styles, zrzuty ekranu dla VLM | Apache-2.0 (Chromium: BSD-3-Clause i licencje komponentów) |
+| `rapidocr-onnxruntime` (opcjonalnie, `INSTALL_OCR=true`) + `onnxruntime`, `opencv-python` | Lokalny OCR zrzutów ekranu bez modelu wizyjnego (modele PP-OCRv4 w paczce) | Apache-2.0 (onnxruntime: MIT, OpenCV: Apache-2.0) |
 | `sqlite3` (stdlib) | Relacyjna baza metadanych | PSF |
 | `pytest` | Testy jednostkowe i integracyjne | MIT |
 | `pip-audit` | Audyt podatności łańcucha dostaw (PyPA) | Apache-2.0 |
@@ -31,6 +32,7 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
 | `tailwindcss`, `tailwind-merge`, `class-variance-authority` | Stylowanie | MIT |
 | `@radix-ui/*` (shadcn/ui) | Dostępne komponenty UI | MIT |
 | `recharts` | Wykresy trendów | MIT |
+| `d3-force` | Układ siłowy grafu powiązań kampanii | ISC |
 | `sonner` | Powiadomienia (toast) | MIT |
 | `lucide-react` | Ikony | ISC |
 | `date-fns` | Formatowanie dat | MIT |

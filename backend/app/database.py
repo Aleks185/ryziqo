@@ -17,6 +17,7 @@ from app.models import (
     Incident,
     IncidentDetail,
     IncidentStatus,
+    QuoteCheck,
     StatsResponse,
     TopRuleCount,
     TrendPoint,
@@ -24,6 +25,7 @@ from app.models import (
     WatchTarget,
 )
 from app.ai.preprocessor import cosine_similarity
+from app.ai.schemas import verify_quote_in_document
 from app.scraper.urlnorm import canonicalize_url
 
 
@@ -256,7 +258,8 @@ class Database:
             names.append(name)
         return names
 
-    def read_raw_text_preview(self, storage_key: str | None) -> str | None:
+    def read_artifact(self, storage_key: str | None) -> dict[str, Any] | None:
+        """Normalized JSON artifact saved by `save_content_object` (None when missing or unreadable)."""
         if not storage_key:
             return None
         json_path = self.object_store_dir / Path(storage_key).name
@@ -264,10 +267,13 @@ class Database:
             return None
         try:
             data = json.loads(json_path.read_text(encoding="utf-8"))
-            text = data.get("normalized_text", "")
-            return text[:2000] if isinstance(text, str) else None
-        except Exception:
+        except (OSError, json.JSONDecodeError):
             return None
+        return data if isinstance(data, dict) else None
+
+    def read_raw_text_preview(self, storage_key: str | None) -> str | None:
+        text = (self.read_artifact(storage_key) or {}).get("normalized_text", "")
+        return text[:2000] if isinstance(text, str) else None
 
     def find_existing_incident_by_hash(self, module_id: int, content_hash: str) -> str | None:
         with self._connect() as conn:
@@ -547,8 +553,74 @@ class Database:
         if not row:
             return None
         base = self._row_to_incident(row)
-        raw_preview = self.read_raw_text_preview(base.storage_key)
-        return IncidentDetail(**base.model_dump(), raw_text_preview=raw_preview)
+        artifact = self.read_artifact(base.storage_key) or {}
+        text = artifact.get("normalized_text")
+        text = text if isinstance(text, str) else ""
+        extracted = artifact.get("extracted") if isinstance(artifact.get("extracted"), dict) else {}
+
+        def strings(key: str) -> list[str]:
+            value = extracted.get(key)
+            return [str(v)[:300] for v in value][:10] if isinstance(value, list) else []
+
+        checks = [
+            QuoteCheck(
+                quote=q,
+                match="system" if q.startswith("[") else verify_quote_in_document(q, text) if text else "missing",
+            )
+            for q in base.evidence_quotes
+        ]
+        return IncidentDetail(
+            **base.model_dump(),
+            raw_text_preview=text[:2000] if text else None,
+            prompt_injection_snippets=strings("prompt_injection_snippets"),
+            hidden_text_snippets=strings("hidden_text_snippets"),
+            quote_checks=checks,
+        )
+
+    def get_snapshot_vectors(self, content_hash: str | None) -> list[list[float]]:
+        """Stored vectors (Ollama and/or local 128-dim) of one content snapshot."""
+        if not content_hash:
+            return []
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT embedding_json, local_embedding_json FROM content_snapshots WHERE content_hash = ?",
+                (content_hash,),
+            ).fetchone()
+        vectors: list[list[float]] = []
+        for raw in (row or (None, None)):
+            try:
+                vec = json.loads(raw) if raw else None
+            except (TypeError, json.JSONDecodeError):
+                vec = None
+            if isinstance(vec, list) and vec:
+                vectors.append(vec)
+        return vectors
+
+    def list_snapshots(self, source_url: str, limit: int = 20) -> list[dict[str, Any]]:
+        """Stored versions of one URL, oldest first, with their text and DOM metrics."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT content_hash, storage_key, fetched_at FROM content_snapshots
+                WHERE source_url = ? ORDER BY fetched_at DESC, rowid DESC LIMIT ?
+                """,
+                (source_url, limit),
+            ).fetchall()
+        versions = []
+        for row in reversed(rows):
+            artifact = self.read_artifact(row["storage_key"]) or {}
+            extracted = artifact.get("extracted") if isinstance(artifact.get("extracted"), dict) else {}
+            text = artifact.get("normalized_text")
+            versions.append(
+                {
+                    "content_hash": row["content_hash"],
+                    "storage_key": row["storage_key"],
+                    "fetched_at": row["fetched_at"],
+                    "normalized_text": text if isinstance(text, str) else "",
+                    "dom_metrics": extracted.get("dom_metrics") if isinstance(extracted.get("dom_metrics"), dict) else {},
+                }
+            )
+        return versions
 
     def update_incident_status(
         self, incident_id: str, status: IncidentStatus, analyst_note: str | None = None
@@ -603,6 +675,7 @@ class Database:
         flagged_count = 0
         tp = fp = tn = fn = 0
         labeled_total = 0
+        verified_decisions = 0
 
         for inc in incidents:
             by_module[str(inc.module_id)] += 1
@@ -623,6 +696,8 @@ class Database:
             for rule in inc.violated_rules:
                 rule_counts[(rule.rule_id, rule.rule_name)] += 1
 
+            if inc.ground_truth_label is not None or inc.status in ("confirmed", "false_positive"):
+                verified_decisions += 1
             if inc.ground_truth_label is not None:
                 labeled_total += 1
                 if is_flagged and inc.ground_truth_label:
@@ -677,6 +752,7 @@ class Database:
                 recall=recall,
                 f1_score=f1,
             ),
+            verified_decisions=verified_decisions,
         )
 
     # --- Crawl jobs ---
