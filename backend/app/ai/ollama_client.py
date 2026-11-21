@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import time
+from contextlib import asynccontextmanager
+from app.analysis_queue import current_job, status
 import logging
 import re
 from typing import Any
@@ -23,6 +27,9 @@ class OllamaClient:
         self.base_url = settings.ollama_base_url.rstrip("/")
         self.preferred_model = settings.ollama_model
         self.embed_model = settings.ollama_embed_model
+        self.inference_lock = asyncio.Lock()
+        self.loaded_model = None
+        self.num_thread = settings.ollama_num_thread
         self.timeout = settings.ollama_timeout_seconds
         self.num_predict = settings.ollama_num_predict
         self.num_ctx = settings.ollama_num_ctx
@@ -64,21 +71,54 @@ class OllamaClient:
             return False
 
     def _options(self) -> dict[str, Any]:
-        return {"temperature": 0.1, "num_predict": self.num_predict, "num_ctx": self.num_ctx}
+        return {"num_thread": self.num_thread, "temperature": 0.1, "num_predict": self.num_predict, "num_ctx": self.num_ctx}
 
     async def _post_generate(self, body: dict[str, Any]) -> dict[str, Any] | None:
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.post(f"{self.base_url}/api/generate", json=body)
-            if resp.status_code in (400, 500) and isinstance(body.get("format"), dict):
-                # Older Ollama: schema not understood -> retry once with plain JSON mode
-                logger.info("Ollama odrzuciła JSON Schema w polu 'format' — ponawiam z format=json.")
-                if resp.status_code == 400:  # permanent (unsupported); a 500 may be transient
-                    self._schema_format_supported = False
-                resp = await client.post(
-                    f"{self.base_url}/api/generate", json={**body, "format": "json"}
-                )
-            resp.raise_for_status()
-            return self._parse_json_response(resp.json().get("response", ""))
+        async with self.session(body["model"]) as client:
+            body.update(keep_alive="1m", stream=True)
+            for attempt in range(2):
+                async with client.stream("POST", f"{self.base_url}/api/generate", json=body) as resp:
+                    if attempt == 0 and resp.status_code in (400, 500) and isinstance(body["format"], dict):
+                        if resp.status_code == 400:
+                            self._schema_format_supported = False
+                        body["format"] = "json"
+                        continue
+                    resp.raise_for_status()
+                    parts = []
+                    job = current_job.get()
+                    async for line in resp.aiter_lines():
+                        if not line:
+                            continue
+                        part = json.loads(line)
+                        if part.get("error"):
+                            raise ValueError("Ollama nie ukończyła analizy.")
+                        if part.get("response"):
+                            if not parts:
+                                status("analyzing")
+                            parts.append(part["response"])
+                            if job:
+                                if job.metrics["ttft_s"] is None:
+                                    job.metrics["ttft_s"] = time.monotonic() - job.started
+                                job.emit("token", part["response"])
+                        if part.get("done"):
+                            if job:
+                                job.metrics["load_s"] += part.get("load_duration", 0) / 1e9
+                            return self._parse_json_response("".join(parts))
+        return None
+
+    @asynccontextmanager
+    async def session(self, model):
+        status("queued")
+        async with self.inference_lock:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                if self.loaded_model and self.loaded_model != model:
+                    unload = await client.post(f"{self.base_url}/api/generate",
+                                               json={"model": self.loaded_model, "keep_alive": 0})
+                    unload.raise_for_status()
+                self.loaded_model = model
+                status("loading_model")
+                async with asyncio.timeout(self.timeout):
+                    yield client
 
     async def generate_json(
         self,
@@ -174,10 +214,10 @@ class OllamaClient:
         if not self.is_available:
             return None
         try:
-            async with httpx.AsyncClient(timeout=6.0) as client:
+            async with self.session(self.embed_model) as client:
                 resp = await client.post(
                     f"{self.base_url}/api/embeddings",
-                    json={"model": self.embed_model, "prompt": text[:1500]},
+                    json={"model": self.embed_model, "prompt": text[:1500], "keep_alive": "1m"},
                 )
                 if resp.status_code != 200:
                     return None

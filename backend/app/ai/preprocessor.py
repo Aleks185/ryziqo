@@ -116,6 +116,7 @@ class PreprocessedDocument:
     local_embedding: list[float] = field(default_factory=list)
     # JPEG screenshots from Playwright (desktop, mobile) for the optional VLM analysis
     screenshots: list[bytes] = field(default_factory=list)
+    vision_findings: dict | None = None
 
 
 def _hex_luminance(hex_color: str) -> float:
@@ -474,7 +475,7 @@ def preprocess_html(
 
     # Read optional metadata hints (used by local mock-sites)
     platform_meta = soup.find("meta", attrs={"name": "investwatch-platform"})
-    if isinstance(platform_meta, Tag) and platform_meta.get("content"):
+    if is_mock_source and isinstance(platform_meta, Tag) and platform_meta.get("content"):
         source_platform = str(platform_meta["content"]).strip().lower()
 
     promoter_meta = soup.find("meta", attrs={"name": "investwatch-promoter"})
@@ -486,7 +487,7 @@ def preprocess_html(
 
     gt_meta = soup.find("meta", attrs={"name": "investwatch-ground-truth"})
     gt_hint: bool | None = None
-    if isinstance(gt_meta, Tag) and gt_meta.get("content"):
+    if is_mock_source and isinstance(gt_meta, Tag) and gt_meta.get("content"):
         val = str(gt_meta["content"]).strip().lower()
         if val in ("true", "1", "yes"):
             gt_hint = True
@@ -524,7 +525,11 @@ def preprocess_html(
         # A risk warning the user cannot see at all is hidden risk (UKNF criterion 6)
         dom_metrics.risk_hidden_in_footer = True
 
-    raw_text = soup.get_text(" ", strip=True)
+    for nav in soup.find_all("nav"):
+        if not RISK_KEYWORDS_RE.search(nav.get_text(" ", strip=True)):
+            nav.decompose()
+    description = soup.find("meta", attrs={"name": "description"})
+    raw_text = (str(description.get("content", "")) + " " if description else "") + soup.get_text(" ", strip=True)
     normalized = clean_text(raw_text)
     obfuscation_detected = normalized != re.sub(
         r"\s+", " ", unicodedata.normalize("NFKC", raw_text)

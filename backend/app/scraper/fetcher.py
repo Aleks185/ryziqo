@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import html
+from datetime import datetime, timezone
 import logging
 import random
+import time
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -15,7 +19,7 @@ from bs4 import BeautifulSoup
 
 from app.config import Settings
 from app.scraper.browser import BrowserRenderer, RenderResult
-from app.scraper.ssrf import SSRFError, validate_public_url
+from app.scraper.ssrf import SSRFError, pinned_request, validate_public_url
 
 logger = logging.getLogger("investwatch.scraper")
 
@@ -44,17 +48,28 @@ ETHICAL_USER_AGENTS = [
 
 
 @dataclass
+class HttpSnapshot:
+    expires: float
+    etag: str
+    encoding: str
+    data: bytes
+
+
+@dataclass
 class FetchedPage:
     source_url: str
     final_url: str
     source_platform: str
     raw_html: str
     status_code: int
+    fetched_at: str | None = None
+    payload_sha256: str | None = None
     used_playwright: bool = False
     is_mock_source: bool = False
     playwright_dom_metrics: dict[str, object] | None = None
     # JPEG screenshots [desktop, mobile] from Playwright when OLLAMA_VISION_ENABLED=true
     screenshots: list[bytes] | None = None
+    vision_findings: dict | None = None
 
 
 def build_manual_text_page(content: str, title: str | None, source_url: str | None) -> FetchedPage:
@@ -99,6 +114,7 @@ class PageFetcher:
         self.settings = settings
         self._last_public_request_ts: float = 0.0
         self._rate_lock = asyncio.Lock()
+        self._snapshots: OrderedDict[str, HttpSnapshot] = OrderedDict()
         self._renderer = BrowserRenderer(settings)
 
     async def _respect_rate_limit(self) -> None:
@@ -160,7 +176,7 @@ class PageFetcher:
 
     async def fetch_public_url(self, url: str, use_playwright: bool = False) -> FetchedPage:
         """Fetch a public HTTP(S) page with strict anti-SSRF validation on every redirect."""
-        current_url = validate_public_url(url)
+        current_url = await asyncio.to_thread(validate_public_url, url)
         await self._respect_rate_limit()
 
         headers = {
@@ -174,36 +190,57 @@ class PageFetcher:
         status_code = 200
         proxy = self.pick_proxy()
 
-        async with httpx.AsyncClient(
+        async with asyncio.timeout(self.settings.crawler_timeout_seconds), httpx.AsyncClient(
             timeout=timeout, follow_redirects=False, proxy=proxy, trust_env=False
         ) as client:
             for hop in range(self.settings.crawler_max_redirects + 1):
-                validate_public_url(current_url)
-                async with client.stream("GET", current_url, headers=headers) as resp:
+                current_url = await asyncio.to_thread(validate_public_url, current_url)
+                cached = self._snapshots.get(current_url)
+                if cached and cached.expires <= time.monotonic():
+                    self._snapshots.pop(current_url)
+                    cached = None
+                request_headers = {**headers, "If-None-Match": cached.etag} if cached else headers
+                async with client.stream("GET", **pinned_request(current_url, request_headers)) as resp:
                     status_code = resp.status_code
+                    if status_code == 304 and cached:
+                        raw_bytes.extend(cached.data)
+                        encoding = cached.encoding
+                        status_code = 200
+                        break
                     if resp.is_redirect and "location" in resp.headers:
                         if hop >= self.settings.crawler_max_redirects:
                             raise SSRFError("Przekroczono maksymalną liczbę przekierowań HTTP.")
                         next_url = urljoin(current_url, resp.headers["location"])
-                        current_url = validate_public_url(next_url)
+                        current_url = await asyncio.to_thread(validate_public_url, next_url)
                         continue
 
                     resp.raise_for_status()
                     content_type = resp.headers.get("content-type", "").lower()
-                    if content_type and not any(
+                    if not any(
                         t in content_type for t in ("text/html", "text/plain", "application/xhtml")
                     ):
                         raise ValueError(f"Nieobsługiwany typ treści: {content_type}")
 
-                    async for chunk in resp.aiter_bytes():
+                    encoding = resp.encoding or "utf-8"
+                    async for chunk in resp.aiter_bytes(chunk_size=65536):
                         raw_bytes.extend(chunk)
                         if len(raw_bytes) > self.settings.crawler_max_bytes:
                             raise ValueError(
                                 f"Przekroczono limit rozmiaru odpowiedzi ({self.settings.crawler_max_bytes} B)."
                             )
+                    # Keep at most four bounded representations. Only strong ETags validate byte equality.
+                    self._snapshots.pop(current_url, None)
+                    etag = resp.headers.get("etag", "")
+                    if etag.startswith('"') and "no-store" not in resp.headers.get("cache-control", "").lower() and not resp.headers.get("vary"):
+                        self._snapshots[current_url] = HttpSnapshot(time.monotonic()+900, etag, encoding, bytes(raw_bytes))
+                        if len(self._snapshots) > 4:
+                            self._snapshots.popitem(last=False)
                     break
 
-        html = raw_bytes.decode("utf-8", errors="replace")
+        try:
+            html = raw_bytes.decode(encoding, errors="replace")
+        except LookupError:
+            html = raw_bytes.decode("utf-8", errors="replace")
         pw_metrics: dict[str, object] | None = None
         screenshots: list[bytes] | None = None
         used_pw = False
@@ -227,6 +264,8 @@ class PageFetcher:
             source_platform=detect_platform_from_url(current_url),
             raw_html=html,
             status_code=status_code,
+            fetched_at=datetime.now(timezone.utc).isoformat(),
+            payload_sha256=hashlib.sha256(raw_bytes).hexdigest(),
             used_playwright=used_pw,
             is_mock_source=False,
             playwright_dom_metrics=pw_metrics,
@@ -284,7 +323,7 @@ class PageFetcher:
                         if _host(current) in LINK_IN_BIO_HOSTS:
                             resolved.extend(await self._link_in_bio_targets(client, current, headers))
                             break
-                        async with client.stream("GET", current, headers=headers) as resp:
+                        async with client.stream("GET", **pinned_request(current, headers)) as resp:
                             location = resp.headers.get("location")
                             if not (resp.is_redirect and location):
                                 if current != url:
@@ -299,7 +338,7 @@ class PageFetcher:
         self, client: httpx.AsyncClient, url: str, headers: dict[str, str]
     ) -> list[str]:
         raw = bytearray()
-        async with client.stream("GET", url, headers=headers) as resp:
+        async with client.stream("GET", **pinned_request(url, headers)) as resp:
             if resp.status_code != 200:
                 return []
             async for chunk in resp.aiter_bytes():

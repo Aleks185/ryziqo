@@ -72,6 +72,8 @@ class VisionOutcome:
 
 
 async def analyze_screenshots(ollama: OllamaClient, doc: PreprocessedDocument) -> VisionOutcome | None:
+    if doc.vision_findings is not None:
+        return vision_outcome(VisionFindings.model_validate(doc.vision_findings))
     if not doc.screenshots:
         return None
     images = [base64.b64encode(img).decode("ascii") for img in doc.screenshots[:2]]

@@ -21,6 +21,8 @@ from urllib.parse import unquote, urljoin, urlparse
 
 from app.ai.preprocessor import RISK_KEYWORDS_RE
 from app.config import Settings
+import httpx
+from app.scraper.ssrf import pinned_request
 from app.scraper.ssrf import SSRFError, validate_public_url
 
 logger = logging.getLogger("investwatch.browser")
@@ -238,38 +240,38 @@ class BrowserRenderer:
                     # validating every hop, and only the final response is handed to the browser.
                     try:
                         hop_url = request.url
-                        method = request.method
-                        response = await route.fetch(max_redirects=0)
-                        for _ in range(self.settings.crawler_max_redirects + 1):
-                            location = response.headers.get("location")
-                            if not (300 <= response.status < 400 and location):
-                                break
-                            hop_url = urljoin(hop_url, location)
-                            if not await self._is_allowed(hop_url, host_cache):
-                                blocked += 1
-                                logger.warning("Zablokowano przekierowanie przeglądarki (anty-SSRF): %s", hop_url)
-                                await route.abort("blockedbyclient")
-                                return
-                            if response.status in (301, 302, 303):
-                                method = "GET"
-                            response = await route.fetch(url=hop_url, method=method, max_redirects=0)
-                        else:
-                            await route.abort("failed")
+                        if request.method not in ("GET", "HEAD"):
+                            await route.abort("blockedbyclient")
                             return
+                        async with httpx.AsyncClient(timeout=8, proxy=proxy, trust_env=False) as client:
+                            for _ in range(self.settings.crawler_max_redirects + 1):
+                                checked = await asyncio.to_thread(validate_public_url, hop_url)
+                                async with client.stream(request.method, **pinned_request(checked, {"User-Agent": user_agent})) as response:
+                                    if response.is_redirect and response.headers.get("location"):
+                                        hop_url = urljoin(hop_url, response.headers["location"])
+                                        continue
+                                    body = bytearray()
+                                    async for chunk in response.aiter_bytes(chunk_size=65536):
+                                        body.extend(chunk)
+                                        if len(body) > self.settings.crawler_max_bytes:
+                                            raise ValueError("Resource too large")
+                                    await route.fulfill(status=response.status_code, body=bytes(body),
+                                                        content_type=response.headers.get("content-type", "application/octet-stream"))
+                                    return
+                            await route.abort("blockedbyclient")
+                    except SSRFError:
+                        blocked += 1
+                        await route.abort("blockedbyclient")
+                        return
                     except Exception as exc:
                         logger.info("Żądanie przeglądarki nieudane %s: %s", request.url, exc)
                         await route.abort("failed")
                         return
-                    await route.fulfill(response=response)
-
-                async def guard_websocket(ws) -> None:  # type: ignore[no-untyped-def]
+                async def guard_websocket(ws):
                     nonlocal blocked
-                    if await self._is_allowed(ws.url, host_cache):
-                        ws.connect_to_server()
-                    else:
-                        blocked += 1
-                        logger.warning("Zablokowano WebSocket przeglądarki (anty-SSRF): %s", ws.url)
-                        await ws.close()
+                    blocked += 1
+                    # Third-party persistent connections are unnecessary for a static evidence capture.
+                    await ws.close()
 
                 await context.route("**/*", guard_request)
                 await context.route_web_socket("**/*", guard_websocket)

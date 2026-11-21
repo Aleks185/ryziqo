@@ -248,13 +248,16 @@ export function AppProvider({ children }) {
 
   /** Analiza na żądanie. Zwraca listę incydentów (CONTRACT.md: AnalyzeResponse.items). */
   const analyze = useCallback(
-    async ({ kind, content, url, module_ids, title = null, source_url = null, ground_truth_label = null, citizen = false }) => {
+    async ({ kind, file, content, url, onStatus, onReport, signal, module_ids, title = null, source_url = null, ground_truth_label = null, citizen = false }) => {
       let items;
+      if (kind === "image" && mode !== "online") throw Object.assign(new Error("Vision unavailable"), { status: 503 });
       if (mode === "online") {
-        const res = kind === "url"
+        const res = onStatus ? await backend.streamAnalysis({kind, file, content, url, title, source_url, module_ids, ground_truth_label}, onStatus, signal) : kind === "url"
           ? await backend.analyzeUrl({ url, module_ids })
+          : kind === "image" ? await backend.analyzeImage({ file, title, module_ids })
           : await backend.analyzeText({ content, title, source_url, module_ids, ground_truth_label });
         items = res.items || [];
+        onReport?.(res.report);
       } else {
         items = [await buildDemoIncident({ content, module_ids, title, source_url, ground_truth_label })];
       }

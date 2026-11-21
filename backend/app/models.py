@@ -100,13 +100,36 @@ class AnalyzeTextRequest(BaseModel):
     ground_truth_label: bool | None = None
 
 
+class AnalyzeScreenshotRequest(BaseModel):
+    image_base64: str = Field(min_length=4, max_length=13981016)
+    title: str | None = Field(default=None, max_length=240)
+    module_ids: ModuleIds = Field(default_factory=lambda: [1, 2, 3], min_length=1)
+
+
 class AnalyzeUrlRequest(BaseModel):
     url: str = Field(min_length=8, max_length=2048)
     module_ids: ModuleIds = Field(default_factory=lambda: [1, 2, 3], min_length=1)
     use_playwright: bool = False
 
 
+class ReportFinding(BaseModel):
+    module_id: Literal[1, 2, 3]
+    reasons: list[str]
+    evidence: list[str]
+
+
+class AnalysisReport(BaseModel):
+    source_type: Literal["text", "url", "screenshot"]
+    status: Literal["completed"] = "completed"
+    risk_score: int = Field(ge=0, le=100)
+    summary: str
+    findings: list[ReportFinding]
+    limitations: list[str]
+    requires_human_review: bool = True
+
+
 class AnalyzeResponse(BaseModel):
+    report: AnalysisReport | None = None
     items: list[IncidentDetail]
     mode: str
 

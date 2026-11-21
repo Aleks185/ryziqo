@@ -223,9 +223,18 @@ Synchroniczna analiza treści wklejonej przez analityka (reklama, post, opis wid
 Synchroniczne pobranie **jednego publicznego URL** (walidacja anty-SSRF na każdym przekierowaniu, limity rozmiaru i przekierowań) i jego analiza.
 - Request body: `{ "url": "https://example.com/promo", "module_ids": [1, 2, 3], "use_playwright": false }`
 - Odpowiedź (`200`): jak w `POST /api/v1/analyze/text`.
-- Błędy: `400` — adres odrzucony przez anty-SSRF (localhost, sieci prywatne, metadata, niedozwolony schemat); `502` — nie udało się pobrać strony (timeout, błąd HTTP, nieobsługiwany typ treści, przekroczony limit rozmiaru); `422` — niepoprawne dane wejściowe.
+- Błędy: `400` — adres odrzucony przez anty-SSRF (localhost, sieci prywatne, metadata, niedozwolony schemat); `502` — nie udało się pobrać strony (błąd HTTP, nieobsługiwany typ treści, przekroczony limit rozmiaru); `504` — timeout; `422` — niepoprawne dane wejściowe.
 
-> Analiza obrazów (OCR) nie jest częścią kontraktu — backend nie zawiera silnika OCR; panel nie oferuje tej funkcji.
+### Analiza zrzutów i postęp zadań
+
+Ten sam endpoint tekstowy przyjmuje również obiekt z polem `image_base64`, opcjonalnym `title` i listą `module_ids`. Obraz PNG, JPEG lub WebP może mieć do 10 MiB i 20 milionów pikseli. Model wizyjny odczytuje treść obrazu.
+
+Obok `items` i `mode` odpowiedź zawiera `report` z polami `source_type`, `status`, `summary`, `findings`, `limitations` i `requires_human_review`. W raporcie `risk_score` jest liczbą całkowitą od 0 do 100. Incydenty w `items` nadal używają skali 0–1.
+
+- `POST /api/v1/analyze/jobs` przyjmuje jeden z tych samych obiektów wejściowych (tekst, URL lub obraz) i zwraca `202` z `job_id`. Pełna kolejka zwraca `429`.
+- `GET /api/v1/analyze/jobs/{job_id}/events` zwraca SSE z numerowanymi zdarzeniami `queued`, `status`, `token`, `completed` i `error`. Pole `data` zawiera JSON. Zdarzenie `completed` przekazuje pełną odpowiedź analizy. Nagłówek `Last-Event-ID` umożliwia wznowienie strumienia w granicach bufora zadania.
+- `DELETE /api/v1/analyze/jobs/{job_id}` anuluje zadanie. Rozłączenie odbiorcy SSE pozwala ponownie podłączyć się do działającego zadania. Zadania są lokalne dla pojedynczego procesu API.
+
 
 ### `GET /api/v1/crawl/jobs`
 Zwraca listę zadań kolejki, dostępnych plików mock-demo oraz najbliższy termin uruchomienia APScheduler.

@@ -36,40 +36,42 @@ export default function Citizen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
-  const needsText = kind !== "url" || mode !== "online";
+  const needsText = kind === "text" || (kind === "url" && mode !== "online");
   async function submit(event) {
     event.preventDefault();
     if (needsText && content.trim().length < 20) return setError("need_content");
     if (kind === "image" && !["image/png", "image/jpeg", "image/webp"].includes(file?.type)) return setError("image_bad");
+    if (kind === "image" && file.size > 10 * 1024 * 1024) return setError("image_size");
+    if (kind === "image" && mode !== "online") return setError("image_unavailable");
     setBusy(true);
     setError("");
     setResult(null);
     try {
       const items = await analyze({
-        kind: kind === "image" ? "text" : kind, content: content.trim(), url: url.trim(),
-        source_url: kind === "url" ? url.trim() : null, title: kind === "image" ? file.name : null,
+        kind, file, content: content.trim(), url: url.trim(),
+        source_url: kind === "url" ? url.trim() : null, title: kind === "image" ? file.name.slice(0, 240) : null,
         module_ids: MODULES, citizen: true,
       });
       if (!items.length) throw new Error();
       setResult(items.reduce((highest, item) => item.risk_score > highest.risk_score ? item : highest));
-    } catch {
-      setError("failed");
+    } catch (err) {
+      setError(kind === "image" && err.status === 503 ? "image_unavailable" : kind === "image" && err.status === 422 ? "image_unreadable" : "failed");
     } finally {
       setBusy(false);
     }
   }
-  return <div className="max-w-2xl mx-auto space-y-5">
-    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0B192C]">{t("public_title")}</h1>
+  return <div className="w-full max-w-2xl mx-auto space-y-5">
+    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center text-[#0B192C]">{t("public_title")}</h1>
     <Panel><form onSubmit={submit} onChange={() => { setResult(null); setError(""); }}>
       <fieldset disabled={busy} className="space-y-4">
-        <div className="flex flex-wrap gap-2">{["text", "url", "image"].map(k =>
+        <div className="flex flex-wrap justify-center gap-2">{["text", "url", "image"].map(k =>
           <button key={k} type="button" aria-pressed={kind === k} onClick={() => { if (kind !== k) setFile(null); setKind(k); setResult(null); setError(""); }}
             className={`border rounded-sm px-3 py-2 text-sm focus-ring ${kind === k ? "bg-[#0B192C] text-white" : "border-slate-300"}`}>{t(`public_${k}`)}</button>)}</div>
         {kind === "url" && <label className="block">{t("public_url")}<input type="url" pattern="https?://.+" required className={field} value={url} onChange={e => setUrl(e.target.value)} /></label>}
-        {kind === "image" && <label className="block">{t("public_image")}<input type="file" accept="image/png,image/jpeg,image/webp" required className={field} onChange={e => setFile(e.target.files[0])} /></label>}
-        {needsText && <label className="block">{t(kind === "text" ? "public_text" : kind === "image" ? "image_text" : "transcript")}
+        {kind === "image" && <label className="block text-center">{t("public_image")}<input type="file" accept="image/png,image/jpeg,image/webp" required className={field} onChange={e => setFile(e.target.files[0])} /></label>}
+        {needsText && <label className="block">{t(kind === "text" ? "public_text" : "transcript")}
           <textarea required minLength={20} rows={6} className={field} value={content} onChange={e => setContent(e.target.value)} /></label>}
-        <button disabled={mode === "checking"} className="bg-[#0B192C] text-white px-5 py-2 rounded-sm font-semibold disabled:opacity-50">{t(busy ? "analyzing" : "verify")}</button>
+        <button disabled={mode === "checking"} className="block mx-auto bg-[#0B192C] text-white px-5 py-2 rounded-sm font-semibold disabled:opacity-50">{t(busy ? "analyzing" : "verify")}</button>
       </fieldset>
     </form></Panel>
     {error && <p role="alert" className="text-amber-950">{t(error)}</p>}

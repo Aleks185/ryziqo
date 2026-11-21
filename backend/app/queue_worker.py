@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
+import time
+from app.analysis_queue import current_job
+
 import asyncio
 import logging
 import uuid
@@ -289,6 +293,7 @@ class CrawlQueueWorker:
             page.source_url,
             f"Czyszczenie HTML, analiza DOM/CSS i wektoryzacja: {page.source_url}",
         )
+        started = time.monotonic()
         doc = preprocess_html(
             raw_html=page.raw_html,
             source_url=page.source_url,
@@ -296,7 +301,12 @@ class CrawlQueueWorker:
             is_mock_source=page.is_mock_source,
             playwright_metrics=page.playwright_dom_metrics,
         )
+        if current_job.get():
+            current_job.get().metrics["preprocessing_s"] += time.monotonic() - started
         doc.screenshots = list(page.screenshots or [])
+        doc.vision_findings = page.vision_findings
+        if page.vision_findings is not None:
+            doc.content_hash = hashlib.sha256(doc.screenshots[0]).hexdigest()
         # Shortener / link-in-bio destinations (public URLs only; mock and pasted text never hit the network)
         if (
             self.settings.crawler_expand_short_links
@@ -321,7 +331,10 @@ class CrawlQueueWorker:
             local_embedding=doc.local_embedding,
             extracted={
                 "title": doc.title,
+                "vision_findings": doc.vision_findings,
                 "final_url": page.final_url,
+                "fetched_at": page.fetched_at,
+                "payload_sha256": page.payload_sha256,
                 "used_playwright": page.used_playwright,
                 "social": doc.social.to_dict() if doc.social else None,
                 "dom_metrics": doc.dom_metrics.model_dump(),

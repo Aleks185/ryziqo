@@ -53,11 +53,24 @@ class Database:
         conn.execute("PRAGMA foreign_keys=ON;")
         return conn
 
+    def cached_response(self, key, now):
+        with self._connect() as conn:
+            row = conn.execute("SELECT response FROM analysis_cache WHERE key=? AND expires>?", (key, now)).fetchone()
+        return row[0] if row else None
+
+    def cache_response(self, key, response, expires, now):
+        with self._connect() as conn:
+            conn.execute("DELETE FROM analysis_cache WHERE expires<=?", (now,))
+            conn.execute("INSERT OR REPLACE INTO analysis_cache VALUES (?, ?, ?)", (key, expires, response))
+
     def init_schema(self) -> None:
         """Create tables if they do not exist; never drops existing data."""
         with self._connect() as conn:
             conn.executescript(
                 """
+                CREATE TABLE IF NOT EXISTS analysis_cache (
+                    key TEXT PRIMARY KEY, expires REAL NOT NULL, response TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS incidents (
                     id TEXT PRIMARY KEY,
                     module_id INTEGER NOT NULL,
@@ -205,7 +218,8 @@ class Database:
         """Store Playwright JPEG screenshots next to the HTML snapshot (desktop, mobile)."""
         names: list[str] = []
         for label, data in zip(("desktop", "mobile"), screenshots):
-            name = f"{content_hash}_{label}.jpg"
+            extension = "png" if data.startswith(bytes.fromhex("89504e470d0a1a0a")) else "jpg"
+            name = f"{content_hash}_{label}.{extension}"
             (self.object_store_dir / name).write_bytes(data)
             names.append(name)
         return names

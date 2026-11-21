@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.analysis_queue import AnalysisQueue
 from app.ai.ollama_client import OllamaClient
 from app.config import Settings, get_settings
 from app.database import Database
@@ -59,6 +60,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
         )
         await worker.start()
 
+        app.state.analysis_queue = AnalysisQueue()
         app.state.settings = settings
         app.state.db = db
         app.state.registry = registry
@@ -77,6 +79,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            await app.state.analysis_queue.close()
             await worker.stop()
 
     app = FastAPI(

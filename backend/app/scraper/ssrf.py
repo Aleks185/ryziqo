@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ipaddress
 import socket
+import httpx
 from urllib.parse import urlparse
 
 BLOCKED_HOSTNAMES = {
@@ -30,7 +31,8 @@ def _is_forbidden_ip(ip_str: str) -> bool:
         ip = ip.ipv4_mapped
 
     return (
-        ip.is_private
+        not ip.is_global
+        or ip.is_private
         or ip.is_loopback
         or ip.is_link_local
         or ip.is_multicast
@@ -39,16 +41,39 @@ def _is_forbidden_ip(ip_str: str) -> bool:
     )
 
 
+class ValidatedURL(str):
+    def __new__(cls, value, address):
+        result = super().__new__(cls, value)
+        result.address = address
+        return result
+
+
+def pinned_request(url, headers):
+    """Connect to the checked IP while retaining the original Host and TLS server name."""
+    target = httpx.URL(url)
+    if not isinstance(url, ValidatedURL):
+        return {"url": target, "headers": headers}
+    return {"url": target.copy_with(host=url.address),
+            "headers": {**headers, "Host": target.netloc.decode("ascii")},
+            "extensions": {"sni_hostname": target.raw_host.decode("ascii")}}
+
+
 def validate_public_url(url: str) -> str:
     """Validate that a public URL is HTTP(S) and resolves strictly to public IP addresses."""
     if not url or not isinstance(url, str):
         raise SSRFError("URL nie może być pusty.")
 
-    parsed = urlparse(url.strip())
+    try:
+        parsed = urlparse(url.strip())
+        port = parsed.port
+    except ValueError as exc:
+        raise SSRFError("Nieprawidłowy adres URL lub port.") from exc
+    if port is not None and port != {"http": 80, "https": 443}.get(parsed.scheme):
+        raise SSRFError("Niedozwolony port URL.")
     if parsed.scheme not in ("http", "https"):
         raise SSRFError(f"Niedozwolony schemat URL: '{parsed.scheme}'. Dozwolone wyłącznie http/https.")
 
-    if parsed.username or parsed.password:
+    if parsed.username is not None or parsed.password is not None:
         raise SSRFError("URL zawierający dane uwierzytelniające w nagłówku jest zablokowany.")
 
     hostname = (parsed.hostname or "").strip().lower()
@@ -66,7 +91,7 @@ def validate_public_url(url: str) -> str:
     else:
         if _is_forbidden_ip(hostname):
             raise SSRFError(f"Adres IP '{hostname}' należy do sieci prywatnej/lokalnej/metadata.")
-        return url.strip()
+        return ValidatedURL(url.strip(), hostname)
 
     # Resolve DNS and check ALL returned IP addresses
     port = parsed.port or (443 if parsed.scheme == "https" else 80)
@@ -85,4 +110,4 @@ def validate_public_url(url: str) -> str:
                 f"Host '{hostname}' rozwiązuje się na niedozwolony adres '{ip_str}' (ochrona anty-SSRF)."
             )
 
-    return url.strip()
+    return ValidatedURL(url.strip(), addr_infos[0][4][0])

@@ -115,9 +115,9 @@ OLLAMA_EMBED_MODEL=nomic-embed-text
 
 # GPU: 120 is plenty. CPU-only: use 300 — a timed-out call silently falls back to rules only
 OLLAMA_TIMEOUT_SECONDS=120
-OLLAMA_NUM_PREDICT=768
+OLLAMA_NUM_PREDICT=1024
 # Lower to 4096 if `ollama ps` shows a CPU/GPU split
-OLLAMA_NUM_CTX=8192
+OLLAMA_NUM_CTX=4096
 
 # Screenshot analysis needs Playwright (step 8); keep off for the first runs
 OLLAMA_VISION_ENABLED=false
@@ -127,10 +127,12 @@ AI_RAG_FEW_SHOT_ENABLED=true
 AI_STRICT_QUOTE_VERIFICATION=true
 ```
 
-Do **not** set `OLLAMA_NUM_PARALLEL` on a 6 GB GPU or a 4-core CPU: every parallel slot needs extra
+Do **not** increase `OLLAMA_NUM_PARALLEL` above 1 on a 6 GB GPU or a 4-core CPU: every parallel slot needs extra
 memory and the calls only get slower.
 
 ---
+
+Set the Ollama server environment to `OLLAMA_NUM_PARALLEL=1`, `OLLAMA_MAX_LOADED_MODELS=1` and `OLLAMA_MAX_QUEUE=8`. Restart the native server after changing its environment. The Compose AI profile supplies these variables directly. INVESTWATCH requests a one-minute keep-alive.
 
 ## 6. Run the tests and the benchmark
 

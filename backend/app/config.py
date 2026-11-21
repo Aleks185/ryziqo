@@ -36,8 +36,9 @@ class Settings(BaseSettings):
     # Larger prompts (sections + rubric + few-shot) and structured output need more time on CPU
     ollama_timeout_seconds: float = 60.0
     # Response token limit (reasoning + signals + exact quotes) and model context window
-    ollama_num_predict: int = 768
-    ollama_num_ctx: int = 8192
+    ollama_num_thread: int = 10
+    ollama_num_predict: int = 1024
+    ollama_num_ctx: int = 4096
     # Vision (VLM) analysis of Playwright screenshots; requires a model with the "vision" capability
     ollama_vision_enabled: bool = False
     ollama_vision_model: str = ""
@@ -55,7 +56,7 @@ class Settings(BaseSettings):
     aggregator_multi_module_mode: str = "primary"
     aggregator_secondary_min_score: float = 0.55
 
-    crawler_timeout_seconds: float = 12.0
+    crawler_timeout_seconds: float = 8.0
     crawler_max_bytes: int = 2_097_152
     crawler_max_redirects: int = 5
     crawler_rate_limit_seconds: float = 0.5
