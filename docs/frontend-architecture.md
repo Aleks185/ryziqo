@@ -162,7 +162,7 @@ Wydruk: klasy `.no-print` / `.print-only` (`App.css`, `@media print`) ukrywają 
 ### 4.5. Baza zgłoszeń, kampanie, diagnostyka (`Intelligence.jsx`)
 Widoki wymagają backendu (w DEMO pokazują komunikat „Rejestr wymaga połączenia z backendem”). Dane pobiera wspólny hook `useData(path, interval)` przez `backend.intel()`.
 - **`/reports`** — wyszukiwanie (domena, treść, IP serwera, podmiot, URL), filtr statusu, stronicowanie po 50, filtr `?campaign=<id>` (link z kampanii i mapy).
-- **`/reports/:id`** — wynik analizy (skala 0–100), powiązane incydenty, metadane techniczne, **ocena analityka**: status zgłoszenia (`new`, `confirmed_fake`, `requires_review`, `false_positive`) i notatka (do 4000 znaków). Status `confirmed_fake` zasila Fast-Path — kolejne identyczne zgłoszenia dostają gotowy werdykt bez LLM (szczegóły: [kampanie-fejkow.md](./kampanie-fejkow.md)).
+- **`/reports/:id`** — wynik analizy (skala 0–100), powiązane incydenty, metadane techniczne, **ocena analityka**: status zgłoszenia (`new`, `confirmed_fake`, `requires_review`, `false_positive`) i notatka (do 4000 znaków). Status `confirmed_fake` zasila Fast-Path — kolejne identyczne zgłoszenia dostają gotowy werdykt bez LLM.
 - **`/campaigns`** — grupy ≥ 2 powiązanych zgłoszeń (domena / IP / liczba członków) z możliwością nadania statusu całej kampanii jednym kliknięciem.
 - **`/diagnostics`** — model Ollama i jego dostępność, aktywne / oczekujące zadania kolejki FIFO (pojemność 8), trafienia cache i Fast-Path.
 

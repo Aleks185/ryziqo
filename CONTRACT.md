@@ -254,7 +254,7 @@ Obok `items` i `mode` odpowiedź zawiera `report` z polami `source_type`, `statu
 
 ### Baza zgłoszeń, kampanie i diagnostyka (`/api/v1/intelligence/*`)
 
-Każda analiza (z wyjątkiem `share_mode: "none"`) zapisuje wpis w bazie zgłoszeń (`threat_reports`). Wpisy z identycznym odciskiem (hash treści, pHash obrazu, domena / URL) dostają wspólny `campaign_id`. `risk_score` wpisu jest w skali **0–100** (jak w `report`), incydenty nadal używają 0–1. Opis mechanizmu: [docs/kampanie-fejkow.md](docs/kampanie-fejkow.md).
+Każda analiza (z wyjątkiem `share_mode: "none"`) zapisuje wpis w bazie zgłoszeń (`threat_reports`). Wpisy z identycznym odciskiem (hash treści, pHash obrazu, domena / URL) dostają wspólny `campaign_id`. `risk_score` wpisu jest w skali **0–100** (jak w `report`), incydenty nadal używają 0–1.
 
 - `GET /api/v1/intelligence/reports` — parametry: `q` (do 240 znaków; szuka w domenie, fragmencie treści, IP serwera, podmiotach i URL), `verdict`, `campaign`, `incident` (wpisy powiązane z incydentem), `limit` (1–200, domyślnie 50), `offset`. Odpowiedź: `{"total", "items": [{"id", "created_at", "source_channel", "reporter_display_name", "source_type", "target_url", "canonical_domain", "platform", "target_server_ip", "campaign_id", "detected_entities", "risk_score", "verdict_status", "excerpt", "origin", "incident_ids"}]}` (od najnowszych).
 - `GET /api/v1/intelligence/reports/{report_id}` — pełny wpis, m.in. `redirect_chain`, `hosting_asn`, `hosting_country`, `content_hash`, `image_phash`, `analyst_notes`, `ai_report_json` (`summary`, `findings[].reasons`, `findings[].evidence`, `limitations`). Identyfikatory zgłaszającego (IP, skrót IP, User-Agent, HMAC klucza) nie są zwracane. `404` dla nieznanego wpisu.
