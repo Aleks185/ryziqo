@@ -101,7 +101,7 @@ Frontend korzysta wyłącznie z modelu `Incident` i endpointów zdefiniowanych w
 
 - **Przykłady demonstracyjne** (`lib/samples.js`) wysyłane są z `source_url: "manual://sample/S1…S6"` i `ground_truth_label` — dzięki temu backend deduplikuje je po `content_hash`, a panel oznacza je etykietą „PRZYKŁAD”.
 - **Kalibracja** (macierz TP/FP/TN/FN i krzywa FP/FN) liczona jest w przeglądarce z `risk_score` i `ground_truth_label`, więc działa identycznie w obu trybach. `GET /api/v1/stats` nie jest obecnie używany.
-- **Analiza obrazów (OCR)** została usunięta z panelu — backend nie zawiera silnika OCR, a kontrakt jej nie definiuje.
+- **Analiza obrazów (OCR)** została usunięta z panelu — kontrakt nie definiuje przesyłania obrazów. Backend może natomiast sam analizować zrzuty ekranu pobranych stron modelem VLM (`OLLAMA_VISION_ENABLED`); wyniki trafiają do zwykłych pól `violated_rules` (`AI_VLM_*`) i `evidence_quotes` (`[VLM]`).
 
 ---
 
