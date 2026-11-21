@@ -8,7 +8,8 @@ Zespół podzielił projekt na dwa niezależne, lekkie serwisy (`backend/` i `fr
 
 1. **Zamrożenie kontraktu przed kodowaniem:** przed wygenerowaniem kodu modeli i UI zdefiniowano schemat JSON (`Incident`, `ViolatedRule`, `DomMetrics`), endpointy REST (`GET /api/v1/incidents`, `PATCH /api/v1/incidents/{id}/status`, `GET /api/v1/stats`, `POST /api/v1/crawl/trigger`) oraz zdarzenia WebSocket (`/ws/alerts`).
 2. **Ograniczanie kontekstu przekazywanego asystentom AI:** asystent pracujący nad backendem otrzymywał wyłącznie `CONTRACT.md`, dokumenty regulacyjne UKNF oraz katalog `backend/`. Żadne poufne próbki ani sekrety `.env` nie były przekazywane do zewnętrznych narzędzi.
-3. **Separacja warstw:** brak ciężkiego monorepo; każdy serwis posiada własny `Dockerfile` i niezależny pipeline testów/audytu (`pytest` + `pip-audit` dla Pythona, `npm audit` dla frontendu).
+   Prototyp frontendu wygenerowany w Emergent przeszedł przegląd człowieka przed włączeniem do repozytorium: usunięto nieaktualny szablon backendu, pliki robocze agenta oraz **telemetrię z nagrywaniem sesji (PostHog)** i inne integracje z usługami Emergent (szczegóły: [frontend-architecture.md](./frontend-architecture.md#7-bezpieczeństwo-i-prywatność)).
+3. **Separacja warstw:** brak ciężkiego monorepo; każdy serwis posiada własny `Dockerfile` i niezależny pipeline testów/audytu (`pytest` + `pip-audit` dla Pythona, `yarn audit` dla frontendu). W Docker Compose oba serwisy są spięte przez Nginx frontendu (`/api/`, `/ws/` → backend), więc przeglądarka widzi jeden origin.
 
 ## 2. Standard jakości i weryfikacji (Human-in-the-Loop)
 
@@ -19,5 +20,5 @@ Każdy wygenerowany moduł przechodzi 4 obowiązkowe bramki kontrolne:
    - `test_ssrf.py` — weryfikacja blokady SSRF (localhost, sieci prywatne RFC1918, adresy metadata chmury, niedozwolone schematy).
    - `test_modules.py` — testy deterministyczne Modułów 1, 2 i 3 na pozytywnych i negatywnych stronach demonstracyjnych (brak fałszywych alarmów dla materiałów zgodnych i biur podatkowych).
    - `test_api.py` — testy integracyjne REST, zmiany statusów, kalibracji FP/FN i powiadomień WebSocket `/ws/alerts`.
-3. **Weryfikowalny łańcuch dostaw (Cybersec):** obowiązkowy audyt zależności (`pip-audit` / `npm audit`), uruchamianie kontenera jako użytkownik nieuprzywilejowany (`appuser`), izolacja zmiennych środowiskowych w `.env`.
+3. **Weryfikowalny łańcuch dostaw (Cybersec):** obowiązkowy audyt zależności (`pip-audit` / `yarn audit`), uruchamianie kontenera backendu jako użytkownik nieuprzywilejowany (`appuser`), brak skryptów i telemetrii firm trzecich w panelu, izolacja zmiennych środowiskowych w `.env`.
 4. **Rzetelność modeli AI w demo:** wszystkie modele uruchomieniowe działają w 100% on-premise (Ollama bez płatnych API), z jawnym oznaczeniem trybu fallback oraz zastrzeżeniem, że `risk_score` to wskaźnik priorytetyzacji dla analityka, a snapshot KNF ma jawną datę i źródło.

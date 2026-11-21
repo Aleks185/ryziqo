@@ -123,6 +123,7 @@ backend/
   - Lekki obraz `python:3.12-slim` z nieuprzywilejowanym użytkownikiem `appuser` i wbudowanym `HEALTHCHECK`.
   - Trwały wolumen `investwatch_data:/data` gwarantujący zachowanie bazy SQLite i Object Storage między restartami.
   - Wpis `extra_hosts: ["host.docker.internal:host-gateway"]` zapewniający łączność z natywną Ollamą również pod Linuksem.
+  - Serwis `frontend` (Nginx) wystawia panel na porcie `3000` i przekazuje `/api/` oraz `/ws/` do `backend:8000` w sieci Compose; startuje po uzyskaniu przez backend statusu `healthy`. Szczegóły: [frontend-architecture.md](./frontend-architecture.md).
 
 ---
 
@@ -133,3 +134,4 @@ backend/
 - Szczegóły licencji i zabezpieczeń: [security-licenses.md](./security-licenses.md).
 - Proces pracy z asystentami AI: [ai-workflow.md](./ai-workflow.md).
 - Checklista niezależnego audytu: [backend-audit-checklist.md](./backend-audit-checklist.md).
+- Architektura panelu analitycznego: [frontend-architecture.md](./frontend-architecture.md).
