@@ -63,7 +63,8 @@ Stan na 2026-11-21. Testy backendu: `160 passed`.
 ### Zgodność ze specem
 - [x] **Reguła 8: desktop, tablet i telefon** (1280, 768 i 375 px w `backend/app/scraper/browser.py`; evidence podaje widok)
 - [x] **Odświeżanie rejestru KNF** (`python -m scripts.refresh_knf_registry`, `POST /api/v1/knf-registry/refresh`, `KNF_REFRESH_CRON`), data snapshotu na dashboardzie
-- [ ] **Parser list KNF sprawdzić na prawdziwych stronach.** knf.gov.pl zrywał połączenie (ECONNRESET) przy tworzeniu parsera, więc jest generyczny (tabela / CSV / XLSX / lista) i testowany tylko na fixture'ach. Uruchomić `--dry-run` z sieci, która ma dostęp.
+- [x] **Parser list KNF sprawdzony na prawdziwych stronach (2026-11-21).** knf.gov.pl zrywa połączenia z nagłówkiem bota (robots.txt pozwala wszystkim), więc synchronizacja przedstawia się jako przeglądarka (`KNF_SYNC_USER_AGENT`). Parser czyta tabele klucz–wartość („Nazwa podmiotu”), pomija dawne nazwy (`<strike>`), przechodzi paginację `?page=N`: 754 podmioty (10 banków, 27 DM, 10 oddziałów, 707 transgranicznych). Wpisy z ręcznymi aliasami nie są usuwane automatycznie (`unmatched_kept` w raporcie), a fuzzy-matching podszywania działa tylko na markach z aliasami.
+- [ ] Przejrzeć `unmatched_kept` po pierwszym odświeżeniu: KNF zapisuje np. „DOM MAKLERSKI BANKU OCHRONY ŚRODOWISKA S.A.” zamiast „Dom Maklerski BOŚ S.A.” — scalić ręcznie wpisy (aliasy na wpis z oficjalną nazwą KNF).
 - [ ] (warto rozważyć) Kolejka na zewnętrznym narzędziu (Redis z RQ/Celery/Arq) i MinIO jako object storage, pod kryterium architektury i skalowalności
 - [ ] (warto rozważyć) Skan **Snyk** wprost wymieniony w specu: `snyk test` z wynikiem w `docs/security-licenses.md` albo workflow w GitHub Actions (w repo nie ma `.github/`)
 

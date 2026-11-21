@@ -8,6 +8,10 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+DEFAULT_KNF_SYNC_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+)
+
 class Settings(BaseSettings):
     """Runtime settings for #InvestWatch backend."""
 
@@ -104,6 +108,9 @@ class Settings(BaseSettings):
 
     # Optional crontab for refreshing the KNF registry snapshot from the official sources ("" = off)
     knf_refresh_cron: str = ""
+    # knf.gov.pl resets connections for bot user agents (robots.txt allows all), so the registry
+    # sync identifies as a browser. Only used for the official KNF lists, never for crawling.
+    knf_sync_user_agent: str = DEFAULT_KNF_SYNC_USER_AGENT  # empty (unset in compose) = default
 
     @property
     def cors_origin_list(self) -> list[str]:

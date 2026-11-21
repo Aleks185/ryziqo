@@ -59,6 +59,7 @@ services:
       DISCOVERY_REVISIT_DAYS: "${DISCOVERY_REVISIT_DAYS:-7}"
       DISCOVERY_DOMAIN_DENYLIST: "${DISCOVERY_DOMAIN_DENYLIST:-knf.gov.pl,gov.pl,wikipedia.org,wikimedia.org,google.com,bing.com,duckduckgo.com,europa.eu,esma.europa.eu,gpw.pl,nbp.pl}"
       KNF_REFRESH_CRON: "${KNF_REFRESH_CRON:-}"
+      KNF_SYNC_USER_AGENT: "${KNF_SYNC_USER_AGENT:-}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

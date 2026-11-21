@@ -402,7 +402,10 @@ def test_merge_snapshot_keeps_aliases_synthetic_and_applies_safety_net() -> None
     assert doc["snapshot_date"] == "2026-12-01"
     assert by_name["XTB S.A."]["aliases"] == ["XTB", "X-Trade Brokers", "xtb.com"]
     assert by_name["Nowy Dom Maklerski S.A."]["registry_status"] == "registered_pl"
-    assert report.removed["dom_maklerski"] == ["TMS Brokers (OANDA TMS Brokers S.A.)"]
+    # Curated entries (manual aliases) are never dropped — KNF spells names differently
+    assert report.unmatched_kept["dom_maklerski"] == ["TMS Brokers (OANDA TMS Brokers S.A.)"]
+    assert "TMS Brokers (OANDA TMS Brokers S.A.)" in by_name
+    assert "dom_maklerski" not in report.removed
     assert any(e["is_synthetic_demo"] and e["category"] == "dom_maklerski" for e in doc["entities"])
     assert "bank_maklerski" in report.kept_old
     assert "Biuro Maklerskie mBanku" in by_name
@@ -458,3 +461,67 @@ def test_rules_6_7_require_risk_to_be_exclusively_hidden(body: str, footer: bool
     doc = preprocess_html(f"<html><body>{body}</body></html>", "https://broker.pl/", "web")
     assert doc.dom_metrics.risk_hidden_in_footer is footer
     assert doc.dom_metrics.requires_click_to_view_risk is details
+
+
+KNF_PAGE = """<nav><a href="/podmioty/lista?page=2">2</a><a href="/podmioty/lista?page=3">3</a>
+<a href="/podmioty/inna?page=9">inna lista</a><a href="http://[zepsuty">x</a></nav>
+<table><tr><th>Nazwa</th><td><span>CERES DOM INWESTYCYJNY S.A.<br/><strike>EFIX DOM MAKLERSKI S.A.</strike></span></td></tr>
+<tr><th>Data zezwolenia</th><td>26-05-2010</td></tr></table>
+<table><tr><th>Nazwa</th><td><span>BANK PEKAO S.A.<strike> <br />B</strike>iuro Maklerskie PEKAO</span></td></tr>
+<tr><th>Zakres działalności</th><td>1, 2</td></tr></table>"""
+
+
+def test_parse_knf_key_value_tables_and_pagination() -> None:
+    from app.knf_sync import page_count
+
+    names, _ = parse_html(KNF_PAGE, "https://www.knf.gov.pl/podmioty/lista")
+    assert names == ["CERES DOM INWESTYCYJNY S.A.", "BANK PEKAO S.A. Biuro Maklerskie PEKAO"]
+    assert page_count(KNF_PAGE, "https://www.knf.gov.pl/podmioty/lista") == 3
+
+
+def test_fetch_source_walks_pages_with_browser_user_agent(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app import knf_sync
+
+    seen: list[tuple[str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((str(request.url), request.headers["user-agent"]))
+        page = request.url.params.get("page", "1")
+        if page == "1":
+            return httpx.Response(200, text=KNF_PAGE)
+        return httpx.Response(200, text=f"<table><tr><th>Nazwa podmiotu</th><td>Firma {page} Ltd</td></tr></table>")
+
+    monkeypatch.setattr(knf_sync, "validate_public_url", lambda u: u)
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        knf_sync.httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw)
+    )
+    settings = Settings(crawler_per_host_delay_seconds=0, knf_sync_user_agent="")
+    sources = {"domy_maklerskie": "https://www.knf.gov.pl/podmioty/lista"}
+    results = asyncio.run(knf_sync.fetch_official_sources(settings, sources))
+
+    assert results[0].error is None
+    assert results[0].names[-2:] == ["Firma 2 Ltd", "Firma 3 Ltd"]
+    assert [u for u, _ in seen][1:] == [
+        "https://www.knf.gov.pl/podmioty/lista?page=2",
+        "https://www.knf.gov.pl/podmioty/lista?page=3",
+    ]
+    # Empty setting (unset in docker compose) falls back to the browser User-Agent
+    assert all(ua.startswith("Mozilla/5.0") for _, ua in seen)
+
+
+def test_imported_registry_names_do_not_create_lookalike_alarms(tmp_path: Path) -> None:
+    doc = json.loads((DATA_DIR / "knf_registry_snapshot.json").read_text(encoding="utf-8"))
+    for name in ("Lago Kapital Ltd", "Monex Europe Markets, S.V, S.A", "Investium Limited"):
+        doc["entities"].append(
+            {"official_name": name, "aliases": [], "category": "zagraniczna_bez_oddzialu",
+             "registry_status": "registered_eu_crossborder", "country": "EU", "is_synthetic_demo": False}
+        )
+    path = tmp_path / "knf_registry_snapshot.json"
+    write_snapshot_atomic(path, doc)
+    reg = KNFRegistrySnapshot(snapshot_path=path, rules_path=DATA_DIR / "risk_criteria_rules.json")
+
+    legit = ["https://capital.com/", "https://www.money.pl/", "https://investing.com/", "https://www.mbank.pl/"]
+    assert reg.find_impersonations("", legit) == []
+    assert reg.find_impersonations("", ["https://bosssa.pl/"])[0].kind == "typosquat"  # curated brands still guarded
+    assert reg.match_entity_in_text("Oferta Lago Kapital Ltd dla klientów z Polski") is not None

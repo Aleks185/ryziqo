@@ -108,6 +108,7 @@ Wszystkie parametry znajdują się w [.env.example](.env.example). Sekrety są i
 | `DISCOVERY_CRON` | `0 */6 * * *` | Harmonogram rund discovery (UTC); limity: `DISCOVERY_QUERIES_PER_RUN`, `DISCOVERY_MAX_NEW_URLS_PER_RUN` |
 | `DISCOVERY_REVISIT_DAYS` | `7` | Po ilu dniach URL znaleziony wcześniej może wrócić do kolejki |
 | `KNF_REFRESH_CRON` | puste | Cykliczne odświeżanie snapshotu rejestru KNF z oficjalnych list (`python -m scripts.refresh_knf_registry`) |
+| `KNF_SYNC_USER_AGENT` | nagłówek Chrome | User-Agent synchronizacji rejestru KNF; knf.gov.pl odrzuca nagłówki botów. Crawler treści nadal przedstawia się jako bot |
 
 Zmienne frontendu (`REACT_APP_INVESTWATCH_API_URL`, `REACT_APP_ALERT_THRESHOLD`) opisuje [frontend/.env.example](frontend/.env.example). Są wklejane do bundla w czasie builda — nie umieszczaj w nich sekretów.
 

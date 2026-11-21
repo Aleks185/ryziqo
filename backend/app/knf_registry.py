@@ -166,11 +166,17 @@ class KNFRegistrySnapshot:
         for entry in self._snapshot.get("entities", []):
             names = [entry.get("official_name", ""), *entry.get("aliases", [])]
             entry_keys: set[str] = set()
+            # Fuzzy look-alike keys only for curated brands (manual aliases): the ~750 firms imported
+            # from the KNF lists would turn every "capital"/"invest…" domain into a typosquat
+            # (money.pl → Monex, capital.com → Lago Kapital). Imported names still count as legit.
+            curated = bool(entry.get("aliases"))
             for raw in names:
                 name = str(raw).replace("[DEMO]", "").strip()
                 if not name:
                     continue
                 legit.add(_alnum(name))
+                if not curated:
+                    continue
                 host = name.lower()
                 if "." in host and " " not in host:  # a domain alias, e.g. xtb.com
                     label = host.split(".")[0]
