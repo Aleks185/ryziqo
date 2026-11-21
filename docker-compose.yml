@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      args:
+        INSTALL_PLAYWRIGHT: "${INSTALL_PLAYWRIGHT:-false}"
     container_name: investwatch-backend
     ports:
       - "${APP_PORT:-8000}:8000"
@@ -18,6 +20,13 @@ services:
       OLLAMA_EMBED_MODEL: "${OLLAMA_EMBED_MODEL:-nomic-embed-text}"
       CRAWLER_ENABLE_SCHEDULER: "${CRAWLER_ENABLE_SCHEDULER:-true}"
       CRAWLER_SCHEDULE_MINUTES: "${CRAWLER_SCHEDULE_MINUTES:-15}"
+      CRAWLER_CRON: "${CRAWLER_CRON:-}"
+      CRAWLER_SCHEDULE_INCLUDE_MOCKS: "${CRAWLER_SCHEDULE_INCLUDE_MOCKS:-true}"
+      CRAWLER_PROXIES: "${CRAWLER_PROXIES:-}"
+      CRAWLER_USE_PLAYWRIGHT_FALLBACK: "${CRAWLER_USE_PLAYWRIGHT_FALLBACK:-false}"
+      CRAWLER_PLAYWRIGHT_TIMEOUT_SECONDS: "${CRAWLER_PLAYWRIGHT_TIMEOUT_SECONDS:-20}"
+      CRAWLER_PLAYWRIGHT_MIN_TEXT_CHARS: "${CRAWLER_PLAYWRIGHT_MIN_TEXT_CHARS:-400}"
+      DEDUP_SIMILARITY_THRESHOLD: "${DEDUP_SIMILARITY_THRESHOLD:-0.92}"
       HIGH_RISK_ALERT_THRESHOLD: "${HIGH_RISK_ALERT_THRESHOLD:-0.65}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -48,5 +57,36 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Opcjonalny lokalny silnik AI w kontenerze: docker compose --profile ai up -d
+  # (ustaw wtedy OLLAMA_BASE_URL=http://ollama:11434 w .env)
+  ollama:
+    image: "ollama/ollama:${OLLAMA_IMAGE_TAG:-0.12.6}"
+    container_name: investwatch-ollama
+    profiles: ["ai"]
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Jednorazowe pobranie modeli do wolumenu ollama_models (kończy się po pobraniu)
+  ollama-pull:
+    image: "ollama/ollama:${OLLAMA_IMAGE_TAG:-0.12.6}"
+    profiles: ["ai"]
+    environment:
+      OLLAMA_HOST: "http://ollama:11434"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-gemma3:4b}"
+      OLLAMA_EMBED_MODEL: "${OLLAMA_EMBED_MODEL:-nomic-embed-text}"
+    entrypoint: ["/bin/sh", "-c", "ollama pull \"$${OLLAMA_MODEL}\" && ollama pull \"$${OLLAMA_EMBED_MODEL}\""]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
 volumes:
   investwatch_data:
+  ollama_models:

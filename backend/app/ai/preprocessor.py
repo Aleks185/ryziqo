@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from bs4 import BeautifulSoup, Tag
 
 from app.models import DomMetrics
+from app.scraper.social_parsers import SOCIAL_PLATFORMS, SocialPost, parse_social_post
 
 RISK_KEYWORDS_RE = re.compile(
     r"(ryzyk|utrat[aąey]\s+kapitał|strata|cfd|risk\s+warning|capital\s+at\s+risk|"
@@ -37,6 +38,7 @@ class PreprocessedDocument:
     ground_truth_hint: bool | None = None
     dom_metrics: DomMetrics = field(default_factory=DomMetrics)
     is_mock_source: bool = False
+    social: SocialPost | None = None
 
 
 def _hex_luminance(hex_color: str) -> float:
@@ -157,6 +159,20 @@ def extract_dom_metrics(
         dominant_font = round(sum(non_hero) / len(non_hero), 1)
 
     risk_font = round(min(risk_fonts), 1) if risk_fonts else None
+
+    # Browser-computed styles (Playwright) see external stylesheets, classes and JS-applied CSS,
+    # so they take precedence over the static inline/<style> parsing above.
+    computed = playwright_metrics.get("computed") if playwright_metrics else None
+    if isinstance(computed, dict):
+        if isinstance(computed.get("dominant_font_px"), (int, float)):
+            dominant_font = round(float(computed["dominant_font_px"]), 1)
+        if isinstance(computed.get("risk_font_px"), (int, float)):
+            risk_font = round(float(computed["risk_font_px"]), 1)
+        if isinstance(computed.get("low_contrast_detected"), bool):
+            low_contrast = computed["low_contrast_detected"]
+        risk_in_footer = risk_in_footer or bool(computed.get("risk_hidden_in_footer"))
+        requires_click = requires_click or bool(computed.get("requires_click_to_view_risk"))
+
     font_ratio = (
         round(risk_font / dominant_font, 2)
         if (risk_font is not None and dominant_font > 0)
@@ -234,6 +250,13 @@ def preprocess_html(
         elif val in ("false", "0", "no"):
             gt_hint = False
 
+    # Social-media post metadata (author, hashtags, date) from JSON-LD / OpenGraph / URL
+    social = (
+        parse_social_post(raw_html, source_url, source_platform)
+        if source_platform in SOCIAL_PLATFORMS
+        else None
+    )
+
     title_tag = soup.find("title")
     h1_tag = soup.find("h1")
     title = (
@@ -278,4 +301,5 @@ def preprocess_html(
         ground_truth_hint=gt_hint,
         dom_metrics=dom_metrics,
         is_mock_source=is_mock_source,
+        social=social,
     )

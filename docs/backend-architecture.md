@@ -8,9 +8,10 @@ Kompletny opis techniczny backendu systemu `#InvestWatch` (HackNation UKNF 2026)
 
 ```mermaid
 flowchart LR
-    T["Trigger REST / APScheduler"] --> Q["asyncio.Queue (queue_worker.py)"]
-    Q --> F["PageFetcher + Anty-SSRF (fetcher.py, ssrf.py)"]
-    F --> P["Preprocessor + DOM/CSS + Embedding (preprocessor.py)"]
+    T["Trigger REST / APScheduler (interwał lub cron) + watchlista"] --> Q["Trwała kolejka w SQLite (crawl_jobs, queue_worker.py)"]
+    Q --> F["PageFetcher + Anty-SSRF + rotacja UA/proxy (fetcher.py, ssrf.py)"]
+    F --> SP["Parsery social media: JSON-LD / OpenGraph / URL (social_parsers.py)"]
+    SP --> P["Preprocessor + DOM/CSS + Embedding (preprocessor.py)"]
     P --> OS["Local Object Storage (.html / .json)"]
     P --> M1["Moduł 1: Finfluencerzy"]
     P --> M2["Moduł 2: 18 reguł UKNF"]
@@ -29,7 +30,9 @@ flowchart LR
 ```text
 backend/
 ├── Dockerfile                        # python:3.12-slim, non-root appuser, HEALTHCHECK
-├── requirements.txt                  # Otwarte zależności (MIT / BSD / Apache-2.0)
+├── requirements.txt                  # Zależności runtime, przypięte wersje (MIT / BSD / Apache-2.0)
+├── requirements-dev.txt              # + pytest, pip-audit (poza obrazem produkcyjnym)
+├── requirements-playwright.txt       # Opcjonalny Playwright (build-arg INSTALL_PLAYWRIGHT=true)
 ├── pytest.ini
 ├── app/
 │   ├── main.py                       # FastAPI app, lifespan, CORS, /api/v1/health
@@ -38,10 +41,12 @@ backend/
 │   ├── database.py                   # SQLite WAL, Object Storage, agregacje, kalibracja FP/FN
 │   ├── knf_registry.py               # Loader snapshotu 5 rejestrów KNF + 18 reguł UKNF
 │   ├── ws_manager.py                 # Odporny na rozłączenia manager połączeń /ws/alerts
-│   ├── queue_worker.py               # Kolejka asyncio.Queue + harmonogram APScheduler
+│   ├── queue_worker.py               # Trwała kolejka (SQLite) + harmonogram APScheduler (interwał/cron) + watchlista
 │   ├── scraper/
 │   │   ├── ssrf.py                   # Walidacja anty-SSRF (schemat, DNS, prywatne/metadata IP)
-│   │   └── fetcher.py                # httpx (limity/redirecty/UA) + Playwright fallback + mock loader
+│   │   ├── fetcher.py                # httpx (limity/redirecty/rotacja UA i proxy) + wybór fallbacku + mock loader
+│   │   ├── browser.py                # Playwright/Chromium: render JS, metryki z computed styles, anty-SSRF przeglądarki
+│   │   └── social_parsers.py         # Autor, treść posta, data, hashtagi, wzmianki, linki (FB/IG/TikTok/YT/X)
 │   ├── ai/
 │   │   ├── preprocessor.py           # Czyszczenie HTML, NFKC, SHA-256, DOM/CSS, wektor 128-dim
 │   │   ├── ollama_client.py          # Klient natywnej Ollamy na hoście (JSON + embeddings)
@@ -53,11 +58,14 @@ backend/
 │       ├── incidents.py              # /incidents, /incidents/{id}, PATCH /status, PATCH /label, /stats
 │       ├── analyze.py                # POST /analyze/text, POST /analyze/url (analiza na żądanie)
 │       ├── crawl.py                  # POST /crawl/trigger, /crawl/jobs, /knf-registry, /rules, /mock-sites
+│       ├── watchlist.py              # /watchlist (CRUD) + POST /watchlist/run
+│       ├── reports.py                # GET /reports/{module_id}?format=json|csv
 │       └── ws.py                     # WebSocket /ws/alerts
 └── tests/
     ├── test_ssrf.py                  # 14 przypadków blokady anty-SSRF
     ├── test_modules.py               # Testy Modułów 1–3, DOM/CSS i embeddingów
-    └── test_api.py                   # Testy integracyjne REST, analizy na żądanie, etykiet, kalibracji i WebSocket
+    ├── test_api.py                   # Testy integracyjne REST, analizy na żądanie, etykiet, kalibracji i WebSocket
+    └── test_crawler_features.py      # Parsery social, proxy, trwała kolejka, watchlista, near-dup, raporty, risk_level
 ```
 
 ---
@@ -77,6 +85,7 @@ backend/
   - `POST /api/v1/analyze/url` *(v1.1.0)* — synchroniczne pobranie jednego publicznego URL przez `PageFetcher` (anty-SSRF na każdym przekierowaniu, limity rozmiaru/przekierowań) i analiza; `400` dla adresów zablokowanych, `502` dla błędów pobierania.
   - Kolejka i analiza na żądanie współdzielą `CrawlQueueWorker.analyze_page()` — ten sam preprocessing, zapis do Object Storage, Moduły 1–3, deduplikację po `content_hash` (zachowuje status i etykietę analityka) oraz alerty `high_risk_alert`.
   - `GET /api/v1/crawl/jobs`, `GET /api/v1/knf-registry`, `GET /api/v1/rules`, `GET /mock-sites/{filename}`.
+  - *(v1.2.0)* `GET /api/v1/incidents?risk_level=high`, watchlista `GET/POST /api/v1/watchlist`, `PATCH/DELETE /api/v1/watchlist/{id}`, `POST /api/v1/watchlist/run`, raporty `GET /api/v1/reports/{module_id}?format=json|csv` (CSV z ochroną przed formula injection).
 - **WebSocket (`ws_manager.py`, `routers/ws.py`):** kanał `/ws/alerts` obsługuje `ping`/`pong` i emituje ustrukturyzowane komunikaty `connected`, `crawler_status` (`queued`, `fetching`, `preprocessing`, `analyzing`), `high_risk_alert` (gdy `risk_score >= HIGH_RISK_ALERT_THRESHOLD`, domyślnie `0.65`), `analysis_complete`, `status_updated` oraz `error`. Rozłączenie klienta usuwa gniazdo z puli bez przerywania bieżącego crawla.
 
 ---
@@ -88,9 +97,13 @@ backend/
   - Blokuje nazwy hostów lokalnych i wewnętrznych (`localhost`, `*.local`, `*.internal`, `metadata.google.internal`, `host.docker.internal`).
   - Rozwiązuje DNS (`socket.getaddrinfo`) i odrzuca adresy prywatne (`10/8`, `172.16/12`, `192.168/16`, `fc00::/7`), loopback (`127/8`, `::1`), IPv4-mapped IPv6 (`::ffff:127.0.0.1`), link-local / cloud metadata (`169.254.0.0/16`, `fe80::/10`), multicast oraz zarezerwowane.
   - W `fetcher.py` przekierowania są obsługiwane ręcznie (`follow_redirects=False`, max 5 hopów), a walidacja anty-SSRF jest wykonywana ponownie na każdym przekierowaniu.
-- **Pobieranie (`scraper/fetcher.py`):** asynchroniczny `httpx` z timeoutem (`12s`), limitem strumienia (`2 MB`), walidacją `Content-Type`, łagodnym rate-limitingiem (`0.5s`) i transparentną rotacją User-Agent (bez omijania kontroli dostępu). Zawiera opcjonalny fallback `Playwright` do renderowania stron JS oraz pomiaru overflow na ekranie mobilnym (`375x667`).
+- **Pobieranie (`scraper/fetcher.py`):** asynchroniczny `httpx` z timeoutem (`12s`), limitem strumienia (`2 MB`), walidacją `Content-Type`, łagodnym rate-limitingiem (`0.5s`), transparentną rotacją User-Agent oraz rotacją proxy z `CRAWLER_PROXIES` (bez omijania kontroli dostępu). - **Renderowanie JS (`scraper/browser.py`, obraz z `INSTALL_PLAYWRIGHT=true`):** uruchamiane gdy `use_playwright: true` albo przy `CRAWLER_USE_PLAYWRIGHT_FALLBACK=true`, jeśli strona po usunięciu skryptów ma mniej niż `CRAWLER_PLAYWRIGHT_MIN_TEXT_CHARS` znaków widocznego tekstu (powłoka SPA). Headless Chromium z tym samym proxy co httpx, timeout `CRAWLER_PLAYWRIGHT_TIMEOUT_SECONDS`, maks. 2 równoległe rendery, `--disable-dev-shm-usage` (Docker), zablokowane service workery, pobieranie plików oraz obrazy/media/fonty.
+  - **Anty-SSRF w przeglądarce:** każde żądanie (nawigacja, skrypty, `fetch`/XHR) i każdy WebSocket przechodzi przez `validate_public_url` (DNS w wątku, cache per host). Chromium podąża za przekierowaniami bez ponownego wywołania `route`, dlatego handler sam pobiera odpowiedź (`route.fetch(max_redirects=0)`), waliduje każdy krok łańcucha `Location` (limit `CRAWLER_MAX_REDIRECTS`) i oddaje przeglądarce dopiero końcową odpowiedź. Wyrenderowany DOM jest ograniczony do `CRAWLER_MAX_BYTES`.
+  - **Metryki z computed styles:** w kontekście strony liczone są rozmiar czcionki ostrzeżenia vs. mediana ważona długością tekstu (Reguła 4), kontrast WCAG z rzeczywistym tłem i efektywną przezroczystością (< 4.5:1, Reguła 5), umieszczenie w stopce/sekcji prawnej (Reguła 6), treść w zamkniętym `<details>` (Reguła 7) i overflow przy `375x667` (Reguła 8). Uwzględniają zewnętrzne arkusze CSS i style nadane przez JS, więc mają pierwszeństwo przed statyczną analizą inline CSS.
+  - **Znane ograniczenie:** walidacja DNS i połączenie wykonywane przez Playwright to dwa osobne rozwiązania nazwy (teoretyczne okno na DNS rebinding). Przy wdrożeniu produkcyjnym ruch wychodzący crawlera powinien iść przez proxy egress z blokadą sieci prywatnych.
+- **Parsery social media (`scraper/social_parsers.py`):** dla `facebook`, `instagram`, `tiktok`, `youtube`, `x` odczytują schema.org JSON-LD (`SocialMediaPosting`, `VideoObject`), OpenGraph / Twitter Card, uchwyt z ścieżki URL (`tiktok.com/@user`, `instagram.com/user`) i widoczne oznaczenie autora. Wynik (autor, treść posta, data publikacji, hashtagi, wzmianki, linki wychodzące) trafia do artefaktu JSON w Object Storage, a autor — do `promoter_name` w Module 1.
 - **Lokalne źródła demonstracyjne (`data/mock_sites/*.html`):** ładowane osobną, odizolowaną ścieżką z ochroną przed path traversal, jawnie oznaczone jako syntetyczne (`mock://...`, `[MOCK DEMO]`).
-- **Kolejka i harmonogram (`queue_worker.py`):** asynchroniczny worker na `asyncio.Queue` zapisujący postęp w tabeli `crawl_jobs` + `APScheduler` (`AsyncIOScheduler`) uruchamiający cykliczny skan z zabezpieczeniem `max_instances=1` oraz zbiorem aktywnych celów (brak dublowania).
+- **Kolejka i harmonogram (`queue_worker.py`):** trwała kolejka w tabeli `crawl_jobs` (parametry zadania w `request_json`, atomowe pobieranie `BEGIN IMMEDIATE`, zadania przerwane restartem wracają do kolejki) + `APScheduler` (`AsyncIOScheduler`) z wyzwalaczem interwałowym lub crontab (`CRAWLER_CRON`), `max_instances=1`, `coalesce=True`. Każdy cykl skanuje mock-strony demo (opcjonalnie) oraz wszystkie aktywne cele z tabeli `watch_targets` — to mechanizm okresowej aktualizacji raportu Modułu 1. Cele w trakcie przetwarzania są pomijane.
 
 ---
 
@@ -98,7 +111,7 @@ backend/
 
 ### Preprocessing (`ai/preprocessor.py`)
 - Usuwa elementy nietekstowe (`<script>`, `<style>`, `<noscript>`, `<svg>`), normalizuje tekst (Unicode NFKC + białe znaki), dzieli na zdania i liczy skrót `SHA-256` (`content_hash`) do deduplikacji.
-- Ekstrahuje **metryki DOM/CSS** z inline stylów i bloków `<style>` (plus opcjonalne metryki z Playwright): `dominant_font_px`, `risk_font_px`, `font_ratio`, `risk_hidden_in_footer`, `requires_click_to_view_risk` (`<details>`), `low_contrast_detected` (luminancja koloru hex/opacity), `responsive_overflow_detected`.
+- Ekstrahuje **metryki DOM/CSS** z inline stylów i bloków `<style>` (plus metryki z computed styles przeglądarki, gdy strona była renderowana przez Playwright — mają pierwszeństwo): `dominant_font_px`, `risk_font_px`, `font_ratio`, `risk_hidden_in_footer`, `requires_click_to_view_risk` (`<details>`), `low_contrast_detected` (luminancja koloru hex/opacity), `responsive_overflow_detected`.
 - Tworzy deterministyczną reprezentację wektorową 128-dim (feature hashing z normalizacją L2 + funkcja `cosine_similarity`), którą przy dostępnej Ollamie nadpisuje lokalnym embeddingiem z `/api/embeddings`.
 
 ### Trzy wyspecjalizowane moduły
@@ -116,26 +129,27 @@ backend/
 - Backend łączy się z Ollamą działającą natywnie na hoście (`OLLAMA_BASE_URL`, w Dockerze `http://host.docker.internal:11434`), automatycznie wykrywając zainstalowany model open-source (preferując `gemma4`/`gemma3`/`qwen2.5`/`llama3`) i wymuszając odpowiedź w `format: "json"`.
 - Gdy Ollama odpowiada, finalny `risk_score` (`0.00–1.00`) jest średnią ważoną wyniku reguł (65–70%) i oceny LLM (30–35%).
 - Gdy Ollama jest niedostępna, system automatycznie i bezawaryjnie przechodzi na tryb `demo_fallback` (silnik deterministyczny 18 reguł + DOM/CSS + seedowane rekordy w SQLite), jawnie oznaczając to w `mode`, `model_used` oraz `is_demo_fallback`.
-- `aggregator.py` łączy wyniki Modułów 1–3 w ujednolicony obiekt `Incident` i deduplikuje wpisy w SQLite po parze `(module_id, content_hash)`.
+- `aggregator.py` łączy wyniki Modułów 1–3 w ujednolicony obiekt `Incident`. Deduplikacja w `queue_worker.py`: najpierw dokładnie po `(module_id, content_hash)`, potem semantycznie — ponowny skan tego samego URL z podobieństwem kosinusowym embeddingów `>= DEDUP_SIMILARITY_THRESHOLD` aktualizuje istniejący incydent (zmienione liczniki czy komentarze nie tworzą duplikatów).
 
 ---
 
 ## 6. Warstwa składowania i konteneryzacja
 
-- **SQLite (`database.py`):** tryb `WAL`, klucze obce włączone, 3 tabele (`incidents`, `content_snapshots`, `crawl_jobs`) + indeksy po `module_id`, `risk_score`, `status`, `detected_at` i `(module_id, content_hash)`. Wszystkie zapytania używają wyłącznie parametrów bindowanych (`?`).
+- **SQLite (`database.py`):** tryb `WAL`, klucze obce włączone, 4 tabele (`incidents`, `content_snapshots` z pełnym embeddingiem, `crawl_jobs`, `watch_targets`), addytywne migracje kolumn przy starcie + indeksy po `module_id`, `risk_score`, `status`, `detected_at` i `(module_id, content_hash)`. Wszystkie zapytania używają wyłącznie parametrów bindowanych (`?`).
 - **Local Object Storage:** surowe pobrane strony (`<hash>.html`) oraz przetworzone artefakty JSON (`<hash>.json` z tekstem i wektorem) zapisywane w `OBJECT_STORE_DIR` i wiązane z rekordem poprzez `storage_key`.
 - **Docker (`backend/Dockerfile`, `docker-compose.yml`):**
   - Lekki obraz `python:3.12-slim` z nieuprzywilejowanym użytkownikiem `appuser` i wbudowanym `HEALTHCHECK`.
   - Trwały wolumen `investwatch_data:/data` gwarantujący zachowanie bazy SQLite i Object Storage między restartami.
   - Wpis `extra_hosts: ["host.docker.internal:host-gateway"]` zapewniający łączność z natywną Ollamą również pod Linuksem.
+  - Profil `ai` (`docker compose --profile ai up`): serwis `ollama` (przypięty obraz `ollama/ollama:${OLLAMA_IMAGE_TAG}`, wolumen `ollama_models`) i jednorazowy `ollama-pull` pobierający `OLLAMA_MODEL` i `OLLAMA_EMBED_MODEL` — cały stos z lokalnym LLM jedną komendą.
   - Serwis `frontend` (Nginx) wystawia panel na porcie `3000` i przekazuje `/api/` oraz `/ws/` do `backend:8000` w sieci Compose; startuje po uzyskaniu przez backend statusu `healthy`. Szczegóły: [frontend-architecture.md](./frontend-architecture.md).
 
 ---
 
 ## 7. Stan weryfikacji
 
-- **Testy automatyczne (`pytest`):** **28/28 PASSED** (`2026-11-21`) — pokrycie dla 14 wektorów anty-SSRF (`test_ssrf.py`), wszystkich 3 modułów analitycznych + DOM/CSS + przypadków negatywnych (`test_modules.py`) oraz pełnej integracji REST, analizy na żądanie (walidacja, escapowanie, deduplikacja, anty-SSRF dla `/analyze/url`), etykiet referencyjnych, kalibracji FP/FN i streamingu WebSocket `/ws/alerts` (`test_api.py`).
-- **Audyt bezpieczeństwa (`pip-audit`):** `No known vulnerabilities found` (**0 znanych podatności**).
+- **Testy automatyczne (`pytest`):** **43/43 PASSED** (`2026-11-21`, v1.2.0) — **49/49** z zainstalowanym Playwright/Chromium (`test_browser.py`: render SPA, computed styles, blokada żądań/WebSocketów/przekierowań do adresów wewnętrznych; bez Playwrighta testy są pomijane) — pokrycie dla 14 wektorów anty-SSRF (`test_ssrf.py`), wszystkich 3 modułów analitycznych + DOM/CSS + przypadków negatywnych (`test_modules.py`) oraz pełnej integracji REST, analizy na żądanie (walidacja, escapowanie, deduplikacja, anty-SSRF dla `/analyze/url`), etykiet referencyjnych, kalibracji FP/FN i streamingu WebSocket `/ws/alerts` (`test_api.py`).
+- **Audyt bezpieczeństwa (`pip-audit -r requirements-dev.txt`, przypięte wersje):** `No known vulnerabilities found` (**0 znanych podatności**).
 - Szczegóły licencji i zabezpieczeń: [security-licenses.md](./security-licenses.md).
 - Proces pracy z asystentami AI: [ai-workflow.md](./ai-workflow.md).
 - Checklista niezależnego audytu: [backend-audit-checklist.md](./backend-audit-checklist.md).

@@ -40,14 +40,29 @@ class Settings(BaseSettings):
     crawler_max_redirects: int = 5
     crawler_rate_limit_seconds: float = 0.5
     crawler_use_playwright_fallback: bool = False
+    crawler_playwright_timeout_seconds: float = 20.0
+    # Pages whose visible text (without scripts/styles) is shorter are re-rendered with Playwright
+    crawler_playwright_min_text_chars: int = 400
     crawler_enable_scheduler: bool = True
     crawler_schedule_minutes: int = 15
+    # Optional crontab expression ("*/30 * * * *"); overrides CRAWLER_SCHEDULE_MINUTES when set
+    crawler_cron: str = ""
+    # Re-scan local mock sources in each scheduled run (demo); watchlist targets are always scanned
+    crawler_schedule_include_mocks: bool = True
+    # Comma-separated proxy URLs rotated per request, e.g. "http://proxy1:3128,socks5://proxy2:1080"
+    crawler_proxies: str = ""
+    # Cosine similarity above which a re-scanned page (same URL + module) updates the existing incident
+    dedup_similarity_threshold: float = 0.92
 
     high_risk_alert_threshold: float = 0.65
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def crawler_proxy_list(self) -> list[str]:
+        return [p.strip() for p in self.crawler_proxies.split(",") if p.strip()]
 
     def resolve_path(self, raw_path: str) -> Path:
         p = Path(raw_path)

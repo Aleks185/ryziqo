@@ -9,7 +9,7 @@ Prototyp MVP (HackNation 2026) do automatycznej identyfikacji, agregacji i anali
 
 - **Docker + Docker Compose** (rekomendowany start on-premise)
 - **RAM:** min. 4 GB (tryb z regułami/fallback), min. 8–16 GB przy lokalnym modelu LLM w Ollama
-- **Opcjonalnie (lokalne AI on-premise):** [Ollama](https://ollama.com/) uruchomiona na hoście (`ollama pull gemma3:4b` lub `gemma4`) — zero płatnych zewnętrznych API
+- **Opcjonalnie (lokalne AI on-premise):** [Ollama](https://ollama.com/) na hoście (`ollama pull gemma3:4b` lub `gemma4`) albo w kontenerze (profil `ai`, poniżej) — zero płatnych zewnętrznych API
 - **Do developmentu bez Dockera:** Python 3.11+ (backend), Node.js 20+ i Yarn 1.22 (frontend)
 
 ## Struktura repozytorium
@@ -29,12 +29,21 @@ cp .env.example .env
 docker compose up --build
 ```
 
+Z lokalnym AI w kontenerze (pobiera modele przy pierwszym starcie; w `.env` ustaw `OLLAMA_BASE_URL=http://ollama:11434`):
+
+```bash
+docker compose --profile ai up --build
+```
+
+Strony renderowane JavaScriptem: `INSTALL_PLAYWRIGHT=true` i `CRAWLER_USE_PLAYWRIGHT_FALLBACK=true` w `.env`, potem `docker compose build`.
+
 Po uruchomieniu:
 - **Panel analityka (frontend):** `http://localhost:3000` (Nginx przekazuje `/api/` i `/ws/` do backendu)
 - **API:** `http://localhost:8000/api/v1/health`
 - **Swagger / OpenAPI:** `http://localhost:8000/docs`
 - **WebSocket alertów:** `ws://localhost:8000/ws/alerts`
 - **Analiza na żądanie:** `POST /api/v1/analyze/text` i `POST /api/v1/analyze/url` (szczegóły w [CONTRACT.md](CONTRACT.md))
+- **Okresowo skanowane źródła:** `/api/v1/watchlist`; **raporty modułów (JSON/CSV):** `/api/v1/reports/{1|2|3}?format=csv`
 - **Podgląd lokalnych mock-stron demo:** `http://localhost:8000/mock-sites/broker_promo_hidden_risk.html`
 
 ## Quick Start (lokalnie bez Dockera)
@@ -45,7 +54,7 @@ Po uruchomieniu:
 cd backend
 python -m venv .venv
 .venv\Scripts\activate      # Linux/macOS: source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -69,6 +78,12 @@ Wszystkie parametry znajdują się w [.env.example](.env.example). Sekrety są i
 | `DATABASE_PATH` | `../data/investwatch.db` (Docker: `/data/investwatch.db`) | Ścieżka trwałej bazy SQLite |
 | `OBJECT_STORE_DIR` | `../data/object_store` (Docker: `/data/object_store`) | Lokalny object storage surowych HTML i JSON |
 | `CRAWLER_SCHEDULE_MINUTES` | `15` | Interwał harmonogramu APScheduler |
+| `CRAWLER_CRON` | puste | Wyrażenie crontab (UTC) zastępujące interwał, np. `*/30 * * * *` |
+| `CRAWLER_PROXIES` | puste | Lista proxy rotowanych per żądanie (`http://...`, `socks5://...`) |
+| `DEDUP_SIMILARITY_THRESHOLD` | `0.92` | Próg podobieństwa embeddingów przy ponownym skanie tego samego URL |
+| `INSTALL_PLAYWRIGHT` | `false` | Build-arg Dockera: Chromium dla stron renderowanych JS |
+| `CRAWLER_USE_PLAYWRIGHT_FALLBACK` | `false` | Renderuj w Chromium strony z małą ilością tekstu (SPA) |
+| `CRAWLER_PLAYWRIGHT_MIN_TEXT_CHARS` | `400` | Próg widocznego tekstu uruchamiający render |
 | `HIGH_RISK_ALERT_THRESHOLD` | `0.65` | Próg emisji alertów `high_risk_alert` na `/ws/alerts` (w Dockerze także próg alertów w panelu) |
 | `FRONTEND_PORT` | `3000` | Port hosta, na którym Docker Compose wystawia panel |
 
@@ -78,8 +93,8 @@ Zmienne frontendu (`REACT_APP_INVESTWATCH_API_URL`, `REACT_APP_ALERT_THRESHOLD`)
 
 ```bash
 cd backend
-pytest -q
-pip-audit -r requirements.txt
+pytest -q                    # testy Playwright wymagają: pip install -r requirements-playwright.txt && playwright install chromium
+pip-audit -r requirements-dev.txt -r requirements-playwright.txt
 
 cd ../frontend
 yarn audit

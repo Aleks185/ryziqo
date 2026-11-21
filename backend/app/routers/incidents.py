@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.database import utc_now_iso
@@ -24,6 +26,7 @@ async def list_incidents(
     module_id: int | None = Query(default=None, ge=1, le=3),
     source_platform: str | None = Query(default=None),
     status: str | None = Query(default=None),
+    risk_level: Literal["low", "medium", "high"] | None = Query(default=None),
     min_risk_score: float | None = Query(default=None, ge=0.0, le=1.0),
     max_risk_score: float | None = Query(default=None, ge=0.0, le=1.0),
     date_from: str | None = Query(default=None),
@@ -47,6 +50,7 @@ async def list_incidents(
         search=search,
         limit=limit,
         offset=offset,
+        risk_level=risk_level,
     )
     return IncidentListResponse(
         items=items,

@@ -11,8 +11,10 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import httpx
+from bs4 import BeautifulSoup
 
 from app.config import Settings
+from app.scraper.browser import BrowserRenderer, RenderResult
 from app.scraper.ssrf import SSRFError, validate_public_url
 
 logger = logging.getLogger("investwatch.scraper")
@@ -67,6 +69,8 @@ def detect_platform_from_url(url: str) -> str:
         return "facebook"
     if "youtube" in host or "youtu.be" in host:
         return "youtube"
+    if host in ("x.com", "www.x.com", "twitter.com", "www.twitter.com", "mobile.twitter.com"):
+        return "x"
     return "web"
 
 
@@ -77,6 +81,7 @@ class PageFetcher:
         self.settings = settings
         self._last_public_request_ts: float = 0.0
         self._rate_lock = asyncio.Lock()
+        self._renderer = BrowserRenderer(settings)
 
     async def _respect_rate_limit(self) -> None:
         async with self._rate_lock:
@@ -86,6 +91,15 @@ class PageFetcher:
             if wait > 0:
                 await asyncio.sleep(wait)
             self._last_public_request_ts = asyncio.get_running_loop().time()
+
+    def pick_proxy(self) -> str | None:
+        """Rotate configured proxies per request (CRAWLER_PROXIES); None means a direct connection."""
+        proxies = self.settings.crawler_proxy_list
+        return random.choice(proxies) if proxies else None
+
+    @staticmethod
+    def pick_user_agent() -> str:
+        return random.choice(ETHICAL_USER_AGENTS)
 
     def list_mock_files(self) -> list[str]:
         mock_dir = self.settings.mock_sites_dir
@@ -132,7 +146,7 @@ class PageFetcher:
         await self._respect_rate_limit()
 
         headers = {
-            "User-Agent": random.choice(ETHICAL_USER_AGENTS),
+            "User-Agent": self.pick_user_agent(),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "pl-PL,pl;q=0.9,en;q=0.5",
         }
@@ -140,8 +154,11 @@ class PageFetcher:
         timeout = httpx.Timeout(self.settings.crawler_timeout_seconds)
         raw_bytes = bytearray()
         status_code = 200
+        proxy = self.pick_proxy()
 
-        async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
+        async with httpx.AsyncClient(
+            timeout=timeout, follow_redirects=False, proxy=proxy, trust_env=False
+        ) as client:
             for hop in range(self.settings.crawler_max_redirects + 1):
                 validate_public_url(current_url)
                 async with client.stream("GET", current_url, headers=headers) as resp:
@@ -173,12 +190,15 @@ class PageFetcher:
         used_pw = False
 
         should_try_pw = use_playwright or (
-            self.settings.crawler_use_playwright_fallback and len(html.strip()) < 600
+            self.settings.crawler_use_playwright_fallback
+            and self.looks_js_rendered(html, self.settings.crawler_playwright_min_text_chars)
         )
         if should_try_pw:
-            pw_html, pw_metrics = await self._try_playwright_render(current_url)
-            if pw_html:
-                html = pw_html
+            rendered = await self._try_playwright_render(current_url, proxy=proxy)
+            if rendered is not None:
+                html = rendered.html
+                current_url = rendered.final_url
+                pw_metrics = rendered.metrics
                 used_pw = True
 
         return FetchedPage(
@@ -192,31 +212,23 @@ class PageFetcher:
             playwright_dom_metrics=pw_metrics,
         )
 
-    async def _try_playwright_render(self, url: str) -> tuple[str | None, dict[str, object] | None]:
-        """Optional Playwright fallback for JS-rendered pages + responsive viewport check."""
-        try:
-            from playwright.async_api import async_playwright
-        except ImportError:
+    @staticmethod
+    def looks_js_rendered(html: str, min_text_chars: int) -> bool:
+        """True when the HTML is an app shell: little visible text once scripts/styles are removed."""
+        soup = BeautifulSoup(html, "html.parser")
+        for tag in soup.find_all(["script", "style", "noscript", "template", "svg"]):
+            tag.decompose()
+        return len(soup.get_text(" ", strip=True)) < min_text_chars
+
+    async def _try_playwright_render(
+        self, url: str, proxy: str | None = None
+    ) -> RenderResult | None:
+        """Optional Playwright fallback; any failure keeps the httpx result."""
+        if not self._renderer.is_available():
             logger.info("Playwright nie jest zainstalowany — używam wyników httpx.")
-            return None, None
-
+            return None
         try:
-            validate_public_url(url)
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
-                try:
-                    page = await browser.new_page(viewport={"width": 1280, "height": 800})
-                    await page.goto(url, wait_until="domcontentloaded", timeout=15000)
-                    html = await page.content()
-
-                    # Check mobile viewport overflow (Rule 8 — Responsiveness)
-                    await page.set_viewport_size({"width": 375, "height": 667})
-                    overflow_mobile = await page.evaluate(
-                        "() => document.documentElement.scrollWidth > window.innerWidth + 10"
-                    )
-                    return html, {"responsive_overflow_detected": bool(overflow_mobile)}
-                finally:
-                    await browser.close()
+            return await self._renderer.render(url, user_agent=self.pick_user_agent(), proxy=proxy)
         except Exception as exc:
             logger.warning("Playwright fallback nie powiódł się dla %s: %s", url, exc)
-            return None, None
+            return None

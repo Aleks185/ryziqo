@@ -1,0 +1,2 @@
+# Optional JS rendering fallback (Docker build-arg INSTALL_PLAYWRIGHT=true)
+playwright==1.64.1

@@ -181,6 +181,39 @@ class CrawlJobsResponse(BaseModel):
     scheduler_next_run: str | None = None
 
 
+class WatchTargetCreate(BaseModel):
+    url: str = Field(min_length=8, max_length=2048)
+    label: str | None = Field(default=None, max_length=200)
+    module_ids: ModuleIds = Field(default_factory=lambda: [1, 2, 3], min_length=1)
+    use_playwright: bool = False
+
+
+class WatchTargetUpdate(BaseModel):
+    enabled: bool
+
+
+class WatchTarget(BaseModel):
+    id: int
+    url: str
+    label: str | None = None
+    module_ids: list[int]
+    use_playwright: bool = False
+    enabled: bool = True
+    created_at: str
+    last_enqueued_at: str | None = None
+
+
+class WatchlistResponse(BaseModel):
+    items: list[WatchTarget]
+    schedule: str
+    scheduler_next_run: str | None = None
+
+
+class WatchlistRunResponse(BaseModel):
+    job_ids: list[str]
+    skipped: list[str] = Field(default_factory=list)
+
+
 class HealthResponse(BaseModel):
     status: str
     ollama_available: bool
