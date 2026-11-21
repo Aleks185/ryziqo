@@ -2,7 +2,7 @@ import "@/App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AppProvider } from "@/lib/store";
-import { Header } from "@/components/Header";
+import { Header, Sidebar } from "@/components/Header";
 import { DemoBanner } from "@/components/DemoBanner";
 import Dashboard from "@/pages/Dashboard";
 import Analyze from "@/pages/Analyze";
@@ -17,22 +17,25 @@ function App() {
   return (
     <AppProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-[#F8FAFC] text-slate-800">
-          <Header />
-          <DemoBanner />
-          <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/public" element={<Citizen />} />
-              <Route path="/analyze" element={<Analyze />} />
-              <Route path="/incidents/:id" element={<IncidentDetail />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/reports/:id" element={<ReportDetails />} />
-              <Route path="/campaigns" element={<Campaigns />} />
-              <Route path="/diagnostics" element={<Diagnostics />} />
-              <Route path="/calibration" element={<Calibration />} />
-              <Route path="/log" element={<LogPage />} />
-            </Routes>
+        <div className="flex min-h-screen bg-[#F8FAFC] text-slate-800">
+          <Sidebar />
+          <main className="min-w-0 flex-1">
+            <Header />
+            <DemoBanner />
+            <div className="app-page mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/public" element={<Citizen />} />
+                <Route path="/analyze" element={<Analyze />} />
+                <Route path="/incidents/:id" element={<IncidentDetail />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/reports/:id" element={<ReportDetails />} />
+                <Route path="/campaigns" element={<Campaigns />} />
+                <Route path="/diagnostics" element={<Diagnostics />} />
+                <Route path="/calibration" element={<Calibration />} />
+                <Route path="/log" element={<LogPage />} />
+              </Routes>
+            </div>
           </main>
         </div>
         <Toaster position="bottom-right" theme="light" richColors closeButton />

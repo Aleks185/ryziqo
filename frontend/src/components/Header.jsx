@@ -1,82 +1,172 @@
-import { useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Activity, ClipboardList, FileSearch, Gauge, LayoutDashboard, Menu, Network, ScanSearch, ShieldAlert } from "lucide-react";
+import { Link, NavLink, useLocation, useMatch } from "react-router-dom";
 import { Logo } from "./Logo";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { useApp } from "@/lib/store";
 
 const LINKS = [
-  ["/", "nav_dashboard", "nav-dashboard"],
-  ["/analyze", "nav_analyze", "nav-analyze"],
-  ["/reports", "intel_reports", "nav-reports"],
-  ["/campaigns", "intel_campaigns", "nav-campaigns"],
-  ["/diagnostics", "intel_diag", "nav-diagnostics"],
-  ["/calibration", "nav_calibration", "nav-calibration"],
-  ["/log", "nav_log", "nav-log"],
+  ["/", "nav_dashboard", "nav-dashboard", LayoutDashboard],
+  ["/analyze", "nav_analyze", "nav-analyze", FileSearch],
+  ["/reports", "intel_reports", "nav-reports", ClipboardList],
+  ["/campaigns", "intel_campaigns", "nav-campaigns", Network],
+  ["/diagnostics", "intel_diag", "nav-diagnostics", Activity],
+  ["/calibration", "nav_calibration", "nav-calibration", Gauge],
+  ["/log", "nav_log", "nav-log", ScanSearch],
 ];
 
-const ConnectionPill = () => {
+function ConnectionPill() {
   const { mode, wsStatus, t } = useApp();
-  const dot = mode === "online" ? (wsStatus === "connected" ? "bg-emerald-400" : "bg-amber-400") : mode === "demo" ? "bg-amber-400" : "bg-slate-400";
+  const connected = mode === "online" && wsStatus === "connected";
+  const dot = connected ? "bg-emerald-400" : mode === "checking" ? "bg-slate-400" : "bg-amber-400";
+
   return (
-    <div data-testid="nav-connection-status" className="flex items-center gap-2 border border-[#2E5077] rounded-sm px-2.5 py-1 font-mono text-[11px] tracking-wide">
-      <span className={`h-2 w-2 rounded-full ${dot} ${mode === "online" && wsStatus === "connected" ? "animate-pulse" : ""}`} />
+    <div data-testid="nav-connection-status" className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-mono">
+      <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
       <span className="font-bold">{t(`conn_${mode}`)}</span>
-      <span className="hidden md:inline text-slate-400">· {t(`ws_${wsStatus}`)}</span>
+      <span className="text-slate-400">{t(`ws_${wsStatus}`)}</span>
     </div>
   );
-};
+}
 
-export const Header = () => {
-  const [open, setOpen] = useState(false);
-  const publicView = useLocation().pathname.replace(/\/$/, "") === "/public";
-  const { lang, setLang, t } = useApp();
+function NavigationContent({ onNavigate }) {
+  const { lang, t } = useApp();
+  const menuLabel = lang === "pl" ? "Nawigacja główna" : "Main navigation";
+
   return (
-    <header className="no-print sticky top-0 z-40 bg-[#0A1E33] text-white border-b border-[#1E3E62]">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center gap-x-6 gap-y-2 py-2.5">
-        <NavLink to="/" data-testid="nav-logo" className="flex items-center gap-3 focus-ring">
-          <Logo wide />
-        </NavLink>
-        {!publicView && <button className="px-3 py-1.5 text-sm rounded-sm transition-colors focus-ring" type="button" aria-expanded={open} aria-controls="analyst-navigation" onClick={()=>setOpen(!open)}>Menu {open ? "▴" : "▾"}</button>}
-        {!publicView && open && <nav id="analyst-navigation" className="flex flex-wrap gap-1 order-3 lg:order-none w-full lg:w-auto">
-          {LINKS.map(([to, key, id]) => (
+    <nav aria-label={menuLabel} className="px-3 py-4">
+      <ul className="space-y-1">
+        {LINKS.map(([to, label, id, Icon]) => (
+          <li key={to}>
             <NavLink
-              onClick={()=>setOpen(false)} key={to}
               to={to}
               end={to === "/"}
+              onClick={onNavigate}
               data-testid={id}
               className={({ isActive }) =>
-                `px-3 py-1.5 text-sm rounded-sm transition-colors focus-ring ${isActive ? "bg-white text-[#0B192C] font-semibold" : "text-slate-300 hover:bg-[#1E3E62] hover:text-white"}`
+                `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors focus-ring ${isActive ? "bg-white font-semibold text-[#0B192C]" : "text-slate-200 hover:bg-[#1E3E62] hover:text-white"}`
               }
             >
-              {t(key)}
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {t(label)}
             </NavLink>
-          ))}
-        </nav>}
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          {!publicView && <ConnectionPill />}
-          <div className="flex border border-[#2E5077] rounded-sm">
-            {[[false, "/", "analyst"], [true, "/public", "citizen"]].map(([active, to, key]) => (
-              <Link key={key} to={to} aria-current={active === publicView ? "page" : undefined}
-                className={`px-2 py-1 text-xs font-semibold focus-ring ${active === publicView ? "bg-white text-[#0B192C]" : "text-slate-300"}`}>
-                {t(key)}
-              </Link>
-            ))}
-          </div>
-          <div className="flex border border-[#2E5077] rounded-sm overflow-hidden" role="group" aria-label="Language">
-            {["pl", "en"].map((l) => (
-              <button
-                key={l}
-                type="button"
-                data-testid={`nav-lang-${l}`}
-                onClick={() => setLang(l)}
-                aria-pressed={lang === l}
-                className={`px-2.5 py-1 text-xs font-mono font-bold uppercase focus-ring transition-colors ${lang === l ? "bg-white text-[#0B192C]" : "text-slate-300 hover:bg-[#1E3E62]"}`}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
-        </div>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+function HeaderControls({ publicView }) {
+  const { lang, setLang, t } = useApp();
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 px-3 pb-2 sm:px-4 lg:min-h-[66px] lg:py-2">
+      <nav aria-label={lang === "pl" ? "Tryb aplikacji" : "Application mode"} className="inline-flex max-w-full rounded-md border border-[#2E5077]">
+        {[
+          { to: "/", label: "analyst", active: !publicView, Icon: LayoutDashboard },
+          { to: "/public", label: "citizen", active: publicView, Icon: ShieldAlert },
+        ].map(({ to, label, active, Icon }) => (
+          <Link
+            key={to}
+            to={to}
+            aria-current={active ? "true" : undefined}
+            className={`flex items-center gap-1.5 rounded-sm px-2 py-2 text-left text-xs font-semibold transition-colors focus-ring sm:px-3 sm:text-sm ${active ? "bg-white text-[#0B192C]" : "text-white hover:bg-[#1E3E62]"}`}
+          >
+            <Icon className="hidden h-4 w-4 shrink-0 sm:block" aria-hidden="true" />
+            {t(label)}
+          </Link>
+        ))}
+      </nav>
+      {!publicView && <ConnectionPill />}
+      <div className="inline-flex overflow-hidden rounded-md border border-[#2E5077]" role="group" aria-label={lang === "pl" ? "Język" : "Language"}>
+        {["pl", "en"].map((language) => (
+          <button
+            key={language}
+            type="button"
+            data-testid={`nav-lang-${language}`}
+            onClick={() => setLang(language)}
+            aria-pressed={lang === language}
+            className={`px-3 py-1.5 font-mono text-xs font-bold uppercase transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-500 ${lang === language ? "bg-white text-[#0B192C]" : "text-slate-200 hover:bg-[#1E3E62]"}`}
+          >
+            {language}
+          </button>
+        ))}
       </div>
+    </div>
+  );
+}
+
+export function Sidebar() {
+  const publicView = useMatch("/public");
+  if (publicView) return null;
+
+  return (
+    <aside className="no-print sticky top-0 hidden h-dvh w-64 shrink-0 flex-col self-start overflow-y-auto border-r border-[#2E5077] bg-[#0A1E33] text-white lg:flex">
+      <Link to="/" data-testid="nav-logo" className="flex min-w-0 justify-center border-b border-[#2E5077] py-3 focus-ring">
+        <Logo wide />
+      </Link>
+      <NavigationContent />
+    </aside>
+  );
+}
+
+function MobileNavigation() {
+  const [open, setOpen] = useState(false);
+  const { lang } = useApp();
+  const { key } = useLocation();
+  const menuLabel = lang === "pl" ? "Nawigacja główna" : "Main navigation";
+
+  useEffect(() => setOpen(false), [key]);
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = (event) => {
+      if (event.matches) setOpen(false);
+    };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
+
+  return (
+    <div className="flex h-[66px] items-center gap-1 px-3 py-2 lg:hidden">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <button type="button" aria-label={menuLabel} className="rounded-md p-2 transition-colors hover:bg-[#1E3E62] focus-ring">
+            <Menu className="h-6 w-6" aria-hidden="true" />
+          </button>
+        </SheetTrigger>
+        <SheetContent side="left" aria-describedby={undefined} className="no-print flex w-[min(18rem,100%)] flex-col gap-0 overflow-y-auto border-[#2E5077] bg-[#0A1E33] p-0 pt-10 text-white">
+          <SheetTitle className="sr-only">{menuLabel}</SheetTitle>
+          <div className="flex justify-end border-b border-[#2E5077] px-3 pb-2">
+            <Link to="/" data-testid="drawer-nav-logo" onClick={() => setOpen(false)} className="rounded-sm focus-ring">
+              <Logo wide />
+            </Link>
+          </div>
+          <NavigationContent onNavigate={() => setOpen(false)} />
+        </SheetContent>
+      </Sheet>
+      {!open && (
+        <Link to="/" data-testid="mobile-nav-logo" className="rounded-sm focus-ring">
+          <Logo wide />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+export function Header() {
+  const publicView = Boolean(useMatch("/public"));
+
+  return (
+    <header className="no-print sticky top-0 z-40 flex flex-wrap items-center justify-end border-b border-[#2E5077] bg-[#0A1E33] text-white">
+      {publicView ? (
+        <Link to="/" className="mr-auto rounded-sm px-3 py-2 focus-ring">
+          <Logo wide />
+        </Link>
+      ) : (
+        <div className="mr-auto lg:hidden"><MobileNavigation /></div>
+      )}
+      <HeaderControls publicView={publicView} />
     </header>
   );
-};
+}

@@ -52,7 +52,8 @@ body {
   .print-only.grid {
     display: grid;
   }
-  main {
+  main,
+  .app-page {
     max-width: none !important;
     padding: 0 !important;
   }
