@@ -436,3 +436,25 @@ def test_refreshed_snapshot_is_picked_and_reload_updates_matching(tmp_path: Path
     match = registry.match_entity_in_text("Konto w ZupelnieNowyBroker")
     assert match is not None and match.official_name == "Zupełnie Nowy Broker S.A."
     assert registry.snapshot_date == "2999-01-01"
+
+
+# --- Rules 6/7: a warning repeated in the footer is not a hidden warning ------------------
+RISK = "Kontrakty CFD są złożonymi instrumentami i wiążą się z dużym ryzykiem utraty środków."
+
+
+@pytest.mark.parametrize(
+    ("body", "footer", "details"),
+    [
+        (f"<header><p>{RISK}</p></header><main><p>Oferta</p></main><footer><p>{RISK}</p></footer>", False, False),
+        (f"<div class='page'><main><p>Oferta</p></main><footer><p>{RISK}</p></footer></div>", True, False),
+        (f"<main><p>Oferta</p><details><summary>Ryzyko</summary><p>{RISK}</p></details></main>", False, True),
+        (f"<p>{RISK}</p><details><summary>Więcej</summary><p>{RISK}</p></details>", False, False),
+        (f"<p>{RISK}</p><div style='display:none'><p>{RISK}</p></div>", False, False),
+    ],
+)
+def test_rules_6_7_require_risk_to_be_exclusively_hidden(body: str, footer: bool, details: bool) -> None:
+    from app.ai.preprocessor import preprocess_html
+
+    doc = preprocess_html(f"<html><body>{body}</body></html>", "https://broker.pl/", "web")
+    assert doc.dom_metrics.risk_hidden_in_footer is footer
+    assert doc.dom_metrics.requires_click_to_view_risk is details

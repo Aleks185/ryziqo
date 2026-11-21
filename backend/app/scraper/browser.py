@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import unquote, urljoin, urlparse
 
-from app.ai.preprocessor import RISK_KEYWORDS_RE
+from app.ai.preprocessor import RISK_KEYWORDS_RE, RISK_WARNING_CLAUSE_RE
 from app.config import Settings
 from app.scraper.ssrf import SSRFError, validate_public_url
 
@@ -47,8 +47,9 @@ VIEWPORTS: dict[str, dict[str, int]] = {
 # Runs in the page. Mirrors preprocessor.extract_dom_metrics, but on computed styles,
 # so external stylesheets, CSS classes and JS-applied styles are taken into account.
 COMPUTED_METRICS_JS = r"""
-(riskPattern) => {
+([riskPattern, warningPattern]) => {
   const riskRe = new RegExp(riskPattern, 'i');
+  const warningRe = new RegExp(warningPattern, 'i');  // substantive clause, not just "CFD"
   const parseRGB = (s) => {
     const m = /rgba?\(([^)]+)\)/.exec(s || '');
     if (!m) return null;
@@ -76,6 +77,7 @@ COMPUTED_METRICS_JS = r"""
   const normalFonts = [];  // [fontPx, textLength]
   const riskFonts = [];
   let minRiskContrast = null, inFooter = false, behindClick = false, lowContrast = false, riskNodes = 0;
+  let shownOutsideFooter = false, shownOutsideDetails = false;  // warning also visible in the body
   const seenBlocks = new Set();
 
   const walker = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_TEXT);
@@ -99,8 +101,11 @@ COMPUTED_METRICS_JS = r"""
     }
     riskNodes += 1;
     riskFonts.push(fontPx);
-    if (el.closest(LEGAL)) inFooter = true;
-    if (closedDetails && !el.closest('summary')) behindClick = true;
+    const inLegal = !!el.closest(LEGAL);
+    const hiddenByClick = !!closedDetails && !el.closest('summary');
+    const shownWarning = rendered && warningRe.test(text);
+    if (inLegal) inFooter = true; else if (shownWarning) shownOutsideFooter = true;
+    if (hiddenByClick) behindClick = true; else if (shownWarning) shownOutsideDetails = true;
     if (seenBlocks.has(block)) continue;
     seenBlocks.add(block);
     const fg = parseRGB(cs.color);
@@ -125,8 +130,8 @@ COMPUTED_METRICS_JS = r"""
     risk_font_px: riskFonts.length ? Math.min(...riskFonts) : null,
     risk_min_contrast: minRiskContrast === null ? null : Math.round(minRiskContrast * 100) / 100,
     low_contrast_detected: lowContrast,
-    risk_hidden_in_footer: inFooter,
-    requires_click_to_view_risk: behindClick,
+    risk_hidden_in_footer: inFooter && !shownOutsideFooter,
+    requires_click_to_view_risk: behindClick && !shownOutsideDetails,
     risk_nodes: riskNodes,
   };
 }
@@ -296,7 +301,7 @@ class BrowserRenderer:
                     )
 
                 metrics: dict[str, Any] = {"computed": await page.evaluate(
-                    COMPUTED_METRICS_JS, RISK_KEYWORDS_RE.pattern
+                    COMPUTED_METRICS_JS, [RISK_KEYWORDS_RE.pattern, RISK_WARNING_CLAUSE_RE.pattern]
                 )}
                 if capture_screenshots:
                     screenshots.append(await page.screenshot(type="jpeg", quality=SCREENSHOT_JPEG_QUALITY))
