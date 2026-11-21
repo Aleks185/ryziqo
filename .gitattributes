@@ -1,0 +1,16 @@
+# Spójne końcówki linii: LF w repozytorium i w kopii roboczej (także na Windowsie),
+# niezależnie od core.autocrlf. Ważne dla skryptów, Dockerfile i konfiguracji Nginx.
+* text=auto eol=lf
+
+# Pliki binarne — bez konwersji i bez diffu tekstowego
+*.docx binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.db binary
+*.sqlite binary
