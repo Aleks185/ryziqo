@@ -49,11 +49,18 @@ SPA_HTML = """<!doctype html><html lang="pl"><head><meta charset="utf-8">
 </script></body></html>"""
 
 
+# Overflows only in the tablet range (rule 8 must cover desktop, tablet and phone)
+TABLET_ONLY_HTML = """<!doctype html><html lang="pl"><head><meta charset="utf-8"><style>
+  @media (min-width: 700px) and (max-width: 900px) { .promo { width: 1100px; } }
+</style></head><body><p class="promo">Ryzyko utraty kapitału — CFD</p></body></html>"""
+
+
 class _Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         routes = {
             "/spa": ("text/html; charset=utf-8", SPA_HTML),
             "/style.css": ("text/css", STYLE_CSS),
+            "/tablet-only": ("text/html; charset=utf-8", TABLET_ONLY_HTML),
         }
         redirects = {
             "/redirect-internal": "http://169.254.169.254/latest/meta-data/",
@@ -121,6 +128,7 @@ def _settings(tmp_path: Path, **overrides: object) -> Settings:
         "database_path": str(tmp_path / "t.db"),
         "object_store_dir": str(tmp_path / "store"),
         "crawler_rate_limit_seconds": 0,
+        "crawler_per_host_delay_seconds": 0,
         "crawler_playwright_timeout_seconds": 15,
     }
     base.update(overrides)
@@ -141,8 +149,19 @@ def test_render_computes_styles_and_blocks_internal_requests(
     assert computed["low_contrast_detected"] is True and computed["risk_min_contrast"] < 4.5
     assert computed["risk_hidden_in_footer"] is True
     assert result.metrics["responsive_overflow_detected"] is True
+    assert result.metrics["responsive_overflow_by_viewport"] == {"tablet": True, "mobile": True}
     # metadata script, redirected script, fetch() to 10.0.0.1 and WebSocket to loopback were refused
     assert result.blocked_requests >= 4
+
+
+def test_render_detects_tablet_only_overflow(tmp_path: Path, origin: str, allow_test_origin: None) -> None:
+    renderer = BrowserRenderer(_settings(tmp_path))
+    result = asyncio.run(
+        renderer.render(f"{origin}/tablet-only", user_agent="InvestWatchTest/1.0", capture_screenshots=True)
+    )
+    assert result.metrics["responsive_overflow_by_viewport"] == {"tablet": True, "mobile": False}
+    assert result.metrics["responsive_overflow_detected"] is True
+    assert len(result.screenshots) == 3  # desktop, tablet, mobile
 
 
 def test_render_refuses_redirect_to_internal_address(

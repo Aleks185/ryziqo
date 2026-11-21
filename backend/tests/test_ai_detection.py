@@ -360,10 +360,14 @@ def test_database_lists_verified_vectors(tmp_path: Path) -> None:
 def test_knf_impersonation_and_typosquatting() -> None:
     reg = _registry()
     assert reg.find_impersonations("Dołącz do XTB-Polska-VIP")[0].kind == "affix"
-    assert reg.find_impersonations("Promocja mBank-Inwestycje-Pro")[0].official_name == "Biuro Maklerskie mBanku"
+    assert reg.find_impersonations("Promocja mBank-Inwestycje-Pro")[0].official_name == "mBANK S.A. Biuro Maklerskie mBank"
     assert reg.find_impersonations("Zaloguj się na bosssa.pl")[0].kind == "typosquat"
     assert reg.find_impersonations("Konto na xtb.com lub bossa.pl") == []
     assert reg.find_impersonations("NordicMarkets-Polska CFD") == []  # a known alias
+    # Subdomains of a registry domain are the firm's own (online.bossa.pl), look-alikes are not
+    assert reg.find_impersonations("", ["https://online.bossa.pl/login", "https://www.bossa.pl/"]) == []
+    assert reg.find_impersonations("", ["https://online-bossa.pl/login"])[0].kind == "affix"
+    assert reg.find_impersonations("", ["https://bossa.pl.online-login.com/"]) != []
     # The impersonator is not mistaken for the licensed firm
     assert reg.match_entity_in_text("Inwestuj z XTB-Polska-VIP") is None
     assert reg.match_entity_in_text("Rachunek w XTB") is not None

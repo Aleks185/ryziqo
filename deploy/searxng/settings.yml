@@ -1,0 +1,23 @@
+# Lokalny SearXNG dla modułu discovery (docker compose --profile discovery up -d).
+# Dostępny tylko w sieci Dockera (bez portu na hoście); backend odpytuje /search?format=json.
+use_default_settings: true
+
+general:
+  instance_name: "InvestWatch discovery"
+
+server:
+  # Nadpisywane przez zmienną SEARXNG_SECRET z .env
+  secret_key: "change-me-in-env"
+  limiter: false
+  image_proxy: false
+  public_instance: false
+
+search:
+  safe_search: 0
+  default_lang: "pl"
+  formats:
+    - html
+    - json
+
+ui:
+  query_in_title: false

@@ -19,6 +19,15 @@ RISK_KEYWORDS_RE = re.compile(
     r"wyniki\s+historyczne\s+nie\s+stanowią|złożonymi\s+instrumentami)",
     re.IGNORECASE,
 )
+# A substantive risk warning clause (not just a product word like "CFD"). Rules 6/7 use it to tell
+# a warning that is shown in the page body from one that exists only in the footer / behind a click.
+# Kept JavaScript-compatible: it is also evaluated in the page by the Playwright metrics script.
+RISK_WARNING_CLAUSE_RE = re.compile(
+    r"(ryzyk\w*\s+(?:\S+\s+)?utrat|utrat[aąey]\s+(?:części\s+lub\s+całości\s+)?(?:zainwestowan\w+\s+)?(?:środków|kapitał)|"
+    r"wiąż[eą]\s+się\s+z\s+(?:\S+\s+){0,2}ryzyk|(?:możesz|można)\s+(?:stracić|utracić)|złożonymi\s+instrumentami|"
+    r"wyniki\s+historyczne\s+nie\s+stanowią|risk\s+warning|capital\s+at\s+risk|cfds\s+are\s+complex|risk\s+of\s+losing)",
+    re.IGNORECASE,
+)
 FONT_SIZE_RE = re.compile(r"font-size\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*px", re.IGNORECASE)
 COLOR_HEX_RE = re.compile(r"(?:^|[;\s])color\s*:\s*(#[0-9a-fA-F]{3,6})", re.IGNORECASE)
 WIDTH_PX_RE = re.compile(r"width\s*:\s*([0-9]+)\s*px", re.IGNORECASE)
@@ -178,10 +187,14 @@ def extract_dom_metrics(
     risk_fonts: list[float] = []
     risk_in_footer = False
     requires_click = False
+    # A warning shown in the page body as well is not "hidden" (rules 6/7) — legit sites repeat it in the footer
+    risk_outside_footer = False
+    risk_outside_details = False
     low_contrast = False
     responsive_overflow = False
+    block_tags = ["p", "div", "span", "li", "small", "summary", "footer"]
 
-    for tag in soup.find_all(["p", "div", "span", "li", "small", "summary", "footer"]):
+    for tag in soup.find_all(block_tags):
         if not isinstance(tag, Tag):
             continue
         text = tag.get_text(" ", strip=True)
@@ -198,17 +211,27 @@ def extract_dom_metrics(
             elif tag.name == "small":
                 risk_fonts.append(round(body_font * 0.75, 1))
 
-            # Rule 6: hidden in footer or legal section
-            ancestors = [tag, *tag.parents]
-            for anc in ancestors:
+            # Rule 6: hidden in footer or legal section; rule 7: behind a <details> click
+            node_in_footer = node_in_details = False
+            for anc in [tag, *tag.parents]:
                 if not isinstance(anc, Tag):
                     continue
                 anc_id = str(anc.get("id") or "").lower()
                 anc_cls = " ".join(str(c).lower() for c in (anc.get("class") or []))
                 if anc.name == "footer" or "legal" in anc_id or "footnote" in anc_cls or "legal" in anc_cls:
-                    risk_in_footer = True
+                    node_in_footer = True
                 if anc.name == "details":
-                    requires_click = True
+                    node_in_details = True
+            risk_in_footer = risk_in_footer or node_in_footer
+            requires_click = requires_click or node_in_details
+            # Only innermost risk blocks count as "shown elsewhere": a wrapper <div> around the
+            # footer contains the footer's warning text without the warning being outside it.
+            innermost = not any(
+                RISK_WARNING_CLAUSE_RE.search(d.get_text(" ", strip=True)) for d in tag.find_all(block_tags)
+            )
+            if innermost and RISK_WARNING_CLAUSE_RE.search(text):
+                risk_outside_footer = risk_outside_footer or not node_in_footer
+                risk_outside_details = risk_outside_details or not node_in_details
 
             # Rule 5: low contrast detection (light gray text on light background)
             color_match = COLOR_HEX_RE.search(style)
@@ -227,8 +250,16 @@ def extract_dom_metrics(
             if font_px is not None and font_px >= 12.0:
                 main_fonts.append(font_px)
 
-    if playwright_metrics and playwright_metrics.get("responsive_overflow_detected"):
-        responsive_overflow = True
+    risk_in_footer = risk_in_footer and not risk_outside_footer
+    requires_click = requires_click and not risk_outside_details
+
+    overflow_viewports: list[str] = []
+    if playwright_metrics:
+        by_viewport = playwright_metrics.get("responsive_overflow_by_viewport")
+        if isinstance(by_viewport, dict):
+            overflow_viewports = [str(k) for k, v in by_viewport.items() if v]
+        if playwright_metrics.get("responsive_overflow_detected"):
+            responsive_overflow = True
 
     dominant_font = round(max(main_fonts), 1) if main_fonts else 16.0
     # Prefer body/paragraph scale rather than giant hero banner if multiple exist
@@ -265,6 +296,7 @@ def extract_dom_metrics(
         requires_click_to_view_risk=requires_click,
         low_contrast_detected=low_contrast,
         responsive_overflow_detected=responsive_overflow,
+        responsive_overflow_viewports=overflow_viewports,
     )
 
 
@@ -367,7 +399,7 @@ def extract_hidden_text(soup: BeautifulSoup) -> list[str]:
     return snippets
 
 
-def _absolute_http_link(href: str, base_url: str) -> str | None:
+def absolute_http_link(href: str, base_url: str) -> str | None:
     href = href.strip()
     if not href or href.startswith(("#", "javascript:", "mailto:", "tel:", "data:")):
         return None
@@ -411,7 +443,7 @@ def extract_sections(
     for tag in soup.find_all(["a", "button"]):
         anchor = clean_text(tag.get_text(" ", strip=True))[:120]
         href = tag.get("href")
-        target = _absolute_http_link(href, base_url) if isinstance(href, str) else None
+        target = absolute_http_link(href, base_url) if isinstance(href, str) else None
         if target and target not in outbound:
             outbound.append(target)
         domain = urlparse(target).hostname if target else None
@@ -521,16 +553,16 @@ def preprocess_html(
     for noise in soup.find_all(["script", "style", "noscript", "svg", "template"]):
         noise.decompose()
 
-    if any(RISK_KEYWORDS_RE.search(snip) for snip in hidden_snippets):
-        # A risk warning the user cannot see at all is hidden risk (UKNF criterion 6)
-        dom_metrics.risk_hidden_in_footer = True
-
     for nav in soup.find_all("nav"):
         if not RISK_KEYWORDS_RE.search(nav.get_text(" ", strip=True)):
             nav.decompose()
     description = soup.find("meta", attrs={"name": "description"})
     raw_text = (str(description.get("content", "")) + " " if description else "") + soup.get_text(" ", strip=True)
     normalized = clean_text(raw_text)
+    if any(RISK_KEYWORDS_RE.search(snip) for snip in hidden_snippets) and not RISK_WARNING_CLAUSE_RE.search(normalized):
+        # A risk warning the user cannot see at all is hidden risk (UKNF criterion 6); a hidden
+        # duplicate of a visible warning (responsive layouts) is not
+        dom_metrics.risk_hidden_in_footer = True
     obfuscation_detected = normalized != re.sub(
         r"\s+", " ", unicodedata.normalize("NFKC", raw_text)
     ).strip()

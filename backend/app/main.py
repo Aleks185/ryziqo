@@ -15,11 +15,12 @@ from app.analysis_queue import AnalysisQueue
 from app.ai.ollama_client import OllamaClient
 from app.config import Settings, get_settings
 from app.database import Database
-from app.knf_registry import KNFRegistrySnapshot
+from app.knf_registry import KNFRegistrySnapshot, pick_snapshot_path
 from app.models import HealthResponse
 from app.queue_worker import CrawlQueueWorker
-from app.routers import analyze, crawl, incidents, reports, watchlist, ws
+from app.routers import analyze, crawl, discovery, incidents, reports, watchlist, ws
 from app.scraper.fetcher import PageFetcher
+from app.watchlist_seed import load_watchlist_seed
 from app.ws_manager import AlertWebSocketManager
 
 logging.basicConfig(
@@ -43,11 +44,21 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
         if seeded:
             logger.info("Załadowano %d demonstracyjnych incydentów startowych do SQLite.", seeded)
 
+        # A snapshot refreshed from the official KNF sources (data volume) wins over the baked-in seed
         registry = KNFRegistrySnapshot(
-            snapshot_path=settings.resolved_data_dir / "knf_registry_snapshot.json",
+            snapshot_path=pick_snapshot_path(
+                settings.resolved_data_dir / "knf_registry_snapshot.json", settings.knf_registry_live_path
+            ),
             rules_path=settings.resolved_data_dir / "risk_criteria_rules.json",
             warnings_path=settings.resolved_data_dir / "knf_warnings_snapshot.json",
         )
+        if settings.watchlist_seed_on_start and db.count_watch_targets() == 0:
+            added = db.seed_watch_targets(
+                load_watchlist_seed(settings.resolved_data_dir / "watchlist_seed.json", registry)
+            )
+            if added:
+                logger.info("Załadowano %d startowych celów watchlisty.", added)
+
         ollama = OllamaClient(settings)
         await ollama.check_health()
 
@@ -101,7 +112,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
             "System monitoringu treści inwestycyjnych (Moduły 1–3: Finfluencerzy, "
             "18 kryteriów ryzyka MiFID II / 2017/565, Shadow Advisory art. 76 u.o.i.f.)."
         ),
-        version="1.2.0",
+        version="1.3.0",
         lifespan=lifespan,
     )
 
@@ -119,6 +130,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
     app.include_router(intelligence.router)
     app.include_router(casework.router)
     app.include_router(watchlist.router)
+    app.include_router(discovery.router)
     app.include_router(reports.router)
     app.include_router(ws.router)
 

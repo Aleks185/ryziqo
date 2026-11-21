@@ -7,11 +7,13 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from app.models import (
     WatchlistResponse,
     WatchlistRunResponse,
+    WatchlistSeedResponse,
     WatchTarget,
     WatchTargetCreate,
     WatchTargetUpdate,
 )
 from app.scraper.ssrf import SSRFError, validate_public_url
+from app.watchlist_seed import load_watchlist_seed
 
 router = APIRouter(prefix="/api/v1/watchlist", tags=["watchlist"])
 
@@ -37,6 +39,7 @@ async def add_watch_target(request: Request, body: WatchTargetCreate) -> WatchTa
         label=body.label.strip() if body.label else None,
         module_ids=list(body.module_ids),
         use_playwright=body.use_playwright,
+        follow_depth=body.follow_depth,
     )
     if created is None:
         raise HTTPException(status_code=409, detail="Ten adres URL jest już na liście obserwowanych.")
@@ -63,3 +66,13 @@ async def run_watchlist_now(request: Request) -> WatchlistRunResponse:
     """Run the scheduled scan immediately (same logic as the periodic job)."""
     job_ids, skipped = await request.app.state.worker.scheduled_scan()
     return WatchlistRunResponse(job_ids=job_ids, skipped=skipped)
+
+
+@router.post("/seed", response_model=WatchlistSeedResponse)
+async def seed_watchlist(request: Request) -> WatchlistSeedResponse:
+    """Add the starter targets (data/watchlist_seed.json + KNF registry domains); idempotent."""
+    settings = request.app.state.settings
+    db = request.app.state.db
+    items = load_watchlist_seed(settings.resolved_data_dir / "watchlist_seed.json", request.app.state.registry)
+    added = db.seed_watch_targets(items)
+    return WatchlistSeedResponse(added=added, total=db.count_watch_targets())

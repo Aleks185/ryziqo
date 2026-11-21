@@ -1,7 +1,7 @@
 # Checklista zgodności ze specyfikacją UKNF (#InvestWatch)
 
 Źródła: `Opis Wyzwania HackNation UKNF 19.11.pdf` + 4 załączniki DOCX (kryteria ryzyka, tematy 1–3).
-Stan na 2026-11-21. Testy backendu: `134 passed`.
+Stan na 2026-11-21 (wieczór). Testy backendu: `175 passed`. Benchmark fallback: P 0,958 / R 0,676 / F1 0,793. Stos Docker w wersji API 1.3.0 uruchomiony i sprawdzony (backend, frontend, SearXNG).
 
 ## ✅ Zrobione
 
@@ -12,6 +12,14 @@ Stan na 2026-11-21. Testy backendu: `134 passed`.
 - [x] Wynik z HTML zapisywany jako JSON, w bazie SQLite (metadane) i w lokalnym object store (`OBJECT_STORE_DIR`)
 - [x] Harmonogram APScheduler (interwał albo crontab w `CRAWLER_CRON`) i watchlista do okresowego skanowania
 - [x] Kolejka zadań (`CrawlQueueWorker`, trwała w SQLite)
+- [x] Odkrywanie nowych treści: SearXNG w profilu `discovery`, zapytania z rejestru KNF (`data/discovery_queries.json`, rotacja), deduplikacja, denylist, anty-SSRF (`backend/app/discovery.py`)
+- [x] Seed watchlisty (`data/watchlist_seed.json` + domeny z rejestru KNF, `POST /api/v1/watchlist/seed`)
+- [x] Chodzenie po linkach w obrębie domeny (`follow_depth` 0–2, `follow_max_pages`, priorytet regulaminów i stron o ryzyku)
+- [x] Kanonikalizacja URL (watchlista, kolejka, discovery), `409` dla duplikatu w kolejce
+- [x] `robots.txt` + `Crawl-delay` + odstęp per host (`backend/app/scraper/politeness.py`)
+- [x] Anty-SSRF z przypięciem IP (`pinned_request`, ochrona przed DNS rebinding) dla stron, `robots.txt` i list KNF
+- [x] Kolejka analiz z formularza (`POST /api/v1/analyze/jobs`, postęp przez SSE, limit 1+8 i HTTP 429), cache ETag/304 dla pobrań URL (`backend/app/analysis_queue.py`)
+- [x] Rejestr KNF z knf.gov.pl: 758 podmiotów (banki i domy maklerskie, oddziały, notyfikowane firmy zagraniczne) + 4 [DEMO]; synchronizacja z paginacją i bezpiecznikami (`backend/app/knf_sync.py`, `KNF_SYNC_USER_AGENT`)
 
 ### AI
 - [x] Preprocessing: czyszczenie HTML, normalizacja, tokeny, embeddingi (lokalne 128-dim lub z Ollamy), deduplikacja
@@ -21,12 +29,18 @@ Stan na 2026-11-21. Testy backendu: `134 passed`.
 - [x] Moduł 2: wszystkie reguły 1–18 (z 12a/12b) w `data/risk_criteria_rules.json`, analiza wyglądu strony (czcionka, kontrast WCAG, `<details>`, przepełnienie na mobile)
 - [x] Moduł 3: shadow advisory, porównanie z rejestrem KNF, wykrywanie podszywania się pod firmy z rejestru, Lista Ostrzeżeń
 - [x] Dodatki: wykrywanie prompt injection, odrzucanie cytatów nieobecnych w treści, RAG z przykładami few-shot, analiza zrzutów ekranu (VLM), benchmark P/R/F1
+- [x] Fałszywe alarmy na prawdziwych stronach brokerów (sprawdzone crawlem xtb.com, bossa.pl, etoro.com; po poprawkach wszystkie poniżej progów):
+  - reguły 6 i 7 tylko wtedy, gdy ostrzeżenie jest **wyłącznie** w stopce lub za kliknięciem (legalne strony powtarzają je w stopce)
+  - moduł 1 pomija kody polecające na oficjalnej domenie firmy z rejestru (to komunikacja własna, zakres modułu 2)
+  - podszywanie: subdomeny oficjalnych domen są zaufane (`online.bossa.pl`), fuzzy matching tylko dla marek z ręcznymi aliasami, słowa ogólne nie są literówką marki (`bank.pl` ≠ mBank); 0 fałszywych alarmów na 40 popularnych domenach, podróbki dalej wykrywane
 
 ### Frontend
 - [x] React 19 + Tailwind + shadcn/Radix, komponenty oparte na propsach
 - [x] Wykres trendu (Recharts), WebSocket z alertami na żywo, zmiana statusu rekordu
 - [x] Panel kalibracji: próg zmienia TP/FP/FN, precyzję i pełność
 - [x] Brak `console.log` w `frontend/src/` (jedyne wywołania są w pluginie health-check, który działa tylko na serwerze deweloperskim)
+- [x] Build produkcyjny (`CI=true yarn build`) bez ostrzeżeń; data snapshotu rejestru KNF na dashboardzie
+- [x] Zgłoszenie obywatelskie i analiza ze zrzutu ekranu (PNG/JPG/WebP do 10 MB, odczyt przez model wizyjny; wymaga Ollamy z modelem multimodalnym)
 
 ### Wymagania techniczne
 - [x] Cały stos startuje jedną komendą `docker compose up`, Ollama w opcjonalnym profilu `ai`
@@ -43,26 +57,47 @@ Stan na 2026-11-21. Testy backendu: `134 passed`.
 - [ ] (opcjonalnie) **Film do 3 minut**
 
 ### Automatyczny crawling internetu
-Stan obecny: cron (`scheduled_scan` w `backend/app/queue_worker.py`) co 15 minut skanuje ponownie tylko mocki demo i URL-e z watchlisty. Jest to cykliczny rescan, a nie monitoring sieci.
-- [ ] **Odkrywanie nowych treści**: lokalny SearXNG w Docker Compose, który cron odpytuje frazami typu „<nazwa firmy z rejestru KNF> + kod polecający / reklama / CFD”. Nowe URL-e trafiają automatycznie do kolejki, z deduplikacją i ochroną anty-SSRF.
-- [ ] **Seed watchlisty**: publiczne strony brokerów z rejestru KNF i publiczne profile (teraz watchlista startuje pusta)
-- [ ] (opcjonalnie) Chodzenie po linkach w obrębie domeny, z ograniczeniem głębokości (teraz każdy cel to jedna strona)
+- [x] Discovery sprawdzone na żywo (2026-11-21): SearXNG `2026.11.21-c6ee3e9fd` (tag przypięty), 3 frazy → 30 wyników → 6 nowych URL-i w kolejce → 6 przeanalizowanych; strony afiliacyjne wykryte (M1), oficjalne strony brokera bez fałszywych alarmów
+- [x] Seed watchlisty sprawdzony: xtb.com i bossa.pl odpowiadają i pozwalają w `robots.txt`; po starcie Dockera watchlista ma 9 celów (4 z seeda + domeny z rejestru: mbank.pl, pkobp.pl, santander.pl, interactivebrokers.com/.ie)
+- [ ] etoro.com i trading212.com odpowiadają `403` na nagłówek bota (ochrona antybotowa). Zdecydować: usunąć z seeda, skanować przez Playwright albo zostawić jako znane ograniczenie
+- [ ] Włączyć discovery w Dockerze: `.env` z `DISCOVERY_ENABLED=true` i `docker compose --profile discovery up -d` (domyślnie wyłączone)
+- [ ] (warto rozważyć) Publiczne profile social mediów w seedzie (teraz tylko strony brokerów)
 
 ### Dashboard (spec, pkt 3)
 - [ ] **Filtry po dacie, źródle (platformie) i poziomie ryzyka.** Teraz jest tylko filtr po module (`frontend/src/pages/Dashboard.jsx`). Backend już obsługuje `date_from/date_to`, `source_platform` i `risk_level`.
 - [ ] **Uruchamianie crawla z panelu** (`POST /api/v1/crawl/trigger`) i lista zadań (`GET /api/v1/crawl/jobs`)
 - [ ] **Widok watchlisty** (dodawanie i usuwanie źródeł, „uruchom teraz”). Endpointy istnieją, UI nie ma.
 - [ ] **Pobieranie raportów modułów z backendu** (`/api/v1/reports/{1|2|3}?format=csv`). Teraz eksport jest liczony lokalnie z listy w przeglądarce.
-- [ ] Nieaktualny komentarz w `frontend/src/lib/api.js` (mówi o v1.1.0, kontrakt jest w 1.2.0)
-- [ ] Dodac pobieranie tekstu ze zrzutu ekranu, dla zgloszenia obywatelskiego
+- [x] Komentarz w `frontend/src/lib/api.js` zaktualizowany (CONTRACT.md v1.3.0)
+- [x] Pobieranie tekstu ze zrzutu ekranu dla zgłoszenia obywatelskiego (VLM, patrz sekcja Frontend)
+- [ ] Widok wyników discovery (`GET /api/v1/discovery/recent`) i przycisk „uruchom discovery” w panelu
 
 ### Zgodność ze specem
-- [ ] **Reguła 8 wymaga też tabletu.** Spec wymienia desktop, tablet i telefon, a `backend/app/scraper/browser.py` sprawdza tylko 1280 i 375 px. Brakuje widoku ~768×1024.
-- [ ] **Odświeżanie rejestru KNF** z 5 URL-i podanych w załącznikach do tematów 1 i 2 (skrypt lub job aktualizujący `data/knf_registry_snapshot.json`), a w UI data snapshotu
+- [x] **Reguła 8: desktop, tablet i telefon** (1280, 768 i 375 px w `backend/app/scraper/browser.py`; evidence podaje widok)
+- [x] **Odświeżanie rejestru KNF** (`python -m scripts.refresh_knf_registry`, `POST /api/v1/knf-registry/refresh`, `KNF_REFRESH_CRON`), data snapshotu na dashboardzie
+- [x] **Parser list KNF sprawdzony na prawdziwych stronach (2026-11-21).** knf.gov.pl zrywa połączenia z nagłówkiem bota (robots.txt pozwala wszystkim), więc synchronizacja przedstawia się jako przeglądarka (`KNF_SYNC_USER_AGENT`). Parser czyta tabele klucz–wartość („Nazwa podmiotu”), pomija dawne nazwy (`<strike>`), przechodzi paginację `?page=N`: 754 podmioty (10 banków, 27 DM, 10 oddziałów, 707 transgranicznych). Wpisy z ręcznymi aliasami nie są usuwane automatycznie (`unmatched_kept` w raporcie), a fuzzy-matching podszywania działa tylko na markach z aliasami.
+- [x] Snapshot rejestru w repo zastąpiony danymi z knf.gov.pl (2026-11-21, 758 podmiotów + 4 [DEMO]); ręczne wpisy scalone z oficjalnymi nazwami KNF (BOŚ, PKO BP, mBank, Santander→Erste, OANDA TMS, IBKR), dawne nazwy zostały aliasami.
+- [ ] Do potwierdzenia ręcznie: eToro (Europe) Ltd. i Saxo Bank A/S nie występują na pobranych listach notyfikacji; Trading 212 figuruje jako „Trading 212 Ltd” i „Trading 212 EU GmbH”, a w snapshocie jest „Trading 212 Markets Ltd.” — wpisy ręczne zostawione bez zmian
+- [ ] Lista dopisków podszywania nie łapie części wzorców (`pkobp-makler.com`, `saxobank-pro.pl`, `trading-212-bonus.pl`) — rozważyć rozszerzenie `SUSPICIOUS_AFFIXES` (makler, pro, bonus)
 - [ ] (warto rozważyć) Kolejka na zewnętrznym narzędziu (Redis z RQ/Celery/Arq) i MinIO jako object storage, pod kryterium architektury i skalowalności
 - [ ] (warto rozważyć) Skan **Snyk** wprost wymieniony w specu: `snyk test` z wynikiem w `docs/security-licenses.md` albo workflow w GitHub Actions (w repo nie ma `.github/`)
 
+### Wyróżniki ponad specyfikację (priorytet wg ROI)
+Uporządkowane od najwyższego stosunku efektu na demo / wartości dla UKNF do nakładu pracy:
+
+- [ ] **P1 (Najwyższe ROI) — Odsłonięcie gotowych mechanizmów AI w UI** — backend już je posiada, ale nie są widoczne dla Jury:
+  - **Prompt Injection**: badge w `frontend/src/pages/IncidentDetail.jsx` („Wykryto próbę manipulacji audytem AI”) + dedykowany mock w `data/mock_sites/` z ukrytym białym tekstem próbującym oszukać model.
+  - **RAG / klony kampanii i Human-in-the-Loop**: sekcja „Podobne wcześniejsze decyzje / możliwe klony” w karcie incydentu oraz licznik zweryfikowanych decyzji analityków korygujących prompty w `frontend/src/pages/Calibration.jsx`.
+  - **Anti-Hallucination**: oznaczenie przy cytatach, że zostały dosłownie zweryfikowane w treści źródłowej.
+- [ ] **P2 (Bardzo wysokie ROI, częściowo zrobione: upload zrzutu i odczyt przez VLM działają) — Zgłoszenie obywatelskie ze zrzutu ekranu (OCR/VLM) → alert na żywo** (rozszerza punkt z sekcji Dashboard dla `frontend/src/pages/Citizen.jsx`): lokalny OCR (`rapidocr-onnxruntime` lub VLM w Ollama) wyciąga tekst i wykrywa wizualne podszywanie się (np. fałszywe logo KNF/NBP, drobny druk), zwraca prosty werdykt obywatelowi, a po zaznaczeniu zgody wysyła zanonimizowany incydent na żywo przez WebSocket do kolejki analityka.
+- [ ] **P3 (Wysokie ROI) — Generator projektu pisma nadzorczego / notatki pod Listę Ostrzeżeń** — 1 klik z karty incydentu (DOCX/MD) bazujący na istniejących `violated_rules`, `legal_basis`, zweryfikowanych cytatach i statusie w rejestrze KNF: szkic wezwania do wyjaśnień (Moduł 1/2) albo notatki pod wpis na Listę Ostrzeżeń / art. 178 u.o.i.f. (Moduł 3).
+- [ ] **P4 (Wysokie ROI) — Paczka dowodowa „Chain of Custody” (ZIP + SHA-256) i diff wersji („Znikające ostrzeżenie”)** — eksport `evidence_pack_<id>.zip` z `OBJECT_STORE_DIR` (surowy HTML, zrzuty ekranu, JSON ekstrakcji, nagłówki/przekierowania + manifest `SHA-256`, opcjonalnie znacznik czasu RFC 3161) oraz porównywanie kolejnych snapshotów tego samego URL z alertem przy usunięciu lub zmniejszeniu klauzuli ryzyka.
+- [ ] **P5 (Średnio-wysokie ROI) — Wizualny „X-Ray” naruszeń na zrzutach ekranu (Desktop / Tablet / Mobile)** (łączy się z Regułą 8 w sekcji wyżej) — nakładanie przez Playwright ramek (bounding boxes) na obietnicę zysku vs ukrytą klauzulę ryzyka (z metrykami fontu i kontrastu) i zestawienie 3 widoków (`1280`, `768`, `375 px`) obok siebie w `IncidentDetail.jsx`.
+- [ ] **P6 (Średnie ROI / mocny efekt „wow”) — Graf powiązań kampanii i sieci finfluencerów** — interaktywny graf łączący `promoter_name`, rozwinięte skrócone linki / kody polecające (`CRAWLER_EXPAND_SHORT_LINKS`), domeny-klony (embeddingi) oraz docelowy podmiot KNF / Listę Ostrzeżeń w mapę sieci dystrybucji.
+- [ ] **P7 (Niższe ROI / bardziej złożone, ale spektakularne na demo) — Analiza krótkiego wideo i audio z TikToka / Reels** — lokalny `faster-whisper` (transkrypcja mowy z reklam „link w bio”) + wybrane klatki (np. migająca plansza końcowa z drobnym druczkiem) przekazane do VLM (`vision_analyzer.py`) i dalej do standardowego pipeline'u Modułów 1–3.
+
 ### Przed oceną Jury
-- [ ] Przejść cały scenariusz demo na `docker compose up` z Ollamą: crawl, alert na WebSockecie, zmiana statusu, kalibracja
-- [ ] Sprawdzić konsolę przeglądarki na buildzie produkcyjnym (Jury patrzy na `Console.log`)
+- [x] Scenariusz demo przez API w trybie bez Ollamy: crawl mocków (14 stron), 8 alertów `high_risk_alert` na WebSockecie, zmiana statusu i etykiety, raporty modułów 1–3, kalibracja (P 1,00 / R 0,91 / F1 0,95)
+- [ ] Ten sam scenariusz **z Ollamą** (`--profile ai` albo Ollama na hoście) i przeklikany w przeglądarce
+- [ ] Sprawdzić konsolę przeglądarki na buildzie produkcyjnym (Jury patrzy na `Console.log`). Jedyny `console.log` w bundlu pochodzi z domyślnej strony błędu react-routera i pojawia się tylko przy wywrotce aplikacji — można dodać własny `errorElement`
 - [ ] Wpisać aktualny wynik `python -m scripts.evaluate_detection --mode both` do prezentacji jako dowód trafności klasyfikacji
