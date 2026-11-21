@@ -504,7 +504,7 @@ class CrawlQueueWorker:
                         incident_id=inc.id,
                         risk_score=inc.risk_score,
                         message=(
-                            f"ALERT wysokiego ryzyka ({inc.risk_score:.2f}) | "
+                            f"ALERT wysokiego ryzyka ({inc.risk_score:.0%}) | "
                             f"Moduł {inc.module_id} | {inc.entity_name}: {inc.title[:90]}"
                         ),
                     )

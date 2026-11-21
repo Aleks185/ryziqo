@@ -1,3 +1,4 @@
+import { formatRiskPercent } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { useApp } from "@/lib/store";
 import { formatDate } from "@/lib/i18n";
@@ -39,7 +40,7 @@ export const LiveLog = ({ limit = 12, full = false }) => {
               <span className="text-slate-500 tabular-nums">{formatDate(e.ts, lang).split(", ").pop()}</span>
               <span className={`font-bold ${LEVEL[e.level]}`}>{e.type}</span>
               <span className="text-slate-300 truncate">{e.message}</span>
-              {e.score != null && <span className={`tabular-nums ${LEVEL[e.level]}`}>{e.score.toFixed(2)}</span>}
+              {e.score != null && <span className={`tabular-nums ${LEVEL[e.level]}`}>{formatRiskPercent(e.score)}</span>}
             </li>
           ))}
         </ul>

@@ -1,3 +1,4 @@
+import { formatRiskPercent } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Slider } from "@/components/ui/slider";
@@ -19,8 +20,6 @@ export const confusion = (records, th) => {
   const f1 = precision && recall ? (2 * precision * recall) / (precision + recall) : null;
   return { ...m, precision, recall, f1 };
 };
-
-const pct = (v) => (v == null ? "—" : `${(v * 100).toFixed(1)}%`);
 
 const Cell = ({ label, value, tone, testId }) => (
   <div data-testid={testId} className={`border rounded-sm p-4 ${tone}`}>
@@ -56,7 +55,7 @@ export default function Calibration() {
     () => Array.from({ length: 21 }, (_, i) => {
       const x = i / 20;
       const c = confusion(labeled, x);
-      return { th: x.toFixed(2), FP: c.fp, FN: c.fn };
+      return { th: formatRiskPercent(x), FP: c.fp, FN: c.fn };
     }),
     [labeled],
   );
@@ -84,15 +83,15 @@ export default function Calibration() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <Panel title={t("threshold")}>
             <div className="flex items-center gap-5">
-              <Slider data-testid="calib-threshold-slider" aria-label={t("threshold")} min={0} max={1} step={0.01} value={[th]} onValueChange={([v]) => setTh(v)} className="flex-1" />
-              <span data-testid="calib-threshold-value" className="font-mono text-3xl font-bold tabular-nums text-[#0B192C] w-20 text-right">{th.toFixed(2)}</span>
+              <Slider data-testid="calib-threshold-slider" aria-label={t("threshold")} aria-valuetext={formatRiskPercent(th)} min={0} max={1} step={0.01} value={[th]} onValueChange={([v]) => setTh(v)} className="flex-1" />
+              <span data-testid="calib-threshold-value" className="font-mono text-3xl font-bold tabular-nums text-[#0B192C] w-20 text-right">{formatRiskPercent(th)}</span>
             </div>
             <div className="mt-6"><Matrix m={m} /></div>
             <div className="mt-5 grid grid-cols-3 gap-3 text-center">
               {[["precision", m.precision], ["recall", m.recall], ["f1", m.f1]].map(([k, v]) => (
                 <div key={k} data-testid={`calib-${k}`} className="border border-[#E2E8F0] rounded-sm p-3">
                   <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">{t(k)}</div>
-                  <div className="font-mono text-xl font-bold tabular-nums mt-1">{pct(v)}</div>
+                  <div className="font-mono text-xl font-bold tabular-nums mt-1">{formatRiskPercent(v)}</div>
                 </div>
               ))}
             </div>
@@ -106,7 +105,7 @@ export default function Calibration() {
                   <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748B" }} />
                   <Tooltip contentStyle={{ fontSize: 12, borderRadius: 2 }} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <ReferenceLine x={(Math.round(th * 20) / 20).toFixed(2)} stroke="#0B192C" strokeDasharray="4 3" label={{ value: th.toFixed(2), fontSize: 11, position: "top" }} />
+                  <ReferenceLine x={formatRiskPercent(Math.round(th * 20) / 20)} stroke="#0B192C" strokeDasharray="4 3" label={{ value: formatRiskPercent(th), fontSize: 11, position: "top" }} />
                   <Line type="stepAfter" dataKey="FP" stroke="#D97706" strokeWidth={2} dot={false} isAnimationActive={false} />
                   <Line type="stepAfter" dataKey="FN" stroke="#DC2626" strokeWidth={2} dot={false} isAnimationActive={false} />
                 </LineChart>

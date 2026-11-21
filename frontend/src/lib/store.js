@@ -1,3 +1,4 @@
+import { formatRiskPercent } from "@/lib/utils";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ALERT_THRESHOLD, MODULES, SAMPLE_URL_PREFIX, WS_URL, isMixedContent, uid } from "./config";
@@ -134,7 +135,7 @@ export function AppProvider({ children }) {
   const notify = useCallback((inc) => {
     if (inc.risk_score < ALERT_THRESHOLD || alerted.current.has(inc.id)) return;
     alerted.current.add(inc.id);
-    toast.error(`${translate(langRef.current, "toast_high")}: ${inc.risk_score.toFixed(2)}`, {
+    toast.error(`${translate(langRef.current, "toast_high")}: ${formatRiskPercent(inc.risk_score)}`, {
       id: inc.id,
       description: inc.violated_rules?.some(rule => rule.rule_id === "M2_MONETARY_OFFER")
         ? translate(langRef.current, "toast_timed_income")

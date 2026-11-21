@@ -1,3 +1,4 @@
+import { formatRiskPercent } from "@/lib/utils";
 import { MODULE_COLORS, riskLevel } from "@/lib/config";
 import { useApp } from "@/lib/store";
 
@@ -12,7 +13,7 @@ export const RiskScore = ({ score, size = "sm", testId }) => (
     data-testid={testId}
     className={`inline-flex items-center justify-center border font-mono font-semibold tabular-nums rounded-sm ${RISK_STYLES[riskLevel(score)]} ${size === "lg" ? "text-4xl px-4 py-2" : "text-sm px-2 py-0.5 min-w-[3.25rem]"}`}
   >
-    {Number(score || 0).toFixed(2)}
+    {formatRiskPercent(score)}
   </span>
 );
 

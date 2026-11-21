@@ -1,3 +1,4 @@
+import { formatRiskPercent } from "@/lib/utils";
 import { ThreatOverview } from "./Intelligence";
 import { useState } from "react";
 import { ALERT_THRESHOLD, MODULES } from "@/lib/config";
@@ -52,7 +53,7 @@ export default function Dashboard() {
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi testId="kpi-total" label={t("kpi_total")} value={list.length} accent="#0B192C" />
-        <Kpi testId="kpi-high" label={`${t("kpi_high")} (≥ ${ALERT_THRESHOLD.toFixed(2)})`} value={list.filter((i) => i.risk_score >= ALERT_THRESHOLD).length} accent="#DC2626" />
+        <Kpi testId="kpi-high" label={`${t("kpi_high")} (≥ ${formatRiskPercent(ALERT_THRESHOLD)})`} value={list.filter((i) => i.risk_score >= ALERT_THRESHOLD).length} accent="#DC2626" />
         <Kpi testId="kpi-open" label={t("kpi_open")} value={list.filter((i) => ["new", "in_review", "referred"].includes(i.status)).length} accent="#D97706" />
         <Kpi testId="kpi-confirmed" label={t("kpi_confirmed")} value={list.filter((i) => i.status === "confirmed").length} accent="#065F46" />
       </div>

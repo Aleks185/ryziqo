@@ -129,7 +129,7 @@ def select_results(
                 continue
             ids = ", ".join(r.rule_id for r in other.violated_rules[:5])
             primary.evidence_quotes.append(
-                f"[Wtórne] Moduł {other.module_id} ({other.risk_score:.2f}): {ids}"
+                f"[Wtórne] Moduł {other.module_id} ({other.risk_score:.0%}): {ids}"
             )
         return [primary]
     return relevant_results
