@@ -79,8 +79,9 @@ async def analyze_module1(
     text = doc.normalized_text
     matched_entity = registry.match_entity_in_text(text)
 
-    is_social = doc.source_platform in ("tiktok", "instagram", "facebook", "youtube")
-    has_promoter = bool(doc.promoter_hint) or is_social
+    is_social = doc.source_platform in ("tiktok", "instagram", "facebook", "youtube", "x")
+    promoter = doc.promoter_hint or (doc.social.promoter if doc.social else None)
+    has_promoter = bool(promoter) or is_social
     has_affiliate = bool(AFFILIATE_RE.search(text))
     has_disclosure = bool(AD_DISCLOSURE_RE.search(text))
     has_hype = bool(HYPE_PROFIT_RE.search(text))
@@ -158,7 +159,7 @@ async def analyze_module1(
 
     llm_data = await ollama.generate_json(
         MODULE1_SYSTEM_PROMPT,
-        f"Platforma: {doc.source_platform}\nPromotor: {doc.promoter_hint or 'nieznany'}\n"
+        f"Platforma: {doc.source_platform}\nPromotor: {promoter or 'nieznany'}\n"
         f"Dopasowana firma KNF: {matched_entity.official_name if matched_entity else 'brak'}\n"
         f"Treść:\n{text[:2200]}",
     )
@@ -183,7 +184,7 @@ async def analyze_module1(
         module_name="Monitoring ekosystemu zewnętrznego (Finfluencerzy)",
         relevant=relevant,
         entity_name=entity_name,
-        promoter_name=doc.promoter_hint or (f"Konto {doc.source_platform}" if is_social else None),
+        promoter_name=promoter or (f"Konto {doc.source_platform}" if is_social else None),
         knf_registry_status=reg_status,
         risk_score=score,
         evidence_quotes=quotes,

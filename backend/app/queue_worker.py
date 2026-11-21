@@ -1,13 +1,14 @@
-"""Open-source asyncio crawl queue worker + APScheduler periodic scheduler."""
+"""Persistent crawl queue (SQLite-backed) + APScheduler periodic scheduler (interval or crontab)."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
 import uuid
-from dataclasses import dataclass
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 from app.ai.aggregator import run_analytical_pipeline
 from app.ai.ollama_client import OllamaClient
@@ -21,15 +22,20 @@ from app.ws_manager import AlertWebSocketManager
 
 logger = logging.getLogger("investwatch.worker")
 
+SCHEDULER_JOB_ID = "periodic_scan"
+QUEUE_POLL_SECONDS = 2.0
 
-@dataclass
-class QueuedTask:
-    job_id: str
-    request: CrawlTriggerRequest
+
+def _target_key(req: CrawlTriggerRequest) -> str:
+    return req.target_url or req.mock_file or req.mode
 
 
 class CrawlQueueWorker:
-    """Processes crawl/analysis jobs asynchronously with deduplication and WebSocket telemetry."""
+    """Processes crawl/analysis jobs from the `crawl_jobs` table with deduplication and WS telemetry.
+
+    Jobs are persisted before they are processed, so a restart does not lose queued work:
+    jobs interrupted mid-run are re-queued on startup.
+    """
 
     def __init__(
         self,
@@ -47,30 +53,34 @@ class CrawlQueueWorker:
         self.fetcher = fetcher
         self.ws_manager = ws_manager
 
-        self._queue: asyncio.Queue[QueuedTask] = asyncio.Queue()
+        self._wakeup = asyncio.Event()
         self._worker_task: asyncio.Task[None] | None = None
         self._scheduler: AsyncIOScheduler | None = None
         self._active_targets: set[str] = set()
 
+    # --- lifecycle ---------------------------------------------------------------
+
     async def start(self) -> None:
+        requeued = self.db.requeue_interrupted_crawl_jobs()
+        if requeued:
+            logger.info("Przywrócono %d przerwanych zadań do kolejki.", requeued)
+
         if self._worker_task is None or self._worker_task.done():
             self._worker_task = asyncio.create_task(self._run_loop(), name="investwatch-crawl-worker")
+            self._wakeup.set()
 
         if self.settings.crawler_enable_scheduler and self._scheduler is None:
             self._scheduler = AsyncIOScheduler(timezone="UTC")
             self._scheduler.add_job(
-                self._scheduled_mock_scan,
-                trigger="interval",
-                minutes=max(1, self.settings.crawler_schedule_minutes),
-                id="periodic_mock_scan",
+                self.scheduled_scan,
+                trigger=self._build_trigger(),
+                id=SCHEDULER_JOB_ID,
                 replace_existing=True,
                 max_instances=1,
+                coalesce=True,
             )
             self._scheduler.start()
-            logger.info(
-                "APScheduler uruchomiony (interwał: %d min).",
-                self.settings.crawler_schedule_minutes,
-            )
+            logger.info("APScheduler uruchomiony (%s).", self.schedule_description)
 
     async def stop(self) -> None:
         if self._scheduler is not None:
@@ -84,6 +94,19 @@ class CrawlQueueWorker:
                 pass
             self._worker_task = None
 
+    def _build_trigger(self) -> CronTrigger | IntervalTrigger:
+        if self.settings.crawler_cron.strip():
+            return CronTrigger.from_crontab(self.settings.crawler_cron.strip(), timezone="UTC")
+        return IntervalTrigger(minutes=max(1, self.settings.crawler_schedule_minutes), timezone="UTC")
+
+    @property
+    def schedule_description(self) -> str:
+        if not self.settings.crawler_enable_scheduler:
+            return "disabled"
+        if self.settings.crawler_cron.strip():
+            return f"cron: {self.settings.crawler_cron.strip()} (UTC)"
+        return f"interval: {max(1, self.settings.crawler_schedule_minutes)} min"
+
     @property
     def scheduler_running(self) -> bool:
         return self._scheduler is not None and self._scheduler.running
@@ -92,24 +115,53 @@ class CrawlQueueWorker:
     def scheduler_next_run(self) -> str | None:
         if not self._scheduler:
             return None
-        job = self._scheduler.get_job("periodic_mock_scan")
+        job = self._scheduler.get_job(SCHEDULER_JOB_ID)
         if job and job.next_run_time:
             return job.next_run_time.isoformat()
         return None
 
-    async def _scheduled_mock_scan(self) -> None:
-        """Periodic Cron/APScheduler job that scans local mock sources without duplicating active runs."""
-        if "mock_all" in self._active_targets:
-            logger.info("Pomijam cykliczny skan — poprzedni jeszcze trwa.")
-            return
-        await self.enqueue(CrawlTriggerRequest(mode="mock_all", module_ids=[1, 2, 3]))
+    # --- scheduling --------------------------------------------------------------
+
+    async def scheduled_scan(self) -> tuple[list[str], list[str]]:
+        """Periodic job: demo mock sources (optional) + every enabled watchlist target.
+
+        Targets that are already queued or running are skipped, so slow scans never pile up.
+        Returns (enqueued job ids, skipped targets).
+        """
+        job_ids: list[str] = []
+        skipped: list[str] = []
+
+        if self.settings.crawler_schedule_include_mocks:
+            if "mock_all" in self._active_targets:
+                skipped.append("mock_all")
+            else:
+                job_ids.append(await self.enqueue(CrawlTriggerRequest(mode="mock_all", module_ids=[1, 2, 3])))
+
+        for target in self.db.list_watch_targets(only_enabled=True):
+            if target.url in self._active_targets:
+                skipped.append(target.url)
+                continue
+            req = CrawlTriggerRequest(
+                mode="public_url",
+                target_url=target.url,
+                module_ids=[m for m in target.module_ids if m in (1, 2, 3)] or [1, 2, 3],  # type: ignore[misc]
+                use_playwright=target.use_playwright,
+            )
+            job_ids.append(await self.enqueue(req))
+            self.db.mark_watch_target_enqueued(target.id)
+
+        if skipped:
+            logger.info("Harmonogram: pominięto cele w trakcie przetwarzania: %s", skipped)
+        return job_ids, skipped
 
     async def enqueue(self, req: CrawlTriggerRequest) -> str:
-        target_key = req.target_url or req.mock_file or req.mode
+        target_key = _target_key(req)
         job_id = f"job_{uuid.uuid4().hex[:10]}"
-        self.db.create_crawl_job(job_id=job_id, mode=req.mode, target=target_key)
+        self.db.create_crawl_job(
+            job_id=job_id, mode=req.mode, target=target_key, request_json=req.model_dump_json()
+        )
         self._active_targets.add(target_key)
-        await self._queue.put(QueuedTask(job_id=job_id, request=req))
+        self._wakeup.set()
 
         await self.ws_manager.broadcast(
             WebSocketAlertEvent(
@@ -123,38 +175,47 @@ class CrawlQueueWorker:
         )
         return job_id
 
+    # --- processing --------------------------------------------------------------
+
     async def _run_loop(self) -> None:
         while True:
-            task = await self._queue.get()
-            target_key = task.request.target_url or task.request.mock_file or task.request.mode
+            claimed = self.db.claim_next_crawl_job()
+            if claimed is None:
+                self._wakeup.clear()
+                try:
+                    await asyncio.wait_for(self._wakeup.wait(), timeout=QUEUE_POLL_SECONDS)
+                except asyncio.TimeoutError:
+                    pass
+                continue
+
+            job_id, request_json = claimed
+            target_key = job_id
             try:
-                await self._process_job(task)
+                if not request_json:
+                    raise ValueError("Brak zapisanych parametrów zadania (rekord sprzed migracji kolejki).")
+                req = CrawlTriggerRequest.model_validate_json(request_json)
+                target_key = _target_key(req)
+                self._active_targets.add(target_key)
+                await self._process_job(job_id, req)
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
-                logger.exception("Błąd przetwarzania zadania %s: %s", task.job_id, exc)
-                self.db.update_crawl_job(
-                    task.job_id, status="failed", error_message=str(exc), finished=True
-                )
+                logger.exception("Błąd przetwarzania zadania %s: %s", job_id, exc)
+                self.db.update_crawl_job(job_id, status="failed", error_message=str(exc), finished=True)
                 await self.ws_manager.broadcast(
                     WebSocketAlertEvent(
                         type="error",
                         timestamp=utc_now_iso(),
-                        job_id=task.job_id,
+                        job_id=job_id,
                         stage="error",
                         source=target_key,
-                        message=f"Błąd zadania {task.job_id}: {exc}",
+                        message=f"Błąd zadania {job_id}: {exc}",
                     )
                 )
             finally:
                 self._active_targets.discard(target_key)
-                self._queue.task_done()
 
-    async def _process_job(self, task: QueuedTask) -> None:
-        job_id = task.job_id
-        req = task.request
-        self.db.update_crawl_job(job_id, status="running")
-
+    async def _process_job(self, job_id: str, req: CrawlTriggerRequest) -> None:
         # Refresh Ollama availability once per job
         await self.ollama.check_health()
 
@@ -176,15 +237,10 @@ class CrawlQueueWorker:
             await self._emit_stage(
                 job_id, "fetching", req.target_url, f"Pobieranie URL (anty-SSRF): {req.target_url}"
             )
-            pages.append(
-                await self.fetcher.fetch_public_url(
-                    req.target_url, use_playwright=req.use_playwright
-                )
-            )
+            pages.append(await self.fetcher.fetch_public_url(req.target_url, use_playwright=req.use_playwright))
 
         processed = 0
         created_or_updated = 0
-
         for page in pages:
             saved = await self.analyze_page(page, list(req.module_ids), job_id=job_id)
             created_or_updated += len(saved)
@@ -203,7 +259,7 @@ class CrawlQueueWorker:
                 timestamp=utc_now_iso(),
                 job_id=job_id,
                 stage="completed",
-                source=req.target_url or req.mock_file or req.mode,
+                source=_target_key(req),
                 message=(
                     f"Zakończono zadanie {job_id}: przeanalizowano {processed} źródeł, "
                     f"zapisano {created_or_updated} wyników."
@@ -246,6 +302,13 @@ class CrawlQueueWorker:
             raw_html=page.raw_html,
             normalized_text=doc.normalized_text,
             embedding=doc.embedding,
+            extracted={
+                "title": doc.title,
+                "final_url": page.final_url,
+                "used_playwright": page.used_playwright,
+                "social": doc.social.to_dict() if doc.social else None,
+                "dom_metrics": doc.dom_metrics.model_dump(),
+            },
         )
 
         await self._emit_stage(
@@ -264,8 +327,16 @@ class CrawlQueueWorker:
 
         saved: list[IncidentDetail] = []
         for inc in incidents:
-            # Deduplicate identical content_hash per module (update existing record instead of duplicating)
+            # Deduplicate: exact content hash first, then near-identical content of the same URL
             existing_id = self.db.find_existing_incident_by_hash(inc.module_id, doc.content_hash)
+            if existing_id is None:
+                existing_id = self.db.find_near_duplicate_incident(
+                    module_id=inc.module_id,
+                    source_url=doc.source_url,
+                    content_hash=doc.content_hash,
+                    embedding=doc.embedding,
+                    min_similarity=self.settings.dedup_similarity_threshold,
+                )
             if existing_id:
                 inc.id = existing_id
             self.db.upsert_incident(inc)

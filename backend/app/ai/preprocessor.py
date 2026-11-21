@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from bs4 import BeautifulSoup, Tag
 
 from app.models import DomMetrics
+from app.scraper.social_parsers import SOCIAL_PLATFORMS, SocialPost, parse_social_post
 
 RISK_KEYWORDS_RE = re.compile(
     r"(ryzyk|utrat[aąey]\s+kapitał|strata|cfd|risk\s+warning|capital\s+at\s+risk|"
@@ -37,6 +38,7 @@ class PreprocessedDocument:
     ground_truth_hint: bool | None = None
     dom_metrics: DomMetrics = field(default_factory=DomMetrics)
     is_mock_source: bool = False
+    social: SocialPost | None = None
 
 
 def _hex_luminance(hex_color: str) -> float:
@@ -234,6 +236,13 @@ def preprocess_html(
         elif val in ("false", "0", "no"):
             gt_hint = False
 
+    # Social-media post metadata (author, hashtags, date) from JSON-LD / OpenGraph / URL
+    social = (
+        parse_social_post(raw_html, source_url, source_platform)
+        if source_platform in SOCIAL_PLATFORMS
+        else None
+    )
+
     title_tag = soup.find("title")
     h1_tag = soup.find("h1")
     title = (
@@ -278,4 +287,5 @@ def preprocess_html(
         ground_truth_hint=gt_hint,
         dom_metrics=dom_metrics,
         is_mock_source=is_mock_source,
+        social=social,
     )

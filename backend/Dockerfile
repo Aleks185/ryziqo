@@ -1,14 +1,24 @@
 FROM python:3.12-slim
 
+# Optional headless Chromium for JS-rendered pages (adds ~400 MB): --build-arg INSTALL_PLAYWRIGHT=true
+ARG INSTALL_PLAYWRIGHT=false
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 WORKDIR /app
 
-# Copy dependency list first for layer caching
-COPY backend/requirements.txt /app/requirements.txt
+# Copy dependency lists first for layer caching (runtime only — no test tooling in the image)
+COPY backend/requirements.txt backend/requirements-playwright.txt /app/
 RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+
+RUN if [ "$INSTALL_PLAYWRIGHT" = "true" ]; then \
+        pip install -r /app/requirements-playwright.txt \
+        && playwright install --with-deps chromium \
+        && chmod -R a+rX /ms-playwright; \
+    fi
 
 # Copy backend source and static reference data
 COPY backend/app /app/app

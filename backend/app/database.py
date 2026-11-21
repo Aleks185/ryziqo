@@ -20,7 +20,9 @@ from app.models import (
     TopRuleCount,
     TrendPoint,
     ViolatedRule,
+    WatchTarget,
 )
+from app.ai.preprocessor import cosine_similarity
 
 
 def utc_now_iso() -> str:
@@ -109,8 +111,32 @@ class Database:
                     created_at TEXT NOT NULL,
                     finished_at TEXT
                 );
+                CREATE INDEX IF NOT EXISTS idx_crawl_jobs_status ON crawl_jobs(status, created_at);
+
+                CREATE TABLE IF NOT EXISTS watch_targets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    url TEXT NOT NULL UNIQUE,
+                    label TEXT,
+                    module_ids_json TEXT NOT NULL DEFAULT '[1, 2, 3]',
+                    use_playwright INTEGER NOT NULL DEFAULT 0,
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    last_enqueued_at TEXT
+                );
                 """
             )
+            # Additive migrations for databases created by earlier versions
+            self._add_column_if_missing(conn, "crawl_jobs", "request_json", "TEXT")
+            self._add_column_if_missing(conn, "content_snapshots", "embedding_json", "TEXT")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_incidents_source ON incidents(module_id, source_url)"
+            )
+
+    @staticmethod
+    def _add_column_if_missing(conn: sqlite3.Connection, table: str, column: str, col_type: str) -> None:
+        existing = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if column not in existing:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
 
     def seed_demo_if_empty(self, seed_file: Path) -> int:
         """Load synthetic demo incidents ONLY when incidents table is empty."""
@@ -132,6 +158,7 @@ class Database:
         raw_html: str,
         normalized_text: str,
         embedding: list[float],
+        extracted: dict[str, Any] | None = None,
     ) -> str:
         """Persist raw HTML and normalized JSON artifact in local Object Storage + SQL metadata."""
         storage_key = f"{content_hash}.json"
@@ -146,6 +173,7 @@ class Database:
             "normalized_text": normalized_text,
             "embedding_preview": embedding[:16],
             "embedding_dim": len(embedding),
+            "extracted": extracted,
             "saved_at": utc_now_iso(),
         }
         json_path.write_text(json.dumps(artifact, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -154,10 +182,18 @@ class Database:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO content_snapshots
-                    (content_hash, source_url, source_platform, storage_key, vector_dim, fetched_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                    (content_hash, source_url, source_platform, storage_key, vector_dim, embedding_json, fetched_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (content_hash, source_url, source_platform, storage_key, len(embedding), utc_now_iso()),
+                (
+                    content_hash,
+                    source_url,
+                    source_platform,
+                    storage_key,
+                    len(embedding),
+                    json.dumps(embedding),
+                    utc_now_iso(),
+                ),
             )
         return storage_key
 
@@ -181,6 +217,46 @@ class Database:
                 (module_id, content_hash),
             ).fetchone()
             return str(row["id"]) if row else None
+
+    def find_near_duplicate_incident(
+        self,
+        module_id: int,
+        source_url: str,
+        content_hash: str,
+        embedding: list[float],
+        min_similarity: float,
+    ) -> str | None:
+        """Find an incident for the same module + URL whose stored content is near-identical.
+
+        Re-scans of a watched page often differ only in counters, dates or comments, which changes
+        the exact SHA-256 hash. Comparing embeddings (cosine similarity) keeps one incident per page.
+        """
+        if not embedding:
+            return None
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT i.id, s.embedding_json
+                FROM incidents i
+                JOIN content_snapshots s ON s.content_hash = i.content_hash
+                WHERE i.module_id = ? AND i.source_url = ? AND i.content_hash != ?
+                  AND s.vector_dim = ? AND s.embedding_json IS NOT NULL
+                ORDER BY i.updated_at DESC
+                LIMIT 50
+                """,
+                (module_id, source_url, content_hash, len(embedding)),
+            ).fetchall()
+        best_id: str | None = None
+        best_sim = min_similarity
+        for row in rows:
+            try:
+                other = json.loads(row["embedding_json"])
+            except (TypeError, json.JSONDecodeError):
+                continue
+            sim = cosine_similarity(embedding, other)
+            if sim >= best_sim:
+                best_id, best_sim = str(row["id"]), sim
+        return best_id
 
     def upsert_incident(self, incident: Incident) -> Incident:
         gt_val = None if incident.ground_truth_label is None else (1 if incident.ground_truth_label else 0)
@@ -212,6 +288,7 @@ class Database:
                     dom_metrics_json = excluded.dom_metrics_json,
                     risk_score = excluded.risk_score,
                     risk_level = excluded.risk_level,
+                    content_hash = COALESCE(excluded.content_hash, incidents.content_hash),
                     model_used = excluded.model_used,
                     is_demo_fallback = excluded.is_demo_fallback,
                     storage_key = COALESCE(excluded.storage_key, incidents.storage_key),
@@ -294,6 +371,7 @@ class Database:
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
+        risk_level: str | None = None,
     ) -> tuple[list[Incident], int]:
         where: list[str] = []
         params: list[Any] = []
@@ -307,6 +385,9 @@ class Database:
         if status:
             where.append("status = ?")
             params.append(status)
+        if risk_level:
+            where.append("risk_level = ?")
+            params.append(risk_level)
         if min_risk_score is not None:
             where.append("risk_score >= ?")
             params.append(min_risk_score)
@@ -484,15 +565,17 @@ class Database:
 
     # --- Crawl jobs ---
 
-    def create_crawl_job(self, job_id: str, mode: str, target: str | None) -> CrawlJobRecord:
+    def create_crawl_job(
+        self, job_id: str, mode: str, target: str | None, request_json: str | None = None
+    ) -> CrawlJobRecord:
         now = utc_now_iso()
         with self._connect() as conn:
             conn.execute(
                 """
-                INSERT INTO crawl_jobs (job_id, mode, target, status, created_at)
-                VALUES (?, ?, ?, 'queued', ?)
+                INSERT INTO crawl_jobs (job_id, mode, target, status, request_json, created_at)
+                VALUES (?, ?, ?, 'queued', ?, ?)
                 """,
-                (job_id, mode, target, now),
+                (job_id, mode, target, request_json, now),
             )
         return CrawlJobRecord(
             job_id=job_id, mode=mode, target=target, status="queued", created_at=now
@@ -522,9 +605,105 @@ class Database:
                 (status, processed_count, incidents_created, error_message, finished_at, job_id),
             )
 
+    def claim_next_crawl_job(self) -> tuple[str, str | None] | None:
+        """Atomically move the oldest queued job to 'running'; returns (job_id, request_json)."""
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT job_id, request_json FROM crawl_jobs WHERE status = 'queued' "
+                "ORDER BY created_at, rowid LIMIT 1"
+            ).fetchone()
+            if row is None:
+                conn.execute("COMMIT")
+                return None
+            conn.execute("UPDATE crawl_jobs SET status = 'running' WHERE job_id = ?", (row["job_id"],))
+            conn.execute("COMMIT")
+            return str(row["job_id"]), row["request_json"]
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
+        finally:
+            conn.close()
+
+    def requeue_interrupted_crawl_jobs(self) -> int:
+        """Jobs left 'running' by a crash or restart go back to the queue."""
+        with self._connect() as conn:
+            return conn.execute(
+                "UPDATE crawl_jobs SET status = 'queued' WHERE status = 'running'"
+            ).rowcount
+
     def list_crawl_jobs(self, limit: int = 20) -> list[CrawlJobRecord]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT * FROM crawl_jobs ORDER BY created_at DESC LIMIT ?", (limit,)
+                "SELECT * FROM crawl_jobs ORDER BY created_at DESC, rowid DESC LIMIT ?", (limit,)
             ).fetchall()
-        return [CrawlJobRecord(**dict(r)) for r in rows]
+        fields = CrawlJobRecord.model_fields.keys()
+        return [CrawlJobRecord(**{k: r[k] for k in r.keys() if k in fields}) for r in rows]
+
+    # --- Watchlist (periodically re-scanned public sources) ---
+
+    @staticmethod
+    def _row_to_watch_target(row: sqlite3.Row) -> WatchTarget:
+        return WatchTarget(
+            id=row["id"],
+            url=row["url"],
+            label=row["label"],
+            module_ids=json.loads(row["module_ids_json"] or "[1, 2, 3]"),
+            use_playwright=bool(row["use_playwright"]),
+            enabled=bool(row["enabled"]),
+            created_at=row["created_at"],
+            last_enqueued_at=row["last_enqueued_at"],
+        )
+
+    def add_watch_target(
+        self, url: str, label: str | None, module_ids: list[int], use_playwright: bool
+    ) -> WatchTarget | None:
+        """Insert a watch target; returns None when the URL is already on the watchlist."""
+        with self._connect() as conn:
+            try:
+                cur = conn.execute(
+                    """
+                    INSERT INTO watch_targets (url, label, module_ids_json, use_playwright, created_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        url,
+                        label,
+                        json.dumps(sorted(set(module_ids))),
+                        1 if use_playwright else 0,
+                        utc_now_iso(),
+                    ),
+                )
+            except sqlite3.IntegrityError:
+                return None
+            row = conn.execute("SELECT * FROM watch_targets WHERE id = ?", (cur.lastrowid,)).fetchone()
+        return self._row_to_watch_target(row)
+
+    def list_watch_targets(self, only_enabled: bool = False) -> list[WatchTarget]:
+        sql = "SELECT * FROM watch_targets"
+        if only_enabled:
+            sql += " WHERE enabled = 1"
+        with self._connect() as conn:
+            rows = conn.execute(sql + " ORDER BY id").fetchall()
+        return [self._row_to_watch_target(r) for r in rows]
+
+    def set_watch_target_enabled(self, target_id: int, enabled: bool) -> WatchTarget | None:
+        with self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE watch_targets SET enabled = ? WHERE id = ?", (1 if enabled else 0, target_id)
+            )
+            if cur.rowcount == 0:
+                return None
+            row = conn.execute("SELECT * FROM watch_targets WHERE id = ?", (target_id,)).fetchone()
+        return self._row_to_watch_target(row)
+
+    def delete_watch_target(self, target_id: int) -> bool:
+        with self._connect() as conn:
+            return conn.execute("DELETE FROM watch_targets WHERE id = ?", (target_id,)).rowcount > 0
+
+    def mark_watch_target_enqueued(self, target_id: int) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE watch_targets SET last_enqueued_at = ? WHERE id = ?", (utc_now_iso(), target_id)
+            )

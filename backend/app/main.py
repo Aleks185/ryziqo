@@ -14,7 +14,7 @@ from app.database import Database
 from app.knf_registry import KNFRegistrySnapshot
 from app.models import HealthResponse
 from app.queue_worker import CrawlQueueWorker
-from app.routers import analyze, crawl, incidents, ws
+from app.routers import analyze, crawl, incidents, reports, watchlist, ws
 from app.scraper.fetcher import PageFetcher
 from app.ws_manager import AlertWebSocketManager
 
@@ -84,7 +84,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
             "System monitoringu treści inwestycyjnych (Moduły 1–3: Finfluencerzy, "
             "18 kryteriów ryzyka MiFID II / 2017/565, Shadow Advisory art. 76 u.o.i.f.)."
         ),
-        version="1.1.0",
+        version="1.2.0",
         lifespan=lifespan,
     )
 
@@ -99,6 +99,8 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
     app.include_router(incidents.router)
     app.include_router(crawl.router)
     app.include_router(analyze.router)
+    app.include_router(watchlist.router)
+    app.include_router(reports.router)
     app.include_router(ws.router)
 
     @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
