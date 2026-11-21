@@ -1,4 +1,7 @@
+<<<<<<< Updated upstream
 import { useState } from "react";
+=======
+>>>>>>> Stashed changes
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useApp } from "@/lib/store";
@@ -26,7 +29,10 @@ const ConnectionPill = () => {
 };
 
 export const Header = () => {
+<<<<<<< Updated upstream
   const [open, setOpen] = useState(false);
+=======
+>>>>>>> Stashed changes
   const publicView = useLocation().pathname.replace(/\/$/, "") === "/public";
   const { lang, setLang, t } = useApp();
   return (
@@ -39,8 +45,12 @@ export const Header = () => {
             <div className="text-[11px] text-slate-400 hidden sm:block">{t("app_sub")}</div>
           </div>
         </NavLink>
+<<<<<<< Updated upstream
         {!publicView && <button className="px-3 py-1.5 text-sm rounded-sm transition-colors focus-ring" type="button" aria-expanded={open} aria-controls="analyst-navigation" onClick={()=>setOpen(!open)}>Menu {open ? "▴" : "▾"}</button>}
         {!publicView && open && <nav id="analyst-navigation" className="flex flex-wrap gap-1 order-3 lg:order-none w-full lg:w-auto">
+=======
+        {!publicView && <nav className="flex flex-wrap gap-1 order-3 lg:order-none w-full lg:w-auto">
+>>>>>>> Stashed changes
           {LINKS.map(([to, key, id]) => (
             <NavLink
               onClick={()=>setOpen(false)} key={to}

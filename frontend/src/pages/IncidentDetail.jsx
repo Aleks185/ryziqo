@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+<<<<<<< Updated upstream
 import { IncidentEvidence } from "./Intelligence";
+=======
+>>>>>>> Stashed changes
 import { Link, useParams } from "react-router-dom";
 import { Printer } from "lucide-react";
 import { STATUSES } from "@/lib/config";

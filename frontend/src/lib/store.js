@@ -248,7 +248,11 @@ export function AppProvider({ children }) {
 
   /** Analiza na żądanie. Zwraca listę incydentów (CONTRACT.md: AnalyzeResponse.items). */
   const analyze = useCallback(
+<<<<<<< Updated upstream
     async ({ kind, file, content, url, platform, force_full, onStatus, onReport, signal, module_ids, title = null, source_url = null, ground_truth_label = null, citizen = false }) => {
+=======
+    async ({ kind, content, url, module_ids, title = null, source_url = null, ground_truth_label = null, citizen = false }) => {
+>>>>>>> Stashed changes
       let items;
       if (kind === "image" && mode !== "online") throw Object.assign(new Error("Vision unavailable"), { status: 503 });
       if (mode === "online") {

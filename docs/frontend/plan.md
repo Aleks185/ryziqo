@@ -1,5 +1,3 @@
-> **Dokument historyczny** — notatki z etapu prototypowania frontendu w Emergent (przeniesione z `frontend/`). Aktualny opis: [frontend-architecture.md](../frontend-architecture.md); obowiązujący kontrakt: [CONTRACT.md](../../CONTRACT.md).
-
 # INVESTWATCH — fundament frontendu panelu analitycznego dla UKNF
 Panel dla analityków nadzoru do wykrywania problematycznych reklam inwestycyjnych, finfluencerów i ukrytego doradztwa, z cytatami dowodowymi i kalibracją progu ryzyka.
 Emergent przygotowuje gotowy do rozwoju frontend oraz projekt kontraktu API; Krzysztof rozwija frontend, Aleks dostarcza backend z Ollamą i silnikiem scrapingu.

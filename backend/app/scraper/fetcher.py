@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+<<<<<<< Updated upstream
 import hashlib
 import html
 from datetime import datetime, timezone
+=======
+>>>>>>> Stashed changes
 import logging
 import random
 import time
@@ -79,26 +82,6 @@ class FetchedPage:
     # JPEG screenshots [desktop, tablet, mobile] from Playwright when OLLAMA_VISION_ENABLED=true
     screenshots: list[bytes] | None = None
     vision_findings: dict | None = None
-
-
-def build_manual_text_page(content: str, title: str | None, source_url: str | None) -> FetchedPage:
-    """Wrap analyst-pasted plain text into a minimal HTML page for the shared pipeline.
-
-    The text is HTML-escaped, so pasted markup is treated as data, never rendered or executed.
-    Nothing is fetched from the network.
-    """
-    paragraphs = [p.strip() for p in content.replace("\r\n", "\n").split("\n\n") if p.strip()]
-    body = "\n".join(f"<p>{html.escape(p)}</p>" for p in paragraphs) or "<p></p>"
-    title_html = f"<title>{html.escape(title.strip())}</title>" if title and title.strip() else ""
-    raw_html = f'<!doctype html><html lang="pl"><head><meta charset="utf-8">{title_html}</head><body>{body}</body></html>'
-    url = (source_url or "").strip() or "manual://text"
-    return FetchedPage(
-        source_url=url,
-        final_url=url,
-        source_platform="manual",
-        raw_html=raw_html,
-        status_code=200,
-    )
 
 
 def detect_platform_from_url(url: str) -> str:

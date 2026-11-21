@@ -24,7 +24,7 @@ from app.config import Settings
 from app.database import Database, utc_now_iso
 from app.discovery import DiscoveryService
 from app.knf_registry import KNFRegistrySnapshot
-from app.models import CrawlTriggerRequest, IncidentDetail, WebSocketAlertEvent
+from app.models import CrawlTriggerRequest, WebSocketAlertEvent
 from app.scraper.fetcher import FetchedPage, PageFetcher
 from app.scraper.links import extract_same_site_links
 from app.scraper.politeness import RobotsDisallowedError
@@ -304,10 +304,81 @@ class CrawlQueueWorker:
         processed = 0
         created_or_updated = 0
         for page in pages:
+<<<<<<< Updated upstream
             saved = await self.analyze_page(page, list(req.module_ids), job_id=job_id)
             if registry := getattr(self, "report_registry", None):
                 registry.import_history({item.id for item in saved})
             created_or_updated += len(saved)
+=======
+            await self._emit_stage(
+                job_id,
+                "preprocessing",
+                page.source_url,
+                f"Czyszczenie HTML, analiza DOM/CSS i wektoryzacja: {page.source_url}",
+            )
+            doc = preprocess_html(
+                raw_html=page.raw_html,
+                source_url=page.source_url,
+                source_platform=page.source_platform,
+                is_mock_source=page.is_mock_source,
+                playwright_metrics=page.playwright_dom_metrics,
+            )
+
+            # Optionally upgrade embedding with local Ollama embeddings
+            ollama_emb = await self.ollama.embed_text(doc.normalized_text)
+            if ollama_emb:
+                doc.embedding = ollama_emb
+
+            storage_key = self.db.save_content_object(
+                content_hash=doc.content_hash,
+                source_url=doc.source_url,
+                source_platform=doc.source_platform,
+                raw_html=page.raw_html,
+                normalized_text=doc.normalized_text,
+                embedding=doc.embedding,
+            )
+
+            await self._emit_stage(
+                job_id,
+                "analyzing",
+                page.source_url,
+                f"Analiza AI/reguł (Moduły {req.module_ids}): {doc.title[:80]}",
+            )
+            incidents = await run_analytical_pipeline(
+                doc=doc,
+                module_ids=list(req.module_ids),
+                registry=self.registry,
+                ollama=self.ollama,
+                storage_key=storage_key,
+            )
+
+            for inc in incidents:
+                # Deduplicate identical content_hash per module (update existing record instead of duplicating)
+                existing_id = self.db.find_existing_incident_by_hash(inc.module_id, doc.content_hash)
+                if existing_id:
+                    inc.id = existing_id
+                self.db.upsert_incident(inc)
+                created_or_updated += 1
+
+                if inc.risk_score >= self.settings.high_risk_alert_threshold:
+                    await self.ws_manager.broadcast(
+                        WebSocketAlertEvent(
+                            type="high_risk_alert",
+                            timestamp=utc_now_iso(),
+                            job_id=job_id,
+                            stage="analyzing",
+                            source=inc.source_url,
+                            module_id=inc.module_id,
+                            incident_id=inc.id,
+                            risk_score=inc.risk_score,
+                            message=(
+                                f"ALERT wysokiego ryzyka ({inc.risk_score:.2f}) | "
+                                f"Moduł {inc.module_id} | {inc.entity_name}: {inc.title[:90]}"
+                            ),
+                        )
+                    )
+
+>>>>>>> Stashed changes
             processed += 1
 
         await self._finish_job(job_id, req, processed, created_or_updated)
@@ -386,6 +457,7 @@ class CrawlQueueWorker:
             )
         )
 
+<<<<<<< Updated upstream
     async def analyze_page(
         self, page: FetchedPage, module_ids: list[int], job_id: str | None = None
     ) -> list[IncidentDetail]:
@@ -512,6 +584,9 @@ class CrawlQueueWorker:
         return saved
 
     async def _emit_stage(self, job_id: str | None, stage: str, source: str, message: str) -> None:
+=======
+    async def _emit_stage(self, job_id: str, stage: str, source: str, message: str) -> None:
+>>>>>>> Stashed changes
         await self.ws_manager.broadcast(
             WebSocketAlertEvent(
                 type="crawler_status",

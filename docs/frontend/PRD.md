@@ -1,5 +1,3 @@
-> **Dokument historyczny** — notatki z etapu prototypowania frontendu w Emergent (przeniesione z `frontend/`). Aktualny opis: [frontend-architecture.md](../frontend-architecture.md); obowiązujący kontrakt: [CONTRACT.md](../../CONTRACT.md).
-
 # INVESTWATCH — PRD
 
 ## Problem statement

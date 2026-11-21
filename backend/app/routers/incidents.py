@@ -11,7 +11,6 @@ from app.models import (
     Incident,
     IncidentDetail,
     IncidentListResponse,
-    LabelUpdateRequest,
     StatsResponse,
     StatusUpdateRequest,
     WebSocketAlertEvent,
@@ -97,31 +96,6 @@ async def update_incident_status(
             risk_score=updated.risk_score,
             message=f"Zmieniono status incydentu {updated.id} na '{updated.status}'.",
             extra={"status": updated.status},
-        )
-    )
-    return updated
-
-
-@router.patch("/incidents/{incident_id}/label", response_model=Incident)
-async def update_incident_label(
-    request: Request, incident_id: str, body: LabelUpdateRequest
-) -> Incident:
-    db = request.app.state.db
-    ws_manager = request.app.state.ws_manager
-
-    updated = db.update_incident_label(incident_id, body.ground_truth_label)
-    if updated is None:
-        raise HTTPException(status_code=404, detail=f"Incydent '{incident_id}' nie istnieje.")
-
-    await ws_manager.broadcast(
-        WebSocketAlertEvent(
-            type="status_updated",
-            timestamp=utc_now_iso(),
-            module_id=updated.module_id,
-            incident_id=updated.id,
-            risk_score=updated.risk_score,
-            message=f"Zmieniono etykietę referencyjną incydentu {updated.id} na '{updated.ground_truth_label}'.",
-            extra={"status": updated.status, "ground_truth_label": updated.ground_truth_label},
         )
     )
     return updated
