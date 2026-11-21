@@ -13,7 +13,7 @@ DEFAULT_KNF_SYNC_USER_AGENT = (
 )
 
 class Settings(BaseSettings):
-    """Runtime settings for #InvestWatch backend."""
+    """Runtime settings for Ryziqo backend."""
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),

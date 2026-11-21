@@ -1,6 +1,6 @@
 > **Dokument historyczny** — notatki z etapu prototypowania frontendu w Emergent (przeniesione z `frontend/`). Aktualny opis: [frontend-architecture.md](../frontend-architecture.md); obowiązujący kontrakt: [CONTRACT.md](../../CONTRACT.md).
 
-# INVESTWATCH — PRD
+# Ryziqo — PRD
 
 ## Problem statement
 "zacznij pracę podejdz krytycznie do całości i pytaj o grafikę i podobne" + HackNation brief (hacknation krzysztof.md). Frontend panel for UKNF analysts that detects problematic investment ads, finfluencers and shadow advisory (Modules M1/M2/M3). Emergent builds the frontend and the API contract draft. Krzysztof works on the frontend. Aleks builds the backend (FastAPI + SQLite + scraper + Ollama).

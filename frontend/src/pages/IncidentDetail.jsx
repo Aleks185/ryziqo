@@ -53,7 +53,7 @@ const ViolatedRules = ({ inc }) => {
             <span className="text-xs text-slate-500">· {t(`severity_${r.severity}`)}</span>
           </div>
           <p className="ml-4 mt-1 text-slate-700">{r.reason}</p>
-          <p className="ml-4 mt-0.5 text-xs text-slate-500">{t("legal_basis")}: {r.legal_basis}</p>
+          <p className="ml-4 mt-0.5 text-xs text-slate-500">{t("legal_basis")}: {r.legal_basis?.replace(/#?investwatch\b/gi, "Ryziqo")}</p>
         </li>
       ))}
     </ul>

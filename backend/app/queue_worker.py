@@ -32,7 +32,7 @@ from app.scraper.ssrf import SSRFError
 from app.scraper.urlnorm import canonicalize_url
 from app.ws_manager import AlertWebSocketManager
 
-logger = logging.getLogger("investwatch.worker")
+logger = logging.getLogger("ryziqo.worker")
 
 SCHEDULER_JOB_ID = "periodic_scan"
 DISCOVERY_JOB_ID = "discovery_scan"
@@ -92,7 +92,7 @@ class CrawlQueueWorker:
             logger.info("Przywrócono %d przerwanych zadań do kolejki.", requeued)
 
         if self._worker_task is None or self._worker_task.done():
-            self._worker_task = asyncio.create_task(self._run_loop(), name="investwatch-crawl-worker")
+            self._worker_task = asyncio.create_task(self._run_loop(), name="ryziqo-crawl-worker")
             self._wakeup.set()
 
         if self._scheduler is None and (

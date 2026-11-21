@@ -79,7 +79,7 @@ function Evidence({r}){
     ["UTC",r.created_at],["SHA-256",r.content_hash],["pHash",r.image_phash],
     [l("Podmioty","Entities"),r.detected_entities.join(", ")], [l("Kampania","Campaign"),r.campaign_id]];
   async function copy(){
-    try {await navigator.clipboard.writeText(["INVESTWATCH · CERT / KNF",r.id,...pairs.map(([k,v])=>k+": "+(v || "—")),r.ai_report_json.summary,
+    try {await navigator.clipboard.writeText(["Ryziqo · CERT / KNF",r.id,...pairs.map(([k,v])=>k+": "+(v || "—")),r.ai_report_json.summary,
       ...r.ai_report_json.findings.flatMap(f=>[...f.reasons,...f.evidence]),...r.ai_report_json.limitations,...(r.hosting_asn || r.hosting_country ? ["IP Geolocation by DB-IP · https://db-ip.com · CC BY 4.0"] : [])].join("\n"));
       setMessage(l("Skopiowano.","Copied."));}catch{setMessage(l("Brak dostępu do schowka.","Clipboard access unavailable."));}
   }

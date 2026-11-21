@@ -54,15 +54,15 @@ CONTEXT_TYPES_HELP = """context_type: "commercial_ad" (reklama firmy), "affiliat
 ROLE_BY_MODULE = {
     1: (
         "Jesteś analitykiem UKNF oceniającym treści finfluencerów i podmiotów trzecich promujących firmy "
-        "inwestycyjne (Moduł 1 #InvestWatch). Szukasz ukrytej reklamy i afiliacji, nawet gdy autor unika "
+        "inwestycyjne (Moduł 1 Ryziqo). Szukasz ukrytej reklamy i afiliacji, nawet gdy autor unika "
         "słów kluczowych (slang, eufemizmy, emoji, obfuskacja)."
     ),
     2: (
-        "Jesteś ekspertem zgodności UKNF (Moduł 2 #InvestWatch — art. 24 ust. 3 MiFID II oraz art. 44 rozp. "
+        "Jesteś ekspertem zgodności UKNF (Moduł 2 Ryziqo — art. 24 ust. 3 MiFID II oraz art. 44 rozp. "
         "del. 2017/565). Oceniasz proporcjonalność i rzetelność informacji o ryzyku względem przekazu o zyskach."
     ),
     3: (
-        "Jesteś analitykiem UKNF ds. Shadow Advisory (Moduł 3 #InvestWatch — art. 76, art. 2 i 3 ustawy o obrocie "
+        "Jesteś analitykiem UKNF ds. Shadow Advisory (Moduł 3 Ryziqo — art. 76, art. 2 i 3 ustawy o obrocie "
         "instrumentami finansowymi). Sprawdzasz, czy podmiot bez zezwolenia KNF oferuje spersonalizowane "
         "rekomendacje nabycia/zbycia/trzymania instrumentów finansowych, także pod pozorem edukacji/mentoringu."
     ),

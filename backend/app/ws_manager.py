@@ -11,7 +11,7 @@ from fastapi import WebSocket
 from app.database import utc_now_iso
 from app.models import WebSocketAlertEvent
 
-logger = logging.getLogger("investwatch.ws")
+logger = logging.getLogger("ryziqo.ws")
 
 
 class AlertWebSocketManager:
@@ -28,7 +28,7 @@ class AlertWebSocketManager:
         welcome = WebSocketAlertEvent(
             type="connected",
             timestamp=utc_now_iso(),
-            message="Połączono z kanałem alertów #InvestWatch (/ws/alerts).",
+            message="Połączono z kanałem alertów Ryziqo (/ws/alerts).",
         )
         await self._send_safe(websocket, welcome.model_dump())
 

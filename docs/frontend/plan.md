@@ -1,6 +1,6 @@
 > **Dokument historyczny** — notatki z etapu prototypowania frontendu w Emergent (przeniesione z `frontend/`). Aktualny opis: [frontend-architecture.md](../frontend-architecture.md); obowiązujący kontrakt: [CONTRACT.md](../../CONTRACT.md).
 
-# INVESTWATCH — fundament frontendu panelu analitycznego dla UKNF
+# Ryziqo — fundament frontendu panelu analitycznego dla UKNF
 Panel dla analityków nadzoru do wykrywania problematycznych reklam inwestycyjnych, finfluencerów i ukrytego doradztwa, z cytatami dowodowymi i kalibracją progu ryzyka.
 Emergent przygotowuje gotowy do rozwoju frontend oraz projekt kontraktu API; Krzysztof rozwija frontend, Aleks dostarcza backend z Ollamą i silnikiem scrapingu.
 
@@ -22,7 +22,7 @@ Emergent przygotowuje gotowy do rozwoju frontend oraz projekt kontraktu API; Krz
 - **Dashboard** — filtr Moduł 1 (Finfluencerzy i podmioty trzecie) / Moduł 2 (Zgodność informacji o ryzyku) / Moduł 3 (Shadow Advisory) / Wszystkie; karty liczników tylko z rzeczywiście zapisanych incydentów; kompaktowy wykres trendów (Recharts) z podziałem na moduły; lista incydentów z wynikiem, modułem, źródłem, datą i statusem.
 - **Formularz analizy (3 kanały)** — zakładki Tekst / Adres URL / Obraz-Zrzut ekranu (PNG/JPEG/WebP, multipart/form-data); wybór modułów; przycisk **„Załaduj przykład UKNF”**; stany: trwa analiza, sukces, błąd, brak backendu. Zakładka Obraz w DEMO: *„Analiza OCR obrazów wymaga połączenia z lokalnym backendem (Tesseract/Ollama)”*.
 - **Szczegóły incydentu** — `risk_score`, uzasadnienie, cytaty z podświetleniem w materiale źródłowym, informacje o podmiocie, źródło/URL, znacznik czasu, status, adnotacja „Wynik AI jest wskazówką do weryfikacji przez analityka, nie oceną prawną”.
-- **Widok wydruku A4** — `@media print` ukrywa nawigację i banery; nagłówek InvestWatch, dane, cytaty, hash/źródło, miejsce na datę i podpis analityka.
+- **Widok wydruku A4** — `@media print` ukrywa nawigację i banery; nagłówek Ryziqo, dane, cytaty, hash/źródło, miejsce na datę i podpis analityka.
 - **Panel kalibracji Threshold** — suwak 0.00–1.00 przelicza lokalnie, bez sieci i AI; macierz TP/TN/FP/FN, precyzja/czułość, wykres FP/FN w funkcji progu. Tylko rekordy z etykietą referencyjną; liczba rekordów bez etykiety pokazana jawnie.
 - **Live Crawler Log** — zdarzenia z `/ws/alerts` (oraz lokalne zdarzenia analizy w DEMO) z czasem i typem; wskaźnik online/offline/DEMO; reconnect tylko przy aktywnym backendzie.
 - **Powiadomienia** — toast przy `risk_score >= 0.70`, bez duplikatów.
@@ -40,7 +40,7 @@ Emergent przygotowuje gotowy do rozwoju frontend oraz projekt kontraktu API; Krz
 - Urzędowy, poważny, jasny: biel, chłodne szarości, głęboki granat; statusy: czerwień/bursztyn/zieleń.
 - Typografia instytucjonalna, `tabular-nums` w wynikach, czcionki OFL.
 - Gęste, czytelne tabele i cytaty, bez gradientów i ozdobników.
-- Logotyp InvestWatch w SVG (oko / lupa nad wykresem).
+- Logotyp Ryziqo w pliku PNG.
 - Czytelny na rzutniku, filmie i wydruku; responsywny, obsługa klawiaturą, widoczny focus.
 
 ## Fazy realizacji

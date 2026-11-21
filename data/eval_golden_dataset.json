@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "description": "Golden dataset #InvestWatch do pomiaru Precision / Recall / F1 detekcji (backend/scripts/evaluate_detection.py). Przypadki są syntetyczne; podmioty spoza snapshotu KNF są fikcyjne. category: classic | adversarial | hard_negative.",
+  "description": "Golden dataset Ryziqo do pomiaru Precision / Recall / F1 detekcji (backend/scripts/evaluate_detection.py). Przypadki są syntetyczne; podmioty spoza snapshotu KNF są fikcyjne. category: classic | adversarial | hard_negative.",
   "cases": [
     {"id": "mock-broker-hidden-risk", "category": "classic", "expected_module": 2, "ground_truth_label": true, "mock_file": "broker_promo_hidden_risk.html"},
     {"id": "mock-broker-historical-5y", "category": "classic", "expected_module": 2, "ground_truth_label": true, "mock_file": "broker_promo_historical_5y.html"},

@@ -1,4 +1,4 @@
-# INVESTWATCH — plan pracy Krzysztofa
+# Ryziqo — plan pracy Krzysztofa
 **HackNation 2026 | 21–22 listopada 2026**  
 **Rola:** Backend, scraping, 3 moduły AI, SQLite, komunikacja WebSocket, Docker Compose, audyt Python, README i weryfikacja startu.
 

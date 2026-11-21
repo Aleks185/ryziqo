@@ -30,14 +30,10 @@ export const Header = () => {
   const publicView = useLocation().pathname.replace(/\/$/, "") === "/public";
   const { lang, setLang, t } = useApp();
   return (
-    <header className="no-print sticky top-0 z-40 bg-[#0B192C] text-white border-b border-[#1E3E62]">
+    <header className="no-print sticky top-0 z-40 bg-[#0A1E33] text-white border-b border-[#1E3E62]">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center gap-x-6 gap-y-2 py-2.5">
         <NavLink to="/" data-testid="nav-logo" className="flex items-center gap-3 focus-ring">
-          <Logo />
-          <div className="leading-tight">
-            <div className="font-bold tracking-[0.14em] text-sm">INVESTWATCH</div>
-            <div className="text-[11px] text-slate-400 hidden sm:block">{t("app_sub")}</div>
-          </div>
+          <Logo wide />
         </NavLink>
         {!publicView && <button className="px-3 py-1.5 text-sm rounded-sm transition-colors focus-ring" type="button" aria-expanded={open} aria-controls="analyst-navigation" onClick={()=>setOpen(!open)}>Menu {open ? "▴" : "▾"}</button>}
         {!publicView && open && <nav id="analyst-navigation" className="flex flex-wrap gap-1 order-3 lg:order-none w-full lg:w-auto">

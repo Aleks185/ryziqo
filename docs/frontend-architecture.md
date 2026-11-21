@@ -1,6 +1,6 @@
-# Architektura i Implementacja Frontendu `#InvestWatch`
+# Architektura i Implementacja Frontendu `Ryziqo`
 
-Opis techniczny panelu analitycznego `#InvestWatch` (HackNation UKNF 2026) — aplikacji **React 19** dla analityków nadzoru UKNF, serwowanej w produkcji przez **Nginx**, który pełni też rolę reverse proxy do backendu. Kontrakt danych: [CONTRACT.md](../CONTRACT.md).
+Opis techniczny panelu analitycznego `Ryziqo` (HackNation UKNF 2026) — aplikacji **React 19** dla analityków nadzoru UKNF, serwowanej w produkcji przez **Nginx**, który pełni też rolę reverse proxy do backendu. Kontrakt danych: [CONTRACT.md](../CONTRACT.md).
 
 > Prototyp frontendu został wygenerowany w środowisku Emergent, a następnie oczyszczony z jego integracji (telemetria, skrypty zewnętrzne, pakiety `@emergentbase/*`) — patrz [§7](#7-bezpieczeństwo-i-prywatność). Notatki projektowe z tego etapu: [frontend/PRD.md](./frontend/PRD.md), [frontend/plan.md](./frontend/plan.md), [frontend/design_guidelines.json](./frontend/design_guidelines.json).
 

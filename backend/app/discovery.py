@@ -27,7 +27,7 @@ from app.scraper.urlnorm import canonicalize_url, site_key
 if TYPE_CHECKING:
     from app.queue_worker import CrawlQueueWorker
 
-logger = logging.getLogger("investwatch.discovery")
+logger = logging.getLogger("ryziqo.discovery")
 
 ROTATION_STATE_KEY = "discovery_rotation_offset"
 DEFAULT_TEMPLATES: dict[str, list[str]] = {

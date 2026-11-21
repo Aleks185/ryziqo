@@ -1,4 +1,4 @@
-"""#InvestWatch FastAPI entrypoint."""
+"""Ryziqo FastAPI entrypoint."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
-logger = logging.getLogger("investwatch.main")
+logger = logging.getLogger("ryziqo.main")
 
 
 def create_app(custom_settings: Settings | None = None) -> FastAPI:
@@ -92,7 +92,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
         app.state.worker = worker
 
         logger.info(
-            "#InvestWatch backend gotowy | DB=%s | Ollama=%s (%s) | KNF snapshot=%s",
+            "Ryziqo backend gotowy | DB=%s | Ollama=%s (%s) | KNF snapshot=%s",
             settings.resolved_db_path,
             ollama.is_available,
             ollama.active_model,
@@ -107,7 +107,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
             await worker.stop()
 
     app = FastAPI(
-        title="#InvestWatch API — UKNF HackNation 2026",
+        title="Ryziqo API — UKNF HackNation 2026",
         description=(
             "System monitoringu treści inwestycyjnych (Moduły 1–3: Finfluencerzy, "
             "18 kryteriów ryzyka MiFID II / 2017/565, Shadow Advisory art. 76 u.o.i.f.)."

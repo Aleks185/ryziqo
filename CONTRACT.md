@@ -1,4 +1,4 @@
-# #InvestWatch — Zamrożony Kontrakt API i WebSocket (`CONTRACT.md`)
+# Ryziqo — Zamrożony Kontrakt API i WebSocket (`CONTRACT.md`)
 
 **Wersja:** `1.2.0` (HackNation UKNF 2026) — rozszerzenia addytywne względem `1.0.0` (nowe endpointy, bez zmian istniejących pól i ścieżek; zob. [Historia zmian](#5-historia-zmian))  
 **Zasada współpracy:** Po zamrożeniu nie zmieniamy jednostronnie nazw pól, typów ani ścieżek. Ewentualne rozszerzenia wyłącznie jako opcjonalne pola po obustronnej zgodzie.

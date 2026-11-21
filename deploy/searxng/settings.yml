@@ -3,7 +3,7 @@
 use_default_settings: true
 
 general:
-  instance_name: "InvestWatch discovery"
+  instance_name: "Ryziqo discovery"
 
 server:
   # Nadpisywane przez zmienną SEARXNG_SECRET z .env

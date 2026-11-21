@@ -1,4 +1,4 @@
-# Checklista zgodności ze specyfikacją UKNF (#InvestWatch)
+# Checklista zgodności ze specyfikacją UKNF (Ryziqo)
 
 Źródła: `Opis Wyzwania HackNation UKNF 19.11.pdf` + 4 załączniki DOCX (kryteria ryzyka, tematy 1–3).
 Stan na 2026-11-21 (wieczór). Testy backendu: `175 passed`. Benchmark fallback: P 0,958 / R 0,676 / F1 0,793. Stos Docker w wersji API 1.3.0 uruchomiony i sprawdzony (backend, frontend, SearXNG).

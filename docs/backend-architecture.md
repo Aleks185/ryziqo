@@ -1,6 +1,6 @@
-# Architektura i Implementacja Backendu `#InvestWatch`
+# Architektura i Implementacja Backendu `Ryziqo`
 
-Kompletny opis techniczny backendu systemu `#InvestWatch` (HackNation UKNF 2026) — zaprojektowanego jako lekki, niezależny serwis w **Pythonie + FastAPI**, w 100% **open-source i on-premise** (bez płatnych zewnętrznych API), zgodny z zamrożonym kontraktem [CONTRACT.md](../CONTRACT.md).
+Kompletny opis techniczny backendu systemu `Ryziqo` (HackNation UKNF 2026) — zaprojektowanego jako lekki, niezależny serwis w **Pythonie + FastAPI**, w 100% **open-source i on-premise** (bez płatnych zewnętrznych API), zgodny z zamrożonym kontraktem [CONTRACT.md](../CONTRACT.md).
 
 ---
 

@@ -134,7 +134,7 @@ def clone_rule(clone: CloneMatch) -> ViolatedRule:
     return ViolatedRule(
         rule_id="CAMPAIGN_CLONE_MATCH",
         rule_name="Klon potwierdzonej kampanii na innej domenie",
-        legal_basis="Pamięć incydentów #InvestWatch (potwierdzone przez analityka)",
+        legal_basis="Pamięć incydentów Ryziqo (potwierdzone przez analityka)",
         severity="high",
         reason=(
             f"Treść w {int(clone.similarity * 100)}% podobna do potwierdzonego incydentu {clone.incident_id} "

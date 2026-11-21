@@ -36,7 +36,7 @@ from app.config import DEFAULT_KNF_SYNC_USER_AGENT, Settings
 from app.knf_registry import KNFRegistrySnapshot, _alnum
 from app.scraper.ssrf import SSRFError, pinned_request, validate_public_url
 
-logger = logging.getLogger("investwatch.knf_sync")
+logger = logging.getLogger("ryziqo.knf_sync")
 
 DOWNLOAD_MAX_BYTES = 10 * 1024 * 1024
 MIN_KEEP_RATIO = 0.5

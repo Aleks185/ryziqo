@@ -1,4 +1,4 @@
-# Bezpieczeństwo i Licencje Open Source (`#InvestWatch`)
+# Bezpieczeństwo i Licencje Open Source (`Ryziqo`)
 
 ## 1. Zgodność z wymogiem 100% Open Source & On-Premise
 

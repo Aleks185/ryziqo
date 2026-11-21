@@ -1,4 +1,4 @@
-# INVESTWATCH — raport wdrożenia, 21 listopada 2026
+# Ryziqo — raport wdrożenia, 21 listopada 2026
 
 ## Środowisko i konfiguracja
 

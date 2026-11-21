@@ -1,4 +1,4 @@
-# Ustandaryzowany Proces Wytwarzania Oprogramowania z Asystentami AI (`#InvestWatch`)
+# Ustandaryzowany Proces Wytwarzania Oprogramowania z Asystentami AI (`Ryziqo`)
 
 > Dokumentacja procesu inżynierskiego (kryterium oceny HackNation UKNF 2026 — innowacyjność wykonania rozwiązania).
 

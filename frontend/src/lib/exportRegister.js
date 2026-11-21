@@ -19,7 +19,7 @@ export function exportRegister(incidents, format) {
   const url = URL.createObjectURL(new Blob([data], { type: csv ? "text/csv;charset=utf-8" : "application/json" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = `investwatch-${new Date().toISOString().slice(0, 10)}.${format}`;
+  link.download = `ryziqo-${new Date().toISOString().slice(0, 10)}.${format}`;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

@@ -28,7 +28,7 @@ from app.scraper.politeness import (
 from app.scraper.ssrf import SSRFError, pinned_request, validate_public_url
 from app.scraper.urlnorm import site_key
 
-logger = logging.getLogger("investwatch.scraper")
+logger = logging.getLogger("ryziqo.scraper")
 
 # URL shorteners whose redirect target is resolved (CRAWLER_EXPAND_SHORT_LINKS); link-in-bio pages
 # (linktr.ee, ...) are fetched and their outbound links collected
@@ -48,9 +48,9 @@ def _host(url: str) -> str:
 
 # Ethical, transparent User-Agent pool (no spoofing to bypass access controls)
 ETHICAL_USER_AGENTS = [
-    "InvestWatchResearchBot/1.0 (+https://knf.gov.pl; HackNation-UKNF-MVP) httpx/0.28",
-    "InvestWatchComplianceMonitor/1.0 (Academic/Regulatory-Prototype) Python-httpx",
-    "InvestWatchCrawler/1.0 (OpenSource-OnPremise-Prototype) Mozilla/5.0-compatible",
+    "RyziqoResearchBot/1.0 (+https://knf.gov.pl; HackNation-UKNF-MVP) httpx/0.28",
+    "RyziqoComplianceMonitor/1.0 (Academic/Regulatory-Prototype) Python-httpx",
+    "RyziqoCrawler/1.0 (OpenSource-OnPremise-Prototype) Mozilla/5.0-compatible",
 ]
 
 

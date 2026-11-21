@@ -59,7 +59,7 @@ class FakeOllama(OllamaClient):
         self.calls: list[dict[str, Any]] = []
 
     async def generate_json(self, system_prompt: str, user_prompt: str, json_schema: dict[str, Any] | None = None):
-        module_id = next(m for m in (1, 2, 3) if f"Moduł {m} #InvestWatch" in system_prompt)
+        module_id = next(m for m in (1, 2, 3) if f"Moduł {m} Ryziqo" in system_prompt)
         self.calls.append({"module": module_id, "system": system_prompt, "user": user_prompt, "schema": json_schema})
         return self.responses.get(module_id)
 

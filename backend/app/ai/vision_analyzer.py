@@ -131,7 +131,7 @@ def vision_outcome(findings: VisionFindings) -> VisionOutcome:
             ViolatedRule(
                 rule_id="AI_VLM_PUBLIC_FIGURE",
                 rule_name="Wizerunek osoby publicznej sugerujący rekomendację",
-                legal_basis="Sygnał VLM #InvestWatch (typowy schemat oszustw inwestycyjnych)",
+                legal_basis="Sygnał VLM Ryziqo (typowy schemat oszustw inwestycyjnych)",
                 severity="medium",
                 reason="[VLM] Reklama wykorzystuje wizerunek znanej osoby jako rzekome poparcie.",
             )

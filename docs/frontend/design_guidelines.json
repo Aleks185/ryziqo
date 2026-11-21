@@ -1,5 +1,5 @@
 {
-  "project_name": "INVESTWATCH - UKNF Analytical Supervision Platform",
+  "project_name": "Ryziqo - UKNF Analytical Supervision Platform",
   "app_type": "dashboard",
   "audience": "UKNF (Komisja Nadzoru Finansowego) analysts, financial supervision inspectors, legal enforcement officers, hackathon jury",
   "theme": "institutional-light",
@@ -12,7 +12,7 @@
     "archetype": "SWISS & HIGH-CONTRAST + INSTITUTIONAL REGULATORY",
     "emotional_tone": "Rigorous, authoritative, uncompromised, clinical clarity, forensic scrutiny",
     "branding": {
-      "logo_name": "INVESTWATCH",
+      "logo_name": "Ryziqo",
       "sub_brand": "UKNF FinTech / Nadzór Rynku Finansowego",
       "svg_concept": "Custom vector badge: Precision magnifying reticle / vigilant optical eye over high-frequency candlestick/trend line, framed in deep navy #0B192C with amber focal beacon #D97706"
     }
@@ -124,7 +124,7 @@
   ],
   "key_features_and_components": {
     "header_navbar": {
-      "brand_badge": "INVESTWATCH / UKNF",
+      "brand_badge": "Ryziqo / UKNF",
       "live_crawler_pill": "WebSocket Crawler: ONLINE (ping: 18ms, 1,420 postów/min)",
       "language_toggle": "PL / EN",
       "demo_mode_switch": "Tryb Prezentacji HackNation (wstępnie załadowane incydenty)",
@@ -183,7 +183,7 @@
   "instructions_to_main_agent": [
     "Używaj plików .js i .jsx (React 19 + Tailwind CSS + Lucide Icons + Recharts + Sonner).",
     "Wszystkie interaktywne elementy (przyciski, karty, taby, filtry, suwaki, selecty) MUSZĄ posiadać 'data-testid'.",
-    "Żadnych zdjęć stockowych - wyłącznie wektorowy logotyp SVG InvestWatch, wykresy analityczne Recharts i ikony Lucide.",
+    "Żadnych zdjęć stockowych - wyłącznie logotyp Ryziqo z dostarczonego pliku PNG, wykresy analityczne Recharts i ikony Lucide.",
     "Brak zbędnych gradientów, miękkich cieni i kolorowych plam. Trzymaj się stylu urzędowego: ostre krawędzie (rounded-sm), czytelne linie podziału border-[#CBD5E1], czcionka o stałej szerokości dla liczb (tabular-nums font-mono).",
     "Domyślny język to polski (PL) z możliwością szybkiego przełączenia etykiet na angielski (EN) dla jury międzynarodowego.",
     "Zapewnij stan początkowy z bogatym zestawem realistycznych danych (minimum 8 incydentów, 3 presety UKNF, aktywny crawler z animacją nowych logów).",

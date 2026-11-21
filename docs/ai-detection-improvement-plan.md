@@ -1,6 +1,6 @@
 # Plan usprawnienia detekcji podejrzanych treści reklamowych (LLM / AI)
 
-Plan zmian architektonicznych i implementacyjnych dla silnika analitycznego `#InvestWatch` (`backend/app/ai/`).
+Plan zmian architektonicznych i implementacyjnych dla silnika analitycznego `Ryziqo` (`backend/app/ai/`).
 Wszystkie proponowane zmiany zachowują zasady projektu:
 - **100% open-source i on-premise** (natywna Ollama na hoście, zero płatnych zewnętrznych API),
 - **wsteczna zgodność z kontraktem** [CONTRACT.md](../CONTRACT.md) (ewentualne rozszerzenia API wyłącznie addytywne),

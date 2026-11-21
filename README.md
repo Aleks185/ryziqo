@@ -1,4 +1,4 @@
-# #InvestWatch — System Monitoringu Treści Inwestycyjnych (UKNF)
+# Ryziqo — System Monitoringu Treści Inwestycyjnych (UKNF)
 
 Prototyp MVP (HackNation 2026) do automatycznej identyfikacji, agregacji i analizy materiałów promocyjnych oraz ofert finansowych w trzech modułach:
 1. **Moduł 1** — Finfluencerzy i podmioty trzecie (reklamy polskich i zagranicznych firm inwestycyjnych).

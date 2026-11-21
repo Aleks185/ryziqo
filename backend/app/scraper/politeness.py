@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
 
-logger = logging.getLogger("investwatch.scraper.politeness")
+logger = logging.getLogger("ryziqo.scraper.politeness")
 
 ROBOTS_MAX_BYTES = 524_288
 # Upper bound for a Crawl-delay taken from robots.txt, so one site cannot stall the whole queue

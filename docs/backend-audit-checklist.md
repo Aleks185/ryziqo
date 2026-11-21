@@ -1,7 +1,7 @@
-# Checklista Audytu Backendu `#InvestWatch` (dla niezależnego agenta QA/Review)
+# Checklista Audytu Backendu `Ryziqo` (dla niezależnego agenta QA/Review)
 
 > **Instrukcja dla agenta sprawdzającego:**  
-> Przeprowadź niezależny przegląd kodu, testów i konfiguracji backendu `#InvestWatch` w tym repozytorium.  
+> Przeprowadź niezależny przegląd kodu, testów i konfiguracji backendu `Ryziqo` w tym repozytorium.
 > **Zasady audytu:**
 > 1. Każdy punkt oceń jako `PASS`, `WARN` lub `FAIL` i podaj konkretny dowód (ścieżka pliku, numery linii lub wynik uruchomionej komendy).
 > 2. Nie zakładaj, że coś działa — zweryfikuj w kodzie i testach.
@@ -147,7 +147,7 @@ Uruchom i wklej wyniki:
 ## Format raportu wyjściowego (wymagany od agenta sprawdzającego)
 
 ```markdown
-## Podsumowanie Audytu Backendu #InvestWatch
+## Podsumowanie Audytu Backendu Ryziqo
 - **Werdykt ogólny:** GOTOWY DO DEMO / WYMAGA POPRAWEK
 - **Wynik pytest:** X/Y passed
 - **Wynik pip-audit:** ...

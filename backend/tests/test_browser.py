@@ -139,7 +139,7 @@ def test_render_computes_styles_and_blocks_internal_requests(
     tmp_path: Path, origin: str, allow_test_origin: None
 ) -> None:
     renderer = BrowserRenderer(_settings(tmp_path))
-    result = asyncio.run(renderer.render(f"{origin}/spa", user_agent="InvestWatchTest/1.0"))
+    result = asyncio.run(renderer.render(f"{origin}/spa", user_agent="RyziqoTest/1.0"))
 
     assert "złożonymi instrumentami" in result.html
     assert result.final_url == f"{origin}/spa"
@@ -157,7 +157,7 @@ def test_render_computes_styles_and_blocks_internal_requests(
 def test_render_detects_tablet_only_overflow(tmp_path: Path, origin: str, allow_test_origin: None) -> None:
     renderer = BrowserRenderer(_settings(tmp_path))
     result = asyncio.run(
-        renderer.render(f"{origin}/tablet-only", user_agent="InvestWatchTest/1.0", capture_screenshots=True)
+        renderer.render(f"{origin}/tablet-only", user_agent="RyziqoTest/1.0", capture_screenshots=True)
     )
     assert result.metrics["responsive_overflow_by_viewport"] == {"tablet": True, "mobile": False}
     assert result.metrics["responsive_overflow_detected"] is True
@@ -170,12 +170,12 @@ def test_render_refuses_redirect_to_internal_address(
     renderer = BrowserRenderer(_settings(tmp_path))
     # Must be refused by our route guard, not merely fail to connect
     with pytest.raises(Exception, match="ERR_BLOCKED_BY_CLIENT"):
-        asyncio.run(renderer.render(f"{origin}/redirect-internal", user_agent="InvestWatchTest/1.0"))
+        asyncio.run(renderer.render(f"{origin}/redirect-internal", user_agent="RyziqoTest/1.0"))
 
 
 def test_render_follows_allowed_redirect(tmp_path: Path, origin: str, allow_test_origin: None) -> None:
     renderer = BrowserRenderer(_settings(tmp_path))
-    result = asyncio.run(renderer.render(f"{origin}/redirect-ok", user_agent="InvestWatchTest/1.0"))
+    result = asyncio.run(renderer.render(f"{origin}/redirect-ok", user_agent="RyziqoTest/1.0"))
     assert "złożonymi instrumentami" in result.html
     assert result.metrics["computed"]["risk_font_px"] == 9
 

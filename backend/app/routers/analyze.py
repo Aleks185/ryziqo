@@ -22,7 +22,7 @@ from app.models import AnalysisReport, AnalyzeResponse, AnalyzeScreenshotRequest
 from app.scraper.fetcher import build_manual_text_page
 from app.scraper.ssrf import SSRFError, validate_authority, validate_public_url
 
-logger = logging.getLogger("investwatch.analyze")
+logger = logging.getLogger("ryziqo.analyze")
 
 router = APIRouter(prefix="/api/v1/analyze", tags=["analyze"])
 

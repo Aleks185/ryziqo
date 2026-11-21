@@ -1,1 +1,1 @@
-"""#InvestWatch backend test suite."""
+"""Ryziqo backend test suite."""

@@ -1,4 +1,4 @@
-# Tutorial: Ollama + local LLM environment for running and testing #InvestWatch
+# Tutorial: Ollama + local LLM environment for running and testing Ryziqo
 
 This guide takes you from a clean machine to a measured benchmark of the AI detection layer
 (rules vs. local LLM). Everything runs on-premise — no paid APIs, no data leaves the machine.
@@ -132,7 +132,7 @@ memory and the calls only get slower.
 
 ---
 
-Set the Ollama server environment to `OLLAMA_NUM_PARALLEL=1`, `OLLAMA_MAX_LOADED_MODELS=1` and `OLLAMA_MAX_QUEUE=8`. Restart the native server after changing its environment. The Compose AI profile supplies these variables directly. INVESTWATCH requests a one-minute keep-alive.
+Set the Ollama server environment to `OLLAMA_NUM_PARALLEL=1`, `OLLAMA_MAX_LOADED_MODELS=1` and `OLLAMA_MAX_QUEUE=8`. Restart the native server after changing its environment. The Compose AI profile supplies these variables directly. Ryziqo requests a one-minute keep-alive.
 
 ## 6. Run the tests and the benchmark
 

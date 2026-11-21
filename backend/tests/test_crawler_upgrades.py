@@ -114,10 +114,10 @@ def test_robots_cache_rules_crawl_delay_and_errors() -> None:
             return 503, ""
         if "missing" in url:
             return 404, ""
-        return 200, "User-agent: InvestWatch\nDisallow: /prywatne\nCrawl-delay: 3\n\nUser-agent: *\nDisallow: /\n"
+        return 200, "User-agent: Ryziqo\nDisallow: /prywatne\nCrawl-delay: 3\n\nUser-agent: *\nDisallow: /\n"
 
     cache = RobotsCache(loader, ttl_seconds=3600)
-    ua = "InvestWatchCrawler/1.0 (OpenSource-OnPremise-Prototype)"
+    ua = "RyziqoCrawler/1.0 (OpenSource-OnPremise-Prototype)"
 
     async def run() -> None:
         assert await cache.can_fetch(ua, "https://site.pl/oferta")

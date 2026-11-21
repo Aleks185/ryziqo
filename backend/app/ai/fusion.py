@@ -109,7 +109,7 @@ def injection_rule(doc: PreprocessedDocument) -> ViolatedRule:
     return ViolatedRule(
         rule_id="AI_PROMPT_INJECTION",
         rule_name="Próba manipulacji systemem analizy (prompt injection / cloaking)",
-        legal_basis="Sygnał techniczny #InvestWatch — wymaga weryfikacji analityka",
+        legal_basis="Sygnał techniczny Ryziqo — wymaga weryfikacji analityka",
         severity="high",
         reason=(
             f"Wykryto polecenia skierowane do systemu oceny {where}: "

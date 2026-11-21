@@ -25,7 +25,7 @@ import httpx
 from app.scraper.ssrf import pinned_request
 from app.scraper.ssrf import SSRFError, validate_public_url
 
-logger = logging.getLogger("investwatch.browser")
+logger = logging.getLogger("ryziqo.browser")
 
 BLOCKED_RESOURCE_TYPES = frozenset({"image", "media", "font"})
 # With screenshots (VLM analysis) images must load, or banners would be blank; still SSRF-guarded

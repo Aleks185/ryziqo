@@ -15,7 +15,7 @@ import httpx
 
 from app.config import Settings
 
-logger = logging.getLogger("investwatch.ollama")
+logger = logging.getLogger("ryziqo.ollama")
 
 VISION_FAMILIES = ("gemma3", "gemma4", "qwen2.5vl", "qwen2.5-vl", "llava", "llama3.2-vision", "minicpm-v")
 

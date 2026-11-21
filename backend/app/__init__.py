@@ -1,1 +1,1 @@
-"""#InvestWatch backend package."""
+"""Ryziqo backend package."""

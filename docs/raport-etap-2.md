@@ -1,4 +1,4 @@
-# INVESTWATCH — odbiór etapu 2, 21 listopada 2026
+# Ryziqo — odbiór etapu 2, 21 listopada 2026
 
 ## Zakres wdrożenia
 

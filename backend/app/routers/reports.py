@@ -114,7 +114,7 @@ async def module_report(
     writer.writerow(REPORT_COLUMNS)
     for row in rows:
         writer.writerow([_csv_cell(row[col]) for col in REPORT_COLUMNS])
-    filename = f"investwatch_modul{module_id}_{generated_at[:10]}.csv"
+    filename = f"ryziqo_modul{module_id}_{generated_at[:10]}.csv"
     # UTF-8 BOM so Excel opens Polish characters correctly
     return Response(
         content="﻿" + buf.getvalue(),
