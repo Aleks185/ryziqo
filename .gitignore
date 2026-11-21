@@ -26,6 +26,7 @@ data/uknf_samples/
 # Node / Frontend
 frontend/node_modules/
 frontend/dist/
+frontend/build/
 frontend/.vite/
 
 # OS & Editors

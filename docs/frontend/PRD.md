@@ -7,7 +7,7 @@
 - React (CRA in the Emergent preview, can be moved to Vite later), Tailwind, Recharts, native WebSocket, sonner.
 - One configurable API address: REACT_APP_INVESTWATCH_API_URL (default http://localhost:8000/api/v1). The WS address is derived from it: /ws/alerts.
 - DEMO mode: a rule-based engine in the browser (src/lib/demoEngine.js) that follows the contract and stores data in localStorage. When the page is HTTPS and the API is HTTP, the app does not probe the API, so the console stays clean.
-- /app/CONTRACT.md (DRAFT): data models, REST endpoints, WS events and the AI-Driven Development Workflow.
+- CONTRACT.md (w katalogu głównym repo, zamrożony v1.0.0): data models, REST endpoints, WS events and the AI-Driven Development Workflow.
 
 ## Implemented (2026-06)
 - Dashboard: module filter, KPIs built only from saved incidents, 14-day trend, incident register, compact live log
