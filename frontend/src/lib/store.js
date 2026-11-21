@@ -70,10 +70,33 @@ export function AppProvider({ children }) {
   const [mode, setMode] = useState("checking");
   const [demoReason, setDemoReason] = useState(null);
   const [wsStatus, setWsStatus] = useState("disabled");
-  const [incidents, setIncidents] = useState([]);
+  const [records, setIncidents] = useState([]);
   const [knfSnapshotDate, setKnfSnapshotDate] = useState(null);
   const [events, setEvents] = useState([]);
   const [lang, setLangState] = useState(readLang);
+  const [metadata, setMetadata] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("investwatch.casework.v1")) || {}; }
+    catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("investwatch.casework.v1", JSON.stringify(metadata)); } catch { /* Session-only when storage is unavailable. */ }
+  }, [metadata]);
+  const annotate = useCallback((id, patch) => {
+    setMetadata(previous => {
+      const next = { ...previous[id], ...patch };
+      for (const key of Object.keys(patch)) {
+        if (patch[key] === undefined) delete next[key];
+      }
+      return { ...previous, [id]: next };
+    });
+  }, []);
+  const incidents = useMemo(() => records.map(record => ({
+    ...record,
+    ...metadata[record.id],
+  })), [records, metadata]);
+  const [cycling, setCycling] = useState(false);
+  const cycleTimers = useRef([]);
+  useEffect(() => () => cycleTimers.current.forEach(clearTimeout), []);
   const alerted = useRef(new Set());
   const langRef = useRef(lang);
   langRef.current = lang;
@@ -93,12 +116,29 @@ export function AppProvider({ children }) {
     setEvents((ev) => [{ id: uid("ev"), ts: new Date().toISOString(), type, message, level, score }, ...ev].slice(0, 300));
   }, []);
 
+  const runCycle = () => {
+    if (cycleTimers.current.length) return;
+    setCycling(true);
+    const log = (type, key) => pushEvent(type, translate(langRef.current, key));
+    log("[CRON]", "scan");
+    cycleTimers.current = [
+      setTimeout(() => log("[SCRAPER]", "fetched"), 1000),
+      setTimeout(() => {
+        log("[AI/DEMO]", "assessed");
+        cycleTimers.current = [];
+        setCycling(false);
+      }, 2400),
+    ];
+  };
+
   const notify = useCallback((inc) => {
     if (inc.risk_score < ALERT_THRESHOLD || alerted.current.has(inc.id)) return;
     alerted.current.add(inc.id);
     toast.error(`${translate(langRef.current, "toast_high")}: ${inc.risk_score.toFixed(2)}`, {
       id: inc.id,
-      description: `${inc.entity_name} · ${inc.title || inc.source_url}`.slice(0, 90),
+      description: inc.violated_rules?.some(rule => rule.rule_id === "M2_MONETARY_OFFER")
+        ? translate(langRef.current, "toast_timed_income")
+        : `${inc.entity_name} · ${inc.title || inc.source_url}`.slice(0, 90),
     });
   }, []);
 
@@ -153,8 +193,8 @@ export function AppProvider({ children }) {
   }, [connect]);
 
   useEffect(() => {
-    if (mode === "demo") saveLocal(incidents);
-  }, [mode, incidents]);
+    if (mode === "demo") saveLocal(records);
+  }, [mode, records]);
 
   /** Pobiera pełny IncidentDetail (z raw_text_preview) i aktualizuje go na liście. */
   const refreshIncident = useCallback(
@@ -208,7 +248,7 @@ export function AppProvider({ children }) {
 
   /** Analiza na żądanie. Zwraca listę incydentów (CONTRACT.md: AnalyzeResponse.items). */
   const analyze = useCallback(
-    async ({ kind, content, url, module_ids, title = null, source_url = null, ground_truth_label = null }) => {
+    async ({ kind, content, url, module_ids, title = null, source_url = null, ground_truth_label = null, citizen = false }) => {
       let items;
       if (mode === "online") {
         const res = kind === "url"
@@ -221,11 +261,12 @@ export function AppProvider({ children }) {
       items.forEach((inc) => {
         pushEvent(mode === "online" ? "analysis.completed" : "analysis.local", `M${inc.module_id} · ${inc.entity_name}`, inc.risk_score >= ALERT_THRESHOLD ? "alert" : "info", inc.risk_score);
         upsert(inc);
-        notify(inc);
+        if (citizen) annotate(inc.id, { citizen: true });
+        else notify(inc);
       });
       return items;
     },
-    [mode, upsert, notify, pushEvent],
+    [mode, upsert, notify, pushEvent, annotate],
   );
 
   const remoteOrLocal = useCallback(
@@ -243,7 +284,14 @@ export function AppProvider({ children }) {
     [mode, upsert, patchLocal],
   );
 
-  const updateStatus = (id, status) => remoteOrLocal(id, () => backend.setStatus(id, status), { status });
+  const updateStatus = async (id, status) => {
+    if (status === "referred") return annotate(id, { status });
+    if (mode === "online") {
+      try { upsert(await backend.setStatus(id, status)); }
+      catch (err) { toast.error(err.message); return; }
+    } else patchLocal(id, { status });
+    annotate(id, { status: undefined });
+  };
   const setGroundTruth = (id, label) => remoteOrLocal(id, () => backend.setLabel(id, label), { ground_truth_label: label });
 
   const analyzeSamples = async () => {
@@ -268,9 +316,9 @@ export function AppProvider({ children }) {
   };
 
   const value = useMemo(
-    () => ({ mode, demoReason, wsStatus, incidents, knfSnapshotDate, events, lang, t, setLang, connect, analyze, refreshIncident, updateStatus, setGroundTruth, analyzeSamples, clearDemo, clearEvents: () => setEvents([]) }),
+    () => ({ annotate, runCycle, cycling, mode, demoReason, wsStatus, incidents, knfSnapshotDate, events, lang, t, setLang, connect, analyze, refreshIncident, updateStatus, setGroundTruth, analyzeSamples, clearDemo, clearEvents: () => setEvents([]) }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, demoReason, wsStatus, incidents, knfSnapshotDate, events, lang, t, connect, analyze, refreshIncident],
+    [mode, demoReason, wsStatus, incidents, knfSnapshotDate, events, lang, t, connect, analyze, refreshIncident, cycling, annotate],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -101,7 +101,7 @@ async def analyze_module3(
             sent = next((s for s in doc.sentences if PERSONALIZED_REC_RE.search(s)), None)
             if sent:
                 quotes.append(sent[:260])
-        if instruments_found:
+        if instruments_found and (has_advisory_profile or has_personal_rec):
             score += min(0.22, 0.08 * len(instruments_found))
 
         if has_personal_rec and instruments_found:
@@ -140,7 +140,7 @@ async def analyze_module3(
             )
 
     score = round(max(0.0, min(0.96, score)), 4)
-    if not quotes and doc.sentences:
+    if rules and not quotes and doc.sentences:
         quotes = [doc.sentences[0][:240]]
 
     model_used = "deterministic-uknf-m3-fallback"

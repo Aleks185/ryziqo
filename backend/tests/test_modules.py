@@ -91,3 +91,79 @@ def test_embedding_similarity_is_deterministic() -> None:
     doc1 = preprocess_html("<p>Kontrakty CFD i wysokie ryzyko utraty kapitału.</p>", "mock://a.html", "web")
     doc2 = preprocess_html("<p>Kontrakty CFD i wysokie ryzyko utraty kapitału.</p>", "mock://b.html", "web")
     assert cosine_similarity(doc1.embedding, doc2.embedding) == pytest.approx(1.0, abs=1e-3)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(("content", "minimum", "maximum", "quote"), [
+    ("Nowy algorytm pozwala zarobić od 12 500 zł do nawet 45 000 zł w pierwszym tygodniu. "
+     "Wystarczy wpłacić minimalny depozyt 950 PLN. Link zniknie o północy!", .70, 1, "45 000 zł"),
+    ("Wpłać 950 PLN. Zarób 12,5 tys. zł w tydzień. Zostało tylko 17 wolnych miejsc!", .70, 1, "12,5 tys. zł"),
+    ("Możesz zarobić 1 250,50 zł w ciągu 7 dni.", .40, .69, "1 250,50 zł"),
+    ("Zdobądź za samo założenie konta aż 1 250,50 zł.", 0, .39, "1 250,50 zł"),
+    ("Odbierz 200 PLN po rejestracji.", 0, .39, "200 PLN"),
+    ("Uważaj na reklamy obiecujące: «Wpłać 950 zł. Zarób 12 500 zł w tydzień. Link zniknie o północy!»", 0, .39, None),
+    ("Na webinar zostało tylko 17 wolnych miejsc. Udział kosztuje 200 zł.", 0, .39, None),
+    ("Zysk nie jest gwarantowany. Minimalny depozyt 950 PLN.", 0, .39, None),
+])
+async def test_monetary_offer(content, minimum, maximum, quote):
+    doc = preprocess_html(f"<p>{content}</p>", "manual://text", "manual")
+    result = await analyze_module2(doc, _make_registry(), _offline_ollama())
+    assert minimum <= result.risk_score <= maximum
+    if quote:
+        assert result.relevant
+        assert any(quote in passage for passage in result.evidence_quotes)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("content", [
+    "Rozpocznij naukę inwestowania od podstaw na bezpłatnym koncie demonstracyjnym.",
+    "Rozpocznij naukę inwestowania od podstaw na bezpłatnym koncie demonstracyjnym. Poznaj działanie funduszy indeksowych ETF, zrozum ryzyko rynkowe i przetestuj swoje decyzje w bezpiecznym środowisku, zanim zainwestujesz realne środki.",
+])
+async def test_educational_demo_account(content):
+    doc = preprocess_html(f"<p>{content}</p>", "manual://text", "manual")
+    for analyze in (analyze_module1, analyze_module2, analyze_module3):
+        result = await analyze(doc, _make_registry(), _offline_ollama())
+        assert result.risk_score <= 0.12
+        assert result.violated_rules == []
+        assert result.evidence_quotes == []
+
+
+@pytest.mark.anyio
+async def test_education_with_personal_recommendation_still_flags():
+    content = "Poznaj ETF na koncie demonstracyjnym. Przygotujemy spersonalizowane rekomendacje zakupu ETF."
+    doc = preprocess_html(f"<p>{content}</p>", "manual://text", "manual")
+    result = await analyze_module3(doc, _make_registry(), _offline_ollama())
+    assert any(rule.rule_id == "M3_ART76_PERSONAL_REC" for rule in result.violated_rules)
+    assert any("spersonalizowane" in quote for quote in result.evidence_quotes)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(("warning", "flagged"), [
+    ("", True),
+    ("Informacja o ryzyku: kliknij tutaj.", True),
+    ("Inwestowanie wiąże się z ryzykiem utraty kapitału.", False),
+    ("Możesz stracić część zainwestowanych środków.", False),
+])
+async def test_etf_promotion_requires_risk_information(warning, flagged):
+    content = "Zautomatyzuj swoje inwestycje w fundusze ETF i zacznij budować dochód pasywny już od 500 zł miesięcznie! Nasze algorytmy automatycznie rebalansują Twój portfel 24/7, aby optymalizować wyniki w długim terminie. Załóż konto w 5 minut i odbierz 0% prowizji przez pierwsze 3 miesiące – oferta ważna tylko do końca tygodnia! " + warning
+    doc = preprocess_html(f"<p>{content}</p>", "manual://text", "manual")
+    result = await analyze_module2(doc, _make_registry(), _offline_ollama())
+    assert any(r.rule_id == "3" for r in result.violated_rules) == flagged
+    if flagged:
+        assert result.relevant and result.risk_score >= .40
+        assert any("dochód pasywny" in q for q in result.evidence_quotes)
+
+
+@pytest.mark.anyio
+async def test_pension_tax_offer_is_not_a_promised_return():
+    content = "Zabezpiecz swoją przyszłość finansową dzięki kontu IKE oraz IKZE i zyskaj ulgę podatkową nawet do kilku tysięcy złotych rocznie zgodnie z obowiązującymi przepisami! Wpłać środki przed końcem roku kalendarzowego, aby nie stracić tegorocznego limitu. Sprawdź, ile możesz zaoszczędzić na podatku Belki!"
+    async def evaluate(text):
+        doc = preprocess_html(f"<p>{text}</p>", "manual://text", "manual")
+        return await analyze_module2(doc, _make_registry(), _offline_ollama())
+
+    result = await evaluate(content)
+    assert result.relevant and .40 <= result.risk_score < .70
+    assert [rule.rule_id for rule in result.violated_rules] == ["16"]
+    assert any("ulgę podatkową" in q for q in result.evidence_quotes)
+    mixed = await evaluate(content + " Zyskaj 300% w tydzień.")
+    assert {"3", "16"}.issubset({r.rule_id for r in mixed.violated_rules})

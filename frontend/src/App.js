@@ -10,6 +10,8 @@ import IncidentDetail from "@/pages/IncidentDetail";
 import Calibration from "@/pages/Calibration";
 import LogPage from "@/pages/LogPage";
 
+import Citizen from "@/pages/Citizen";
+
 function App() {
   return (
     <AppProvider>
@@ -20,6 +22,7 @@ function App() {
           <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/public" element={<Citizen />} />
               <Route path="/analyze" element={<Analyze />} />
               <Route path="/incidents/:id" element={<IncidentDetail />} />
               <Route path="/calibration" element={<Calibration />} />

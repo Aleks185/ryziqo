@@ -150,7 +150,7 @@ async def analyze_module1(
 
     score = round(max(0.0, min(1.0, score)), 4)
     quotes = _extract_quotes(doc.sentences, [AFFILIATE_RE, HYPE_PROFIT_RE])
-    if not quotes and doc.sentences:
+    if rules and not quotes and doc.sentences:
         quotes = [doc.sentences[0][:240]]
 
     model_used = "deterministic-uknf-m1-fallback"
