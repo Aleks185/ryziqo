@@ -31,18 +31,22 @@ services:
       retries: 3
       start_period: 10s
 
-  # Serwis frontendu do odkomentowania po dodaniu katalogu frontend/ przez kolegę:
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: investwatch-frontend
-  #   ports:
-  #     - "3000:80"
-  #   depends_on:
-  #     backend:
-  #       condition: service_healthy
-  #   restart: unless-stopped
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Ścieżka relatywna: przeglądarka woła /api/v1 i /ws/alerts na tym samym originie,
+        # a Nginx przekazuje ruch do serwisu backend (brak CORS i mixed-content).
+        REACT_APP_INVESTWATCH_API_URL: "/api/v1"
+        REACT_APP_ALERT_THRESHOLD: "${HIGH_RISK_ALERT_THRESHOLD:-0.65}"
+    container_name: investwatch-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   investwatch_data:

@@ -2,7 +2,10 @@
 const RAW = process.env.REACT_APP_INVESTWATCH_API_URL || "http://localhost:8000/api/v1";
 
 export const API_URL = RAW.replace(/\/$/, "");
-export const WS_URL = `${API_URL.replace(/^http/, "ws").replace(/\/api\/v1$/, "")}/ws/alerts`;
+
+// API_URL może być pełnym adresem (dev) albo ścieżką relatywną "/api/v1" (Docker + proxy Nginx).
+const API_ABS = new URL(API_URL, window.location.origin).href.replace(/\/$/, "");
+export const WS_URL = `${API_ABS.replace(/^http/, "ws").replace(/\/api\/v1$/, "")}/ws/alerts`;
 export const ALERT_THRESHOLD = Number(process.env.REACT_APP_ALERT_THRESHOLD || 0.7);
 
 // Browser blocks http:// API from an https:// page, so skip probing to keep the console clean.
