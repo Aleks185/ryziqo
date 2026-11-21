@@ -1,12 +1,10 @@
 """Contracts for the IP campaign dashboard and dossier."""
-from ipaddress import ip_address
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, IPvAnyAddress
 
 from app import campaign_demo, ip_campaigns as cases
-from app.threat_intel import reporter
 
 router = APIRouter(prefix="/api", tags=["IP campaigns"])
 Source = Literal["CITIZEN_FORM","CRAWLER","ANALYST_PANEL","EXTERNAL_API"]
@@ -48,6 +46,11 @@ def connection(request):
     return request.app.state.intel.connection()
 
 
+def require_demo(request):
+    if not request.app.state.settings.demo_endpoints_enabled:
+        raise HTTPException(404,"Not Found")
+
+
 def campaign(c, cid):
     for group in cases.summaries(c):
         if group["id"] == cid:
@@ -79,15 +82,17 @@ def reports(request: Request, source: Source | None=None, reviewed: bool | None=
 @router.post("/reports",status_code=201)
 def create_report(request: Request, body: Report):
     request.app.state.intel.admit(request)
-    ip = body.ip_address or reporter(request)
-    fallback = not ip or ip_address(ip).is_loopback
+    # Only an explicitly supplied, publicly routable address describes the advertiser's server.
+    # The requester's own address identifies the reporting citizen and must never key a campaign.
+    ip = body.ip_address
+    usable = ip is not None and ip.is_global
     technical = {"metadata":body.raw_technical_data,
                  "headers":{k:request.headers[k] for k in ("content-type","content-length") if k in request.headers},
-                 "ip_source":"demo_default" if fallback else ("payload" if body.ip_address else "request"),
+                 "ip_source":"payload" if usable else ("rejected_non_public" if ip else "none"),
                  "payload":body.model_dump(mode="json",exclude={"raw_technical_data"})}
     with connection(request) as c:
         return cases.insert(c,title=body.title,content=body.content,domain=body.domain or body.url,
-                            ip_address="192.0.2.1" if fallback else ip,source=body.source,risk_score=body.risk_score,
+                            ip_address=str(ip) if usable else "",source=body.source,risk_score=body.risk_score,
                             human_reviewed=body.human_reviewed,evidence=body.artifacts.model_dump(),technical=technical)
 
 
@@ -103,6 +108,14 @@ def review(request: Request,rid: str,body: Review | None=None):
         return cases.decode(c.execute("SELECT * FROM case_reports WHERE id=?",(rid,)).fetchone())
 
 
+def noise_reduction(groups, total):
+    """Share of queue items an analyst no longer opens separately: n reports in a campaign become 1 item."""
+    if not total:
+        return 0
+    folded = sum(g["reports_count"]-1 for g in groups)
+    return round(100*folded/total)
+
+
 @router.get("/dashboard/stats")
 def stats(request: Request):
     with connection(request) as c:
@@ -111,7 +124,7 @@ def stats(request: Request):
         total, pending, ips = c.execute("""SELECT COUNT(*),COUNT(*) FILTER(WHERE human_reviewed=0),
                                          COUNT(DISTINCT NULLIF(ip_address,'')) FROM case_reports""").fetchone()
         return dict(active_campaigns=len(groups), unreviewed_reports=pending, monitored_ips=ips,
-                    noise_reduction_percent=round(100*sum(g["reports_count"] for g in groups)/total) if total else 0)
+                    noise_reduction_percent=noise_reduction(groups,total))
 
 
 @router.get("/campaigns")
@@ -146,6 +159,7 @@ def delete_note(request: Request,cid: str,nid: str):
 
 @router.post("/system/seed-demo")
 def seed_demo(request: Request):
+    require_demo(request)
     with connection(request) as c:
         c.execute("BEGIN IMMEDIATE")
         count = campaign_demo.seed(c)
@@ -154,6 +168,7 @@ def seed_demo(request: Request):
 
 @router.post("/system/simulate-attack",status_code=201)
 async def simulate(request: Request):
+    require_demo(request)
     with connection(request) as c:
         report=campaign_demo.simulate(c)
     event=dict(type="NEW_REPORT",campaignId=cases.campaign_id(report["ip_address"]),

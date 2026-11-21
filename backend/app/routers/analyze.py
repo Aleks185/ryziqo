@@ -99,53 +99,54 @@ async def dispatch(request, body):
     intel = request.app.state.intel
     queue = request.app.state.analysis_queue
     started = time.monotonic()
-    identity = intel.admit(request)
-    if isinstance(body, AnalyzeUrlRequest):
+    identity = await asyncio.to_thread(intel.admit, request)
+    is_url = isinstance(body, AnalyzeUrlRequest)
+    if is_url:
         try:
             validate_authority(body.url)
         except SSRFError as exc:
             raise HTTPException(400,str(exc)) from exc
-    slots = request.app.state.signature_slots
-    if slots.locked():
-        raise HTTPException(429, "Trwa przygotowanie innych zgłoszeń.")
-    async with slots:
+    # The semaphore only bounds CPU-heavy signature work (image decoding / pHash); network fetches
+    # happen inside the analysis queue, so slow pages cannot block unrelated text submissions.
+    async with request.app.state.signature_slots:
         meta = {**await asyncio.to_thread(input_meta, body), **identity}
-        def known():
-            if body.force_full:
-                return None
-            match, count = intel.confirmed(meta)
-            if match is None:
-                return None
-            response = AnalyzeResponse.model_validate_json(match["response_json"])
-            previous_summary = response.report.summary
-            response.report.source_type = meta["source_type"]
-            response.report.summary = f"Dopasowano do potwierdzonego zagrożenia w bazie zgłoszeń (liczba wcześniejszych zgłoszeń: {count}). {previous_summary}"
-            response = intel.save(meta, body, response, "fast_path", time.monotonic()-started, match)
-            return queue.completed(response)
 
-        hit = known()
-        if hit:
-            return hit
-        if isinstance(body, AnalyzeUrlRequest):
-            page = await fetch_url(request, body)
-            request.state.fetched_page = page
-            await asyncio.to_thread(enrich_page,meta,page,request.app.state.settings)
-            hit = known()
-            if hit:
-                return hit
+    def known():
+        if body.force_full:
+            return None
+        match, count = intel.confirmed(meta)
+        if match is None:
+            return None
+        response = AnalyzeResponse.model_validate_json(match["response_json"])
+        previous_summary = response.report.summary
+        response.report.source_type = meta["source_type"]
+        response.report.summary = f"Dopasowano do potwierdzonego zagrożenia w bazie zgłoszeń (liczba wcześniejszych zgłoszeń: {count}). {previous_summary}"
+        return intel.save(meta, body, response, "fast_path", time.monotonic()-started, match)
+
+    hit = await asyncio.to_thread(known)
+    if hit:
+        return queue.completed(hit)
 
     async def operation():
         job = current_job.get()
-        job.history = intel.context(meta)
         job.force_full = body.force_full
         start = time.monotonic()
-        fn = run_url if isinstance(body, AnalyzeUrlRequest) else run_text
+        if is_url:
+            status("fetching")
+            page = await fetch_url(request, body)
+            request.state.fetched_page = page
+            await asyncio.to_thread(enrich_page, meta, page, request.app.state.settings)
+            hit = await asyncio.to_thread(known)
+            if hit:
+                return hit
+        job.history = await asyncio.to_thread(intel.context, meta)
+        fn = run_url if is_url else run_text
         response = await fn(request, body)
         origin = ("cache" if job.metrics["cache_hit"] else
                   "ollama" if any(not i.is_demo_fallback for i in response.items) else "rules")
         if not meta["excerpt"] and response.items:
             meta["excerpt"] = response.items[0].content_excerpt
-        return intel.save(meta, body, response, origin, time.monotonic()-start)
+        return await asyncio.to_thread(intel.save, meta, body, response, origin, time.monotonic()-start)
     return queue.submit(operation)
 
 
@@ -272,9 +273,8 @@ async def analyze_url(request: Request, body: AnalyzeUrlRequest) -> AnalyzeRespo
 
 
 async def run_url(request: Request, body: AnalyzeUrlRequest) -> AnalyzeResponse:
-    """Fetch one public URL (anti-SSRF, size/redirect limits) and analyze it synchronously."""
+    """Analyze the page fetched by `dispatch` (anti-SSRF, size/redirect limits applied by the fetcher)."""
     worker = request.app.state.worker
-    status("fetching")
     page = request.state.fetched_page
     await request.app.state.ollama.check_health()
     status("preprocessing")

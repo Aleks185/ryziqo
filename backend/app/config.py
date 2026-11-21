@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     report_limit_per_minute: int = 30
     hosting_asn_db: str = ""
     hosting_country_db: str = ""
+    # /api/system/seed-demo wipes the case register; outside production it is on by default.
+    enable_demo_endpoints: bool | None = None
+
+    @property
+    def demo_endpoints_enabled(self) -> bool:
+        if self.enable_demo_endpoints is not None:
+            return self.enable_demo_endpoints
+        return self.app_env != "production"
 
     app_env: str = "development"
     app_host: str = "0.0.0.0"

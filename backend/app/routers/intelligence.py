@@ -1,5 +1,4 @@
 """Analyst registry, campaigns and redacted evidence views."""
-import ipaddress
 import json
 from typing import Literal
 
@@ -19,9 +18,9 @@ class Review(BaseModel):
 
 def public_row(row):
     r=dict(row)
-    address=r.pop("reporter_ip", None)
-    r["reporter_network"]=str(ipaddress.ip_network(address+("/64" if ":" in address else "/24"),strict=False)) if address else None
-    for key in ("response_json","reporter_ip_hash","reporter_user_agent"):
+    # Reporter identifiers (even truncated to a network) are personal data and the API has no
+    # authentication, so they are kept server-side for rate limiting and retention only.
+    for key in ("reporter_ip","response_json","reporter_ip_hash","reporter_user_agent"):
         r.pop(key,None)
     for key in ("redirect_chain","detected_entities","incident_ids","ai_report_json"):
         if key in r: r[key]=json.loads(r[key])

@@ -9,7 +9,8 @@ from app.database import utc_now_iso
 
 DOMAIN = re.compile(r"(?i)(?<![\w.-])(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}\b")
 ACCOUNT = re.compile(r"(?i)(?<!\w)(?:PL\s*)?\d{2}(?:[ -]?\d{4}){6}(?!\d)")
-PHONE = re.compile(r"(?<!\d)(?:\+48[ -]?)?(?:\d[ -]?){8}\d(?!\d)")
+# Nine digits not followed by a currency, so amounts such as "100 000 000 PLN" are not phones.
+PHONE = re.compile(r"(?<!\d)(?<!\d[.,])(?:\+48[ -]?)?(?:\d[ -]?){8}\d(?!\d)(?![.,]\d)(?!\s*(?:PLN|zł|zl|EUR|USD|€|\$))", re.I)
 SOURCES = {"public_form":"CITIZEN_FORM", "analyst_panel":"ANALYST_PANEL", "api":"EXTERNAL_API"}
 CRITICAL = 90
 
@@ -107,7 +108,7 @@ def summaries(c):
         if ip in domains:
             reasons.append(f"Najczęściej zgłaszana domena: {domains[ip]}.")
         result.append(dict(id=campaign_id(ip), ip_address=ip, primary_domain=domains.get(ip, ""),
-                           risk_score=min(100, (row["peak"]*7+5)//10 + n*6), reports_count=n,
+                           risk_score=min(100, row["peak"] + 2*(n-1)), reports_count=n,
                            correlation_reasons=reasons, updated_at=row["latest"]))
     return sorted(result, key=lambda x:(-x["risk_score"], x["id"]))
 

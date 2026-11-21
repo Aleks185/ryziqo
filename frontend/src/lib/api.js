@@ -44,7 +44,7 @@ async function streamAnalysis(input, onStatus, signal) {
   const body = kind === "image" ? {image_base64: await encodeImage(file), module_ids, title}
     : kind === "url" ? {url, module_ids} : {content, module_ids, title, source_url, ground_truth_label};
   signal.throwIfAborted();
-  const {job_id, result} = await req("/analyze/jobs", {method: "POST", body: {...body, platform: input.platform || null, force_full: !!input.force_full, source_channel: "analyst_panel"}});
+  const {job_id, result} = await req("/analyze/jobs", {method: "POST", body: {...body, platform: input.platform || null, force_full: !!input.force_full, source_channel: input.source_channel || "analyst_panel"}});
   if (result) return result;
   const path = "/analyze/jobs/" + encodeURIComponent(job_id);
   return new Promise((resolve, reject) => {

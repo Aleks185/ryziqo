@@ -53,3 +53,24 @@ def test_rate_limit_and_untrusted_forwarding(tmp_path):
         body={"content":"Tekst kontrolny dla analizy ryzyka inwestycyjnego.","module_ids":[1]}
         assert client.post("/api/v1/analyze/text",json=body,headers={"X-Forwarded-For":"192.0.2.1"}).status_code==200
         assert client.post("/api/v1/analyze/text",json=body,headers={"X-Forwarded-For":"192.0.2.2"}).status_code==429
+
+
+def test_shared_domain_alone_does_not_reuse_confirmed_verdict(tmp_path):
+    with _build_test_client(tmp_path) as client:
+        api="/api/v1"
+        scam={"content":"Wpłać 950 PLN, zysk 9000 PLN gwarantowany! https://www.knf.gov.pl/komunikat","module_ids":[2]}
+        first=client.post(api+"/analyze/text",json=scam).json()["report"]
+        assert client.patch(api+"/intelligence/reports/"+first["report_id"],
+                            json={"verdict_status":"confirmed_fake"}).status_code==200
+        other={"content":"Komunikat urzędu o nowych zasadach nadzoru: https://www.knf.gov.pl/inny","module_ids":[2]}
+        hit=client.post(api+"/analyze/text",json=other).json()["report"]
+        assert hit["result_origin"]!="fast_path"
+
+
+def test_shared_server_ip_does_not_merge_campaigns():
+    from app.threat_intel import Intelligence
+    where,args=Intelligence.relation({"target_server_ip":"104.16.0.1","canonical_domain":"facebook.com",
+                                      "target_url":None})
+    assert where=="(0)" and args==[]
+    where,args=Intelligence.relation({"target_server_ip":"104.16.0.1"},"context")
+    assert args==["104.16.0.1"]

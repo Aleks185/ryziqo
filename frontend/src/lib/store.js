@@ -253,7 +253,7 @@ export function AppProvider({ children }) {
       if (kind === "image" && mode !== "online") throw Object.assign(new Error("Vision unavailable"), { status: 503 });
       if (mode === "online") {
         const source_channel = citizen ? "public_form" : "analyst_panel";
-        const res = onStatus ? await backend.streamAnalysis({kind, platform, force_full, file, content, url, title, source_url, module_ids, ground_truth_label}, onStatus, signal) : kind === "url"
+        const res = onStatus ? await backend.streamAnalysis({kind, source_channel, platform, force_full, file, content, url, title, source_url, module_ids, ground_truth_label}, onStatus, signal) : kind === "url"
           ? await backend.analyzeUrl({ source_channel, url, module_ids })
           : kind === "image" ? await backend.analyzeImage({ source_channel, file, title, module_ids })
           : await backend.analyzeText({ source_channel, content, title, source_url, module_ids, ground_truth_label });

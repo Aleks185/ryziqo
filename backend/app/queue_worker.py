@@ -306,7 +306,7 @@ class CrawlQueueWorker:
         for page in pages:
             saved = await self.analyze_page(page, list(req.module_ids), job_id=job_id)
             if registry := getattr(self, "report_registry", None):
-                registry.import_history({item.id for item in saved})
+                await asyncio.to_thread(registry.import_history, {item.id for item in saved})
             created_or_updated += len(saved)
             processed += 1
 

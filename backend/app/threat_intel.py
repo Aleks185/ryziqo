@@ -171,12 +171,18 @@ class Intelligence:
 
     def import_history(self, selected=None):
         from app.models import AnalyzeTextRequest, AnalysisReport
+        imported="SELECT j.value FROM threat_reports t,json_each(t.incident_ids) j"
         with self.connection() as c:
-            rows=c.execute("""SELECT id FROM incidents WHERE id NOT IN
-                (SELECT j.value FROM threat_reports t,json_each(t.incident_ids) j)""").fetchall()
+            if selected is None:
+                rows=c.execute(f"SELECT id FROM incidents WHERE id NOT IN ({imported})").fetchall()
+            else:
+                selected=list(selected)
+                if not selected:
+                    return
+                known={r[0] for r in c.execute(imported+" WHERE j.value IN (SELECT value FROM json_each(?))",
+                                                 (json.dumps(selected),))}
+                rows=[(i,) for i in selected if i not in known]
         for row in rows:
-            if selected is not None and row[0] not in selected:
-                continue
             item=self.db.get_incident(row[0])
             if not item: continue
             body=AnalyzeTextRequest.model_construct(content=item.raw_text_preview or item.content_excerpt, source_url=item.source_url)
@@ -221,15 +227,24 @@ class Intelligence:
         return c
 
     @staticmethod
-    def relation(meta, fast=False):
+    def relation(meta, mode="merge"):
+        """SQL predicate linking reports to `meta`.
+
+        mode="fast": evidence strong enough to reuse a confirmed verdict (same content, same image,
+        or the exact same URL). A shared domain alone is not enough, otherwise confirming one fake
+        that links to e.g. knf.gov.pl would mark every later text with such a link as confirmed.
+        mode="merge": grouping into campaigns; a bare domain links reports only outside big platforms,
+        and the server IP is never used because CDN/shared hosting addresses serve unrelated sites.
+        mode="context": loose hint for the LLM, may also use the server IP.
+        """
         clauses=[]; args=[]
         for key in ("content_hash","canonical_domain","target_server_ip","image_phash"):
             value=meta.get(key)
-            if not value or (fast and key=="target_server_ip"):
+            if not value or (key=="target_server_ip" and mode!="context"):
                 continue
-            if key=="canonical_domain" and fast and value in platforms:
-                # A platform-wide confirmation cannot identify an individual advert.
-                clauses.append("(canonical_domain=? AND target_url=?)");args.extend([value,meta.get("target_url")])
+            if key=="canonical_domain" and (mode=="fast" or value in platforms):
+                if meta.get("target_url"):
+                    clauses.append("(canonical_domain=? AND target_url=?)");args.extend([value,meta["target_url"]])
             elif key=="image_phash":
                 clauses.append("(image_phash IS NOT NULL AND hamming(image_phash,?)<=6)");args.append(value)
             else:
@@ -237,7 +252,7 @@ class Intelligence:
         return "("+" OR ".join(clauses or ["0"])+")",args
 
     def confirmed(self,meta):
-        where,args=self.relation(meta,True)
+        where,args=self.relation(meta,"fast")
         with self.connection() as c:
             row=c.execute("SELECT * FROM threat_reports WHERE verdict_status='confirmed_fake' AND "+where+
                           " ORDER BY created_at DESC,rowid DESC LIMIT 1",args).fetchone()
@@ -245,7 +260,7 @@ class Intelligence:
         return row,count
 
     def context(self,meta):
-        where,args=self.relation(meta)
+        where,args=self.relation(meta,"context")
         with self.connection() as c:
             rows=c.execute("SELECT verdict_status,risk_score FROM threat_reports WHERE "+where+" ORDER BY rowid DESC LIMIT 5",args).fetchall()
             if not rows and meta["excerpt"]:

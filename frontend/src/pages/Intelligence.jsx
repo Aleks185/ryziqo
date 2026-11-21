@@ -75,7 +75,7 @@ function Evidence({r}){
     [l("Źródło wyniku","Result origin"),l(...origins[r.origin])],["URL",r.target_url],
     [l("Platforma","Platform"),r.platform],[l("Przekierowania","Redirect chain"),r.redirect_chain.join(" → ")],
     ["IP / ASN / "+l("kraj hostingu","hosting country"),[r.target_server_ip,r.hosting_asn,r.hosting_country].filter(Boolean).join(" / ")],
-    [l("Kanał zgłoszenia","Source channel"),r.source_channel],[l("Sieć zgłaszającego","Reporter network"),r.reporter_network],
+    [l("Kanał zgłoszenia","Source channel"),r.source_channel],
     ["UTC",r.created_at],["SHA-256",r.content_hash],["pHash",r.image_phash],
     [l("Podmioty","Entities"),r.detected_entities.join(", ")], [l("Kampania","Campaign"),r.campaign_id]];
   async function copy(){

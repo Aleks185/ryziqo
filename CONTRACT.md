@@ -313,12 +313,12 @@ Te ścieżki służą widokom rejestru i teczki. Istniejące ścieżki /api/v1 n
 | GET /api/reports | Tablica zgłoszeń od najnowszego. Filtry source, reviewed, minRisk, maxRisk (granice włącznie) i q można łączyć. |
 | POST /api/reports | Utworzony rekord (201). Wymaga title i content. Opcjonalnie przyjmuje domain, url, ip_address, source, risk_score, artifacts, raw_technical_data, human_reviewed. |
 | PATCH /api/reports/{id}/review | Zwraca rekord. Puste żądanie przełącza flagę, obiekt z human_reviewed ustawia ją jawnie. |
-| GET /api/dashboard/stats | active_campaigns, unreviewed_reports, monitored_ips, noise_reduction_percent. |
-| GET /api/campaigns | Lista kampanii malejąco według ryzyka. Dwa zgłoszenia o tym samym IP lub jedno z ryzykiem co najmniej 90/100 aktywują kampanię. |
+| GET /api/dashboard/stats | active_campaigns, unreviewed_reports, monitored_ips, noise_reduction_percent (odsetek zgłoszeń, których analityk nie otwiera osobno, bo kampania z n zgłoszeń to jedna pozycja). |
+| GET /api/campaigns | Lista kampanii malejąco według ryzyka. Dwa zgłoszenia o tym samym IP lub jedno z ryzykiem co najmniej 90/100 aktywują kampanię. Ryzyko kampanii to najwyższe ryzyko zgłoszenia plus 2 za każde kolejne zgłoszenie (maks. 100). |
 | GET /api/campaigns/{id} | Metryki, actor_profile, graph, timeline, notes oraz reports z danymi technicznymi. |
 | POST /api/campaigns/{id}/notes | Utworzona notatka (201). Wymaga content, opcjonalnie author. |
 | DELETE /api/campaigns/{id}/notes/{noteId} | 204 po usunięciu, 404 dla obcej lub brakującej notatki. |
-| POST /api/system/seed-demo | Atomowo zastępuje zawartość rejestru spraw i notatki zestawem demonstracyjnym. Archiwum analiz /api/v1 jest odrębne. |
-| POST /api/system/simulate-attack | Dodaje demonstracyjny rekord (201). Po zatwierdzeniu transakcji rozsyła przez /ws/alerts zdarzenie NEW_REPORT z campaignId, reportId, timestamp i message. |
+| POST /api/system/seed-demo | Tylko gdy endpointy demo są włączone (domyślnie poza APP_ENV=production, wymuszenie przez ENABLE_DEMO_ENDPOINTS), inaczej 404. Atomowo zastępuje zawartość rejestru spraw i notatki zestawem demonstracyjnym. Archiwum analiz /api/v1 jest odrębne. |
+| POST /api/system/simulate-attack | Tylko gdy endpointy demo są włączone, inaczej 404. Dodaje demonstracyjny rekord (201). Po zatwierdzeniu transakcji rozsyła przez /ws/alerts zdarzenie NEW_REPORT z campaignId, reportId, timestamp i message. |
 
-Źródła mają wartości CITIZEN_FORM, CRAWLER, ANALYST_PANEL lub EXTERNAL_API. Dla bezpośredniego POST domyślnym źródłem jest ANALYST_PANEL. Bez podanego IP formularz korzysta z adresu żądania po walidacji proxy. Dla połączenia lokalnego używa demonstracyjnego 192.0.2.1. Pole raw_technical_data.ip_source rozróżnia payload, request i demo_default. Adres żądania identyfikuje połączenie zgłaszającego i sam w sobie nie potwierdza lokalizacji reklamodawcy.
+Źródła mają wartości CITIZEN_FORM, CRAWLER, ANALYST_PANEL lub EXTERNAL_API. Dla bezpośredniego POST domyślnym źródłem jest ANALYST_PANEL. Pole ip_address przyjmuje wyłącznie publiczny adres serwera reklamodawcy. Adres prywatny, lokalny lub dokumentacyjny zostaje odrzucony, a brak adresu pozostawia puste pole. Adres żądania (połączenie zgłaszającego) nigdy nie jest zapisywany jako IP kampanii. Pole raw_technical_data.ip_source przyjmuje wartości payload, rejected_non_public lub none.
