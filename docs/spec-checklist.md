@@ -64,7 +64,8 @@ Stan na 2026-11-21. Testy backendu: `160 passed`.
 - [x] **Reguła 8: desktop, tablet i telefon** (1280, 768 i 375 px w `backend/app/scraper/browser.py`; evidence podaje widok)
 - [x] **Odświeżanie rejestru KNF** (`python -m scripts.refresh_knf_registry`, `POST /api/v1/knf-registry/refresh`, `KNF_REFRESH_CRON`), data snapshotu na dashboardzie
 - [x] **Parser list KNF sprawdzony na prawdziwych stronach (2026-11-21).** knf.gov.pl zrywa połączenia z nagłówkiem bota (robots.txt pozwala wszystkim), więc synchronizacja przedstawia się jako przeglądarka (`KNF_SYNC_USER_AGENT`). Parser czyta tabele klucz–wartość („Nazwa podmiotu”), pomija dawne nazwy (`<strike>`), przechodzi paginację `?page=N`: 754 podmioty (10 banków, 27 DM, 10 oddziałów, 707 transgranicznych). Wpisy z ręcznymi aliasami nie są usuwane automatycznie (`unmatched_kept` w raporcie), a fuzzy-matching podszywania działa tylko na markach z aliasami.
-- [ ] Przejrzeć `unmatched_kept` po pierwszym odświeżeniu: KNF zapisuje np. „DOM MAKLERSKI BANKU OCHRONY ŚRODOWISKA S.A.” zamiast „Dom Maklerski BOŚ S.A.” — scalić ręcznie wpisy (aliasy na wpis z oficjalną nazwą KNF).
+- [x] Snapshot rejestru w repo zastąpiony danymi z knf.gov.pl (2026-11-21, 758 podmiotów + 4 [DEMO]); ręczne wpisy scalone z oficjalnymi nazwami KNF (BOŚ, PKO BP, mBank, Santander→Erste, OANDA TMS, IBKR), dawne nazwy zostały aliasami.
+- [ ] Do potwierdzenia: eToro (Europe) Ltd. i Saxo Bank A/S nie występują na pobranych listach notyfikacji; Trading 212 figuruje jako „Trading 212 Ltd” i „Trading 212 EU GmbH”, a w snapshocie jest „Trading 212 Markets Ltd.” — wpisy ręczne zostawione.
 - [ ] (warto rozważyć) Kolejka na zewnętrznym narzędziu (Redis z RQ/Celery/Arq) i MinIO jako object storage, pod kryterium architektury i skalowalności
 - [ ] (warto rozważyć) Skan **Snyk** wprost wymieniony w specu: `snyk test` z wynikiem w `docs/security-licenses.md` albo workflow w GitHub Actions (w repo nie ma `.github/`)
 

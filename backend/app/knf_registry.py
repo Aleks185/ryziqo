@@ -249,7 +249,10 @@ class KNFRegistrySnapshot:
                         or (part.endswith(key) and part[: -len(key)] in SUSPICIOUS_AFFIXES)
                     ):
                         hit_kind = "affix"
-                    elif is_domain and len(key) >= 5 and part != key and part not in legit:
+                    elif (
+                        is_domain and len(key) >= 5 and part != key and part not in legit
+                        and part not in GENERIC_NAME_WORDS  # bank.pl is a word, not an "mbank" typo
+                    ):
                         limit = 1 if len(key) < 8 else 2
                         if levenshtein(part.translate(LEET), key, limit) <= limit:
                             hit_kind = "typosquat"

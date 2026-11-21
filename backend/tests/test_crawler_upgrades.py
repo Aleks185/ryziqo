@@ -389,28 +389,46 @@ def test_parse_html_table_list_and_file_links() -> None:
     assert parse_csv("Lp;Nazwa\n1;Gamma AG\n2;Delta A/S\n") == ["Gamma AG", "Delta A/S"]
 
 
+def _entity(name: str, category: str, aliases: list[str] | None = None, demo: bool = False) -> dict:
+    return {"official_name": name, "aliases": aliases or [], "category": category,
+            "registry_status": "registered_pl", "country": "PL", "is_synthetic_demo": demo}
+
+
 def test_merge_snapshot_keeps_aliases_synthetic_and_applies_safety_net() -> None:
-    old = json.loads((DATA_DIR / "knf_registry_snapshot.json").read_text(encoding="utf-8"))
+    old = {
+        "snapshot_date": "2026-11-01",
+        "entities": [
+            _entity("XTB S.A.", "dom_maklerski", ["XTB", "xtb.com"]),
+            _entity("Dom Maklerski BOŚ S.A.", "dom_maklerski", ["Bossa", "bossa.pl"]),  # KNF spells it differently
+            _entity("Stary Dom Maklerski S.A.", "dom_maklerski"),  # imported earlier, gone from the list
+            _entity("NordicMarkets [DEMO]", "dom_maklerski", ["NordicMarkets"], demo=True),
+            _entity("Bank A Biuro Maklerskie", "bank_maklerski"),
+            _entity("Bank B Biuro Maklerskie", "bank_maklerski"),
+            _entity("Bank C Biuro Maklerskie", "bank_maklerski"),
+            _entity("Saxo Bank A/S", "zagraniczna_bez_oddzialu", ["Saxo Bank"]),
+        ],
+    }
     results = [
-        SourceResult("domy_maklerskie", "u", names=["XTB S.A.", "Nowy Dom Maklerski S.A.", "Dom Maklerski BOŚ S.A."]),
-        SourceResult("banki_maklerskie", "u", names=[]),
+        SourceResult("domy_maklerskie", "u", names=["XTB S.A.", "Nowy Dom Maklerski S.A.",
+                                                    "DOM MAKLERSKI BANKU OCHRONY ŚRODOWISKA S.A."]),
+        SourceResult("banki_maklerskie", "u", names=["Bank A Biuro Maklerskie"]),  # 1 of 3: safety net
         SourceResult("zagraniczne_bez_oddzialu", "u", error="ECONNRESET"),
     ]
     doc, report = merge_snapshot(old, results, today="2026-12-01")
     by_name = {e["official_name"]: e for e in doc["entities"]}
 
     assert doc["snapshot_date"] == "2026-12-01"
-    assert by_name["XTB S.A."]["aliases"] == ["XTB", "X-Trade Brokers", "xtb.com"]
+    assert by_name["XTB S.A."]["aliases"] == ["XTB", "xtb.com"]
     assert by_name["Nowy Dom Maklerski S.A."]["registry_status"] == "registered_pl"
-    # Curated entries (manual aliases) are never dropped — KNF spells names differently
-    assert report.unmatched_kept["dom_maklerski"] == ["TMS Brokers (OANDA TMS Brokers S.A.)"]
-    assert "TMS Brokers (OANDA TMS Brokers S.A.)" in by_name
-    assert "dom_maklerski" not in report.removed
-    assert any(e["is_synthetic_demo"] and e["category"] == "dom_maklerski" for e in doc["entities"])
-    assert "bank_maklerski" in report.kept_old
-    assert "Biuro Maklerskie mBanku" in by_name
+    # Curated entries are kept and reported; alias-less imported ones are removed
+    assert report.unmatched_kept["dom_maklerski"] == ["Dom Maklerski BOŚ S.A."]
+    assert "Dom Maklerski BOŚ S.A." in by_name
+    assert report.removed["dom_maklerski"] == ["Stary Dom Maklerski S.A."]
+    assert "NordicMarkets [DEMO]" in by_name
+    # Safety net: a list that shrank below half keeps the old category; errors keep it too
+    assert "bank_maklerski" in report.kept_old and "Bank C Biuro Maklerskie" in by_name
     assert report.errors == {"zagraniczna_bez_oddzialu": "ECONNRESET"}
-    assert "Saxo Bank A/S (notyfikacja transgraniczna)" in by_name
+    assert "Saxo Bank A/S" in by_name
 
 
 def test_refreshed_snapshot_is_picked_and_reload_updates_matching(tmp_path: Path) -> None:
@@ -521,7 +539,30 @@ def test_imported_registry_names_do_not_create_lookalike_alarms(tmp_path: Path) 
     write_snapshot_atomic(path, doc)
     reg = KNFRegistrySnapshot(snapshot_path=path, rules_path=DATA_DIR / "risk_criteria_rules.json")
 
-    legit = ["https://capital.com/", "https://www.money.pl/", "https://investing.com/", "https://www.mbank.pl/"]
+    legit = ["https://capital.com/", "https://www.money.pl/", "https://investing.com/", "https://www.mbank.pl/",
+             "https://bank.pl/", "https://polski-bank.pl/"]
     assert reg.find_impersonations("", legit) == []
     assert reg.find_impersonations("", ["https://bosssa.pl/"])[0].kind == "typosquat"  # curated brands still guarded
     assert reg.match_entity_in_text("Oferta Lago Kapital Ltd dla klientów z Polski") is not None
+
+
+def test_robots_txt_is_fetched_from_the_pinned_ip(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.scraper.ssrf import ValidatedURL
+
+    seen: list[tuple[str, str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.url.host, request.headers["host"], request.url.path))
+        if request.url.path == "/robots.txt":
+            return httpx.Response(200, text="User-agent: *\nDisallow: /private\n")
+        return httpx.Response(200, text="<p>ok</p>", headers={"content-type": "text/html"})
+
+    monkeypatch.setattr(fetcher_module, "validate_public_url", lambda u: ValidatedURL(u, "93.184.216.34"))
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        fetcher_module.httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw)
+    )
+    reader = PageFetcher(Settings(crawler_rate_limit_seconds=0, crawler_per_host_delay_seconds=0))
+    with pytest.raises(RobotsDisallowedError):
+        asyncio.run(reader.fetch_public_url("https://broker.pl/private"))
+    assert seen == [("93.184.216.34", "broker.pl", "/robots.txt")]

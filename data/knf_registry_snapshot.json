@@ -1,6 +1,6 @@
 {
   "snapshot_date": "2026-11-21",
-  "disclaimer": "Lokalny snapshot demonstracyjny oparty o publiczne kategorie rejestrów KNF (stan na 2026-11-21) oraz fikcyjne podmioty testowe dla mock-stron. Nie stanowi automatycznej weryfikacji bieżącego statusu prawnego w rejestrze KNF.",
+  "disclaimer": "Snapshot list podmiotów KNF (firmy inwestycyjne: banki i domy maklerskie, oddziały i notyfikowane firmy zagraniczne) pobrany z knf.gov.pl 2026-11-21, uzupełniony o ręczne aliasy marek oraz fikcyjne podmioty testowe [DEMO] dla mock-stron. Nie zastępuje weryfikacji bieżącego statusu w rejestrze KNF.",
   "official_sources": {
     "rejestr_firm_inwestycyjnych": "https://www.knf.gov.pl/podmioty/Podmioty_rynku_kapitalowego/Firmy_inwestycyjne_i_Agenci_firm_inwestycyjnych",
     "banki_maklerskie": "https://www.knf.gov.pl/podmioty/Podmioty_rynku_kapitalowego/Firmy_inwestycyjne_i_Agenci_firm_inwestycyjnych/Banki_prowadzace_dzialalnosc_maklerska",
@@ -10,88 +10,12 @@
   },
   "entities": [
     {
-      "official_name": "XTB S.A.",
-      "aliases": ["XTB", "X-Trade Brokers", "xtb.com"],
-      "category": "dom_maklerski",
-      "registry_status": "registered_pl",
-      "country": "PL",
-      "is_synthetic_demo": false
-    },
-    {
-      "official_name": "Dom Maklerski BOŚ S.A.",
-      "aliases": ["DM BOŚ", "Bossa", "bossa.pl"],
-      "category": "dom_maklerski",
-      "registry_status": "registered_pl",
-      "country": "PL",
-      "is_synthetic_demo": false
-    },
-    {
-      "official_name": "Biuro Maklerskie PKO Banku Polskiego",
-      "aliases": ["BM PKO BP", "PKO BP Makler", "pkobp.pl"],
-      "category": "bank_maklerski",
-      "registry_status": "registered_pl",
-      "country": "PL",
-      "is_synthetic_demo": false
-    },
-    {
-      "official_name": "Biuro Maklerskie mBanku",
-      "aliases": ["eMakler", "BM mBank", "mInwestor", "mbank.pl"],
-      "category": "bank_maklerski",
-      "registry_status": "registered_pl",
-      "country": "PL",
-      "is_synthetic_demo": false
-    },
-    {
-      "official_name": "Santander Biuro Maklerskie",
-      "aliases": ["BM Santander", "santander.pl"],
-      "category": "bank_maklerski",
-      "registry_status": "registered_pl",
-      "country": "PL",
-      "is_synthetic_demo": false
-    },
-    {
-      "official_name": "TMS Brokers (OANDA TMS Brokers S.A.)",
-      "aliases": ["OANDA TMS", "TMS Brokers"],
-      "category": "dom_maklerski",
-      "registry_status": "registered_pl",
-      "country": "PL",
-      "is_synthetic_demo": false
-    },
-    {
-      "official_name": "Saxo Bank A/S (notyfikacja transgraniczna)",
-      "aliases": ["Saxo Bank", "SaxoTrader"],
-      "category": "zagraniczna_bez_oddzialu",
-      "registry_status": "registered_eu_crossborder",
-      "country": "DK",
-      "is_synthetic_demo": false
-    },
-    {
-      "official_name": "Interactive Brokers Ireland Limited",
-      "aliases": ["Interactive Brokers", "IBKR", "interactivebrokers.com", "interactivebrokers.ie"],
-      "category": "zagraniczna_bez_oddzialu",
-      "registry_status": "registered_eu_crossborder",
-      "country": "IE",
-      "is_synthetic_demo": false
-    },
-    {
-      "official_name": "eToro (Europe) Ltd.",
-      "aliases": ["eToro", "etoro.com"],
-      "category": "zagraniczna_bez_oddzialu",
-      "registry_status": "registered_eu_crossborder",
-      "country": "CY",
-      "is_synthetic_demo": false
-    },
-    {
-      "official_name": "Trading 212 Markets Ltd.",
-      "aliases": ["Trading 212", "Trading212", "trading212.com"],
-      "category": "zagraniczna_bez_oddzialu",
-      "registry_status": "registered_eu_crossborder",
-      "country": "CY",
-      "is_synthetic_demo": false
-    },
-    {
       "official_name": "NordicMarkets Polska Dom Maklerski S.A. [DEMO]",
-      "aliases": ["NordicMarkets", "NordicMarkets Polska", "NordicMarkets CFD"],
+      "aliases": [
+        "NordicMarkets",
+        "NordicMarkets Polska",
+        "NordicMarkets CFD"
+      ],
       "category": "dom_maklerski",
       "registry_status": "registered_pl",
       "country": "PL",
@@ -99,7 +23,11 @@
     },
     {
       "official_name": "Vistula Securities S.A. [DEMO]",
-      "aliases": ["Vistula Securities", "Vistula Broker", "Vistula ETF"],
+      "aliases": [
+        "Vistula Securities",
+        "Vistula Broker",
+        "Vistula ETF"
+      ],
       "category": "dom_maklerski",
       "registry_status": "registered_pl",
       "country": "PL",
@@ -107,7 +35,11 @@
     },
     {
       "official_name": "EuroTrade Direct Europe Ltd. [DEMO]",
-      "aliases": ["EuroTrade Direct", "EuroTrade", "EuroTrade App"],
+      "aliases": [
+        "EuroTrade Direct",
+        "EuroTrade",
+        "EuroTrade App"
+      ],
       "category": "zagraniczna_bez_oddzialu",
       "registry_status": "registered_eu_crossborder",
       "country": "CY",
@@ -115,11 +47,6124 @@
     },
     {
       "official_name": "BalticInvest Oddział w Polsce [DEMO]",
-      "aliases": ["BalticInvest", "BalticInvest Polska"],
+      "aliases": [
+        "BalticInvest",
+        "BalticInvest Polska"
+      ],
       "category": "oddzial_zagraniczny",
       "registry_status": "registered_eu_branch",
       "country": "DE",
       "is_synthetic_demo": true
+    },
+    {
+      "official_name": "ALIOR BANK S.A. Biuro Maklerskie ALIOR Bank",
+      "aliases": [],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BANK HANDLOWY S.A. Departament Maklerski Banku Handlowego",
+      "aliases": [],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BANK MILLENNIUM S.A. Biuro Maklerskie Banku Millennium",
+      "aliases": [],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BANK PEKAO S.A. (BANK POLSKA KASA OPIEKI S.A.) Biuro Maklerskie PEKAO",
+      "aliases": [],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BNP Paribas Bank Polska S.A. Biuro Maklerskie BNP Paribas Bank Polska",
+      "aliases": [],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ERSTE BANK POLSKA S.A. Erste Biuro Maklerskie",
+      "aliases": [
+        "BM Santander",
+        "santander.pl",
+        "Santander Biuro Maklerskie",
+        "Erste Biuro Maklerskie",
+        "Santander Bank Polska"
+      ],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ING BANK ŚLĄSKI S.A. Biuro Maklerskie ING Bank Śląski",
+      "aliases": [],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "mBANK S.A. Biuro Maklerskie mBank",
+      "aliases": [
+        "eMakler",
+        "BM mBank",
+        "mInwestor",
+        "mbank.pl",
+        "Biuro Maklerskie mBanku"
+      ],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "POWSZECHNA KASA OSZCZĘDNOŚCI BANK POLSKI S.A. (PKO BP S.A.) Biuro Maklerskie PKO Banku Polskiego",
+      "aliases": [
+        "BM PKO BP",
+        "PKO BP Makler",
+        "pkobp.pl",
+        "Biuro Maklerskie PKO Banku Polskiego"
+      ],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "VeloBank S.A. Departament Maklerski VeloBank",
+      "aliases": [],
+      "category": "bank_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AIXON INVESTMENT MANAGEMENT SP. Z O.O.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CASPAR ASSET MANAGEMENT S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CERES DOM INWESTYCYJNY S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CVI DOM MAKLERSKI SP. Z O.O.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DOM INWESTYCYJNY NEHREBETIUS S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DOM INWESTYCYJNY XELION SP. Z O.O.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DOM MAKLERSKI AFS Sp. z o.o.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DOM MAKLERSKI BANKU OCHRONY ŚRODOWISKA S.A.",
+      "aliases": [
+        "DM BOŚ",
+        "Bossa",
+        "bossa.pl",
+        "Dom Maklerski BOŚ S.A."
+      ],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DOM MAKLERSKI BDM S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DOM MAKLERSKI INC S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DOM MAKLERSKI NAVIGATOR S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DORADZTWO DLA POLSKICH PRZEDSIĘBIORSTW SECURITIES S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ERSTE SECURITIES POLSKA S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EVEREST INVESTMENT MANAGEMENT S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EVO DOM MAKLERSKI S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IFDS DOM MAKLERSKI S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IPOPEMA SECURITIES S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IX ASSET MANAGEMENT S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "LFI DOM MAKLERSKI S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MICHAEL/STRÖM DOM MAKLERSKI S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NOBLE Securities S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NWAI DOM MAKLERSKI S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "OANDA TMS BROKERS S.A.",
+      "aliases": [
+        "OANDA TMS",
+        "TMS Brokers",
+        "TMS Brokers (OANDA TMS Brokers S.A.)"
+      ],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PEKAO INVESTMENT BANKING S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PGE DOM MAKLERSKI S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Q SECURITIES S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TRIGON DOM MAKLERSKI S.A.",
+      "aliases": [],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "XTB S.A.",
+      "aliases": [
+        "XTB",
+        "X-Trade Brokers",
+        "xtb.com"
+      ],
+      "category": "dom_maklerski",
+      "registry_status": "registered_pl",
+      "country": "PL",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CMC Markets Germany GmbH",
+      "aliases": [],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Convera Europe Financial S.A.",
+      "aliases": [],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EXT Ltd",
+      "aliases": [],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Finax, o.c.p., a.s.",
+      "aliases": [],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IG Europe GmbH",
+      "aliases": [],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Instant Trading EU Ltd.",
+      "aliases": [],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Jefferies GmbH",
+      "aliases": [],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "LYNX B.V.",
+      "aliases": [],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Tradition Financial Services España, Sociedad De Valores, S.A.U.",
+      "aliases": [],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "WOOD & Company Financial Services a.s.",
+      "aliases": [],
+      "category": "oddzial_zagraniczny",
+      "registry_status": "registered_eu_branch",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "360 Treasury Systems AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "3D Global Financial Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "42 financial services a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "50KCY LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "7Q Financial Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "A.H.W. Capital Mangement GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "A.J.K. Wealth Management Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "A.T.I. Associstes (Cyprus) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "A/S Global Risk Management Ltd Fondsmaeglerselskab",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ABF TRADE EU LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ABG Sundal Collier ASA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ABN AMRO - ODDO BHF B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AC Markets (Europe) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Accuindex EU Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ACOLIN Europe AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Across Private Investments, o.c.p., a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ACT Financial Solutions B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ActivMarkets - Empresa de Investimento, S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Adamant Capital Partners AD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Adams Street (Europe) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ADM Investor Services B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Admiral Markets AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Admirals Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Aeonic Securities C.I.F Plc",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AFEX Markets Europe Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AFS Interest BV",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AGF International Advisors Company Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AHP Capital Management GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AIB Corporate Finance Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Airwallex Capital (Netherlands) B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Aisa International, s.r.o.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AK Jensen Norway AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AKCENTA CZ, a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AKSYS GLOBAL MARKETS EUROPE LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Alaric Securities OOD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ALBOURNE CYPRUS LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Alfa Capital Markets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Algorithmic Trading Group Netherlands Management B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "All Energy Trading N.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "All Options International N.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "All Securities BV",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Allianz Global Investors Europe GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ALPACA EUROPE, A.V., S.L.U.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Alpha FX Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ALT21 Europe Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Amana Capital (Cyprus) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Amenda Markets AS IBS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AMFIE",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Aon Solutions Ireland Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "APME FX Trading Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Apollo Capital Solutions Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Aquilla Nummus Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Arctic Asset Management AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Arctic Securities AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Arctica Finance hf.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Argus Stockbrokers Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Arion Banki hf.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Arisaig Wealth Management B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ARTEX Global Markets AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ARTS Asset Management GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AS Mintos Marketplace",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AS Suprema Securities",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Asante Capital Group Germany GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Asset Management International B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ASSETERA GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ASTEO Luxembourg S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ATFX Global Markets (CY) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Atlantic Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Atlantic Securities Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Attrax Financial Services SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Aurel-bcg",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Ava Trade EU Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AWM Wealth Advisers Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Axeltis",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Axia Ventures Group Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Ayers Alliance Financial Group Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "AYOMI Financial Services Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "B2B Prime Services EU Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Ballinger Markets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Bankhaus Scheich Wertpapierspezialist AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BCM Begin Capital Markets CY Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BDT & MSD Partners Europe GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BenchMark Finance PLC",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BESTINVER, SOCIEDAD DE VALORES, S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BETA Securities SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Bitpanda Financial Services GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Bitstamp finančne storitve d.o.o. (ang. Bitstamp Financial Services Ltd.)",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BlackRock (Netherlands) B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Blacktower Financial Management (Cyprus) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Blacktower Financial Management (International) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BLOCKMAZE GREECE INVESTMENT SERVICES SINLGE MEMBER SOCIETE ANONYME",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Bloomberg Trading Facility B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Blue Suisse Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BLUENEXT",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BMCP GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BN & Partners Capital AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BNP Paribas Dealing Services",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BNP Paribas Equities France",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BNP Paribas Investment Partners Netherlands N.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Boer & Olij Securities B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Boku Securities SIA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BOS Wealth Management Europe sa",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Boson Alfa Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BOURSE DIRECT",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BP ENERGY SOLUTIONS, SOCIEDAD DE VALORES, S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Brewin Dolphin Wealth Management Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BROCTAGON PRIME LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BSG France S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BT Securities SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "BTIG Norway AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Calamatta Cuschieri Investment Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Cambridge Associates GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Campbell Lutyens & Co (France) S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Cantor Fitzgerald Ireland Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CAPITAL COM GROUP LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Capital Com SV Investments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Capital Markets, o.c.p., a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Capital Solutions Advisory GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Captin B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Carne Global Financial Services (Europe) – Empresa de Investimento, S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Cashline Értékpapír zártkörűen működő Részvénytársaság",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CBRE Capital Advisors B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CDJ SOCIAL STOCKS LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Centris Capital AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Centrus Advisors Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Cex Markets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CHARLGATE Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Chase Buchanan Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Chatham Financial Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Chefinvest International AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Cheuvreux SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Citadel Securities GCS (Ireland) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Citfin – Finanční trhy, a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Citigroup Global Markets Europe AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CLAREMONT SQUARE CAPITAL LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Clarkson Platou Project Sales AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Clear Street Europe BV",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Cleaves Securities AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CLICKOPTIONS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CLSA Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CMC Markets Germany GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Coeli Wealth Management AB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Cohen & Company (Europe) S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Coinbase Financial Services Europe Ltd.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Colin&Cie. Luxembourg S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Colmex Pro Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Columbia Threadneedle Netherlands B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Comgest Asset Management International Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Computershare Investor Services (Ireland) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Concorde Értékpapir Részvénytársaság",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Connaught (EU) B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Conotoxia Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Conseq Investment Management, a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Convera Europe Financial S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Corum Vermögensverwaltung (Deutschland) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Createrra Finance S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Credit Financier Invest (CFI) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CREDO Vermogensmanagement GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CREDOS d.o.o.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CROWD Tech Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CTCAP LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CTS Cloud Trading Solutions Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CVC Capital Markets S.à r.l.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "CYRRUS a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "D.T. Direct Investment Hub Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "D2X Group N.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Daiwa Capital Markets Deutschland GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Darion Capital Management BV",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DC Placement Advisors GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DealerBox Technologies S.A.S",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DeFinVa Deutsche Finanzvertriebsagentur GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Deltastock AD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Deriv Investments (Europe) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Descartes Trading S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Development Company for Israel Europe GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Dialog Vermögensmanagement GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Dif Broker – Empresa de Investimento, S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Direct Hedge Danmark Fondsmæglerselskab A/S",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Directa SIM S.p.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Dodge & Cox (Europe) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DonauCapital Pure Investment GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DonauCapital Wertpapier GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DOO FINANCIAL CYPRUS LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Doto Europe Ltd.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DPRG IM LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Dragon Capital (Cyprus) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DriveWealth Europe UAB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DRW Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Dukascopy Europe IBS AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Dutch Options and Futures Institute B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "DWS International GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "e-MID SIM S.p.A",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Easy Forex Trading Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EBURY PARTNERS MARKETS CYPRUS LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ECOMMBX INVESTMENTS LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EDR Financial Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EFEKTA obchodník s cennými papíry a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Eightcap EU Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ELIDI Securities Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ELITE SIM S.p.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Elitepartner Financial Advisors GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Eminova Fondkommission AB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EMKAP LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Emporium Capital K.A. Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Energy Risk Management Fondsmæglerselskab A/S",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ENGIE Global Markets",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Enmacc Financial Services GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EOS Venture",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Equilor Investment Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "equinet AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EQUITI GLOBAL MARKETS LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Erste Investment AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "eToro (Europe) Ltd.",
+      "aliases": [
+        "eToro",
+        "etoro.com"
+      ],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "CY",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EUI Private Wealth Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Eurivex Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EUROAMERICAN FINANCIAL ADVISORS EAF, S.L",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Eurobank Equities Investment Firm S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Europa Brokerhaz",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Eurotrade Investments RGB Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EUROXX SECURITIES S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Evbx Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Evelyn Partners Investment Management (Europe) Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EVER CAPITAL INVESTMENTS, S.V., S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Ever Financial AD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Evercore GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Everest Index Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Evli Oyj",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EXANE Options",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Exclusive Change Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EXCLUSIVE PARTNERS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Exelcius Prime Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EXENICO (CY) LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Exness (Cy) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "EXT Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FACTORY AD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Fathom Wealth Management Advisors Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Fearnley Securities AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Fiduciary Wealth Management Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FIL (Luxembourg) SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FIMEX Capital o.c.p., a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Finad GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FINALTO EU LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Financial & Risk Transaction Services Ireland Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Finary SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Finax o.c.p., a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FinDeal Advisers S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FINQUOTES FINANCIAL (CYPRUS) LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FIO, burzovni spolecnost, a.s. Czechy",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "First Avenue Partners (Europe) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "First Capital Management Group GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "First Prudential Markets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Fisher Investments Ireland Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Fisher Investments Luxembourg Sarl",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Flow Traders B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FMO Investment Management B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FNZ (Europe) DAC",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Fondee s.r.o.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Forex TB Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FORIS CAPITAL CY LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Fortrade Cyprus Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FP Asset Management Cyprus Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Freedom Finance Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FTI Finance Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FUND CHANNEL S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FundRock Distribution S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Fundvest UAB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FUSION MARKETS EU LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FX Central Clearing Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FXdirekt Bank AG Niemcy",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FXGlobe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FXNET Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FXOPEN EU Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "FXPRO Financial Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Gasum Portfolio Services Oy",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GATE SECURITIES (CYPRUS) LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GBE Brokers Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GBR Capital GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GC Exchange Fondsmæglerselskab A/S",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Gemini Intergalactic EU Artemis, Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "General Investments AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Geneve Invest (Europe) S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GHI GLOBAL ADVISORY PARTNERS A.V, S.L.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GLITNIR AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Global Funds Exchange EAD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Global Shares Execution Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Global Trade CIF Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GMG Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GMO Netherlands B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GO Markets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Goldenburg Group Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Goldman Sachs Paris Inc. Et Cie",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Goodbody Stockbrokers Unlimited Company",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Gothaer Asset Management AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GPB Financial Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Grand Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Granfeld Wealth Management Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GRAVITY PRIVATE WEALTH LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GreenStream Network Plc",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Griffin Markets Europe SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Growell Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Grunfin AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GTSE CAPITAL GROUP LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Guggenheim Partners Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Guggenheim Securities Europe Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GuildAM Ltd.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "GWT Fondsmeglerselskab A/S",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HABERL Wealth Management, o. c. p., a. s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Hamilton Lane (Germany) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HANetf EU Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Harindale Ltd.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Harmovest Capital (Cyprus) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Heptagon Capital Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HF Markets (Europe) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Hidden Road Partners CIV NL B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Hitomorrow Securities LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Hogg Capital Invetsments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Holborn Assets Wealth Management (Cy) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Houlihan Lokey (Europe) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Howden Capital Markets & Advisory (EU) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HOXTON CAPITAL MANAGEMENT (EUROPE) LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HRTEU Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HSBC Financial Products",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HSBC Global Asset Management (Deutschland) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HSBC International Financial Advisers (Malta) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HSH Corporate Finance ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HUAPRIME EU LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Huber & Co Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "HYDE CREDIT LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "I.W.G. International Wealth Group Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IBKR Europe S.a.r.l.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ibrokr.AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IC Markets (EU) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ICAP Energy AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ICE Securities Netherlands B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ICFD Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ICM InvestmentBank AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IDCM Netherlands B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IFH Capital Trader Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IG Europe GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IGM Forex Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IN2MARKETS LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Indication Investments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Instant Trading EU Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Instinet Germany GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Institutional CN (Europe) — Empresa de Investimento, S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Integrae Sim S.p.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Interactive Brokers Ireland Ltd",
+      "aliases": [
+        "Interactive Brokers",
+        "IBKR",
+        "interactivebrokers.com",
+        "interactivebrokers.ie",
+        "Interactive Brokers Ireland Limited"
+      ],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Intercapital Securities Ltd (vrijednosti papiri)",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Intermediate Capital Group Benelux B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Intermonte SIM SpA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "International Commodity Consulting ICC B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "International Investment Platform, o.c.p., a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Interpolis Pensioenen Vermogensbeheer B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "InterTrader Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Invest4Growth Asset Management Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Investcorp Europe S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Investec Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Investium Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Investors Europe (Malta) Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IQBroker Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Iqoption Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Isec Wealth Management Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "iSwap Euro B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "IWC Investment Partners Fondsmeglerselskab A/S",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "J.P. Morgan Dublin plc",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "J&E Davy Unlimited Company",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "J2T Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Jane Street Netherlands B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "JB Capital Markets Sociedad de Valores, S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "JB DRAX HONORE (FRANCE) SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Jefferies GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "JFD Group Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "JLL Transaction Services AB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Jump Trading Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Justmarkets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Kepler Capital Markets S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Key Way Investments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "KfW Capital GmbH & Co. KG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "KKR Credit Advisors (Ireland) Unlimited Company",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "KNG Securities International - Empresa de Investimento, Lda",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Kvarn Investment Services Oy",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "L.F. Investment Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Lago Kapital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "LAIETANA LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "LCM Commodities SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Leonteq Securities (Europe) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "LIFEGOALS FINANCIAL SERVICES LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Lightyear Europe AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "LIQID Asset Management GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Lirunex Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Liteforex (Europe) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "LL Capital & Partners Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Lloyds Bank Corporate Markets Wertpapierhandelsbank GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "LMAX Broker Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "LocalTapiola Asset Management Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Luna Wealth Asset Management Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Lydya Financial Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Lynx B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Macquarie Capital France",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Magic Compass Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Magnum FX (Cyprus) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Makor Securities Paris SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Man (Europe) AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Mandatum Asset Management Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Manentia Wealth Consulting Group Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Mangold Fonkommission AB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Marche de TitreS France (MTS France)",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Marcuard Heritage (Europe) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Marex SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Marex Società di Intermediazione mobiliare S.p.A. (Marex SIM S.p.A.)",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Marex Spectron Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MARIANA UFP SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Marigny Capital",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Market Securities France SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MarketAxess NL B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MCA Intelifunds Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MeDirect Bank (Malta) PLC",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Medvešek Pušnik, borzno posredniška hiša, d.d., Ljubljana",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Mega Equity Securities and Financial Services Public Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Mercer Global Investments Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Mercia Securities Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Mercurius Pro, o.c.p., a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Merrill Lynch, Pierce, Fenner and Smith SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MEX EUROPE LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Mexem Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MIND MONEY LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MIO-Partners (EU) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Mirabella Malta Advisers Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MIT SIM SpA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MITRADE EU LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Mitsui Bussan Commodities France SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MK BROKERS AD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MMC Securities (Ireland) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Moelis & Company Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Monex Europe Markets, S.V, S.A.U",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Moneycorp Technologies Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Montesquieu Finance B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Monument Group Netherlands B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Mount Nico Corp Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Moventum S.C.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MTG Liquidity Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "MTS Associated Markets",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Naga Markets Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Naxex Invest Ltd.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NBC Global Finance Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NBC Paris",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NBI Investments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "New England Asset Management Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "New Momentum AV, SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NFS Netfonds Financial Service GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NFS Network Financial Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Njord Securities AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NNIP Advisors B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Noemon Finance Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Nomura Investment Management Europe S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Noordnederlands Effektenkantoor B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Nordlux Vermögensmanagement S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Notely Trading Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Notesco Financial Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NOVA SECURITIES LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NOVIA GLOBAL EUROPE LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Npinvestor Fondsmaeglerselskab A/S",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NRP Project Finance AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Numisma Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "NUNTIUS BROKERAGE AND INVESTMENT SERVICES SINGLE MEMBER S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "OAKK Capital Partners BV",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Octa Markets Cyprus Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "OEXN LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "OFL Westpapierhandels AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "OKX Europe Markets Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Olive Tree Capital Markets Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Omega Funds Investment Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Omicron Investment Management GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "One Plus Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "One Trading Exchange B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Oppenheim Asset Management",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Opstock Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Optieclub.nl B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "optionsXpress Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Optiver v.o.f.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "OQTIMA EU LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ORBEO",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "ORBEX Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Orion Securities Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Orkla Finans Kapitalforvaltning ASA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Otkritie Broker Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Ott, Hagen & Partner AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PAM Capital AB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Pareto Private Equity AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Pareto Securities",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Pareto Securities AB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Pareto Securities Oy",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Partners Group (EU) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Patria Finance a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Payward Europe Digital Solutions (CY) Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Peaks B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PEAKSIGHT LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Peel Hunt Europe Fondsmæglerselskab A/S",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PELICAN EXCHANGE EUROPE (CY) LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Pepperstone EU Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Perella Weinbesrg Partners France SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Performance Ronnaru Company Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Pershing Securities International Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Petram & Co N.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PIMCO Europe GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PineBridge Investemnts Deutschland GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Piper Sandler Europe SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PJT Partners Park Hill (Spain) A.V., S.A.U.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PLUM Money CY Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Plus500CY Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Plus500EE AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PM MTF LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Pohjola Corporate Finance LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Primus Global Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Pritle N.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Privalux Management S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Privanet Securities Oy",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Probus Pleion Luxembourg S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Prochoice Chrimatistiriaki Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Prodigit Investments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Prospergate Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Proteste Investe — Empresa de Investimento, Unipessoal Lda.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "PROXENTA Finance, o.c.p., a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Qbasis Invest GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Quantile BV",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Quay Financials (Gibraltar) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "QUEST FUND PLACE-MENT EUROPE, AGENCIA DE VALORES, SOCIEDAD ANÓNIMA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "QUIDEOS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Quilter Cheviot Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "R.J. O’Brien France S.A.S.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Raiffeisen Vermoegensverwaltungsbank AG Austria",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Ramius GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Rathbones Investment Management International (Ireland) Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Raymond James Corporate Finance GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "RAYMOND JAMES France SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "RBC Capital Markets (Europe) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Red Mars Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Redburn (France) SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Rede Partners (Netherlands) B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Redpine Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Renaissance Securities (Cyprus) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "RENARD Solutions AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Revolut Securities Europe UAB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "RM-S Market, o.c.p., a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Robinhood Europe, UAB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "RoboMarkets Deutschland GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Robomarkets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Roemer Capital (Europe) Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Ronin Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Royal Financial Trading (CY) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Rubicon Infrastructure Advisors",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Ruffer SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Rynat Trading Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "S.S.I.F. Blue Rock Financial Services S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SAB o.c.p., a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Safecap Investments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Salmann Investment Management AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Salus Alpha Capital GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SAPIENS MARKETS EU, SOCIEDAD DE VALORES, S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SB1 Markets AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SECURITIZE EUROPE BROKERAGE AND MARKETS, S.V., S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SFI Markets B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SFS Markets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SGX FX Markets NL B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SHARES FINANCIAL ASSETS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Shine Trades (CY) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SIA “DN Operator”",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SIB (Cyprus) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Silvercrest Asset Management (Europe) Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Skanestas Investments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Skilling Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SKY Asset Management AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Skybound Wealth Europe Ltd.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Slim Vermogensbeheer B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SM Capital Markets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Small & Mid Cap Investmentbank AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Societatea De Servicii De Investitii Financiare Romintrade SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Société Générale - Forge",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SOLARIS EMEA LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Solas Capital Germany GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Solid Financial Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SOLVENTIS, S.V., S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Spiko Finance SASU",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Spirit Asset Management SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Square Global",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Squared Financial (CY) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SSC Smart FX Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "SSIF BRK FINANCIAL GROUP S.A",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "STAK SECURITIES LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "STATOK LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Stifel Europe Securities SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Stonehage Fleming Investment Management (Liechtenstein) AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "StoneX Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "StoneX Financial Europe GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Strategic Wealth Management A/S",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Strato Markets B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Stratos Europe Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Streams Financial Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Substnz Capital Partners GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Sucden Financial Hamburg GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Superfund Asset Management GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Susquehanna International Securities Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Svensk Värdepappersservice i Stockholm AB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Swiss Life Asset Managers Transactions AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Swiss Re Capital Markets Europe S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Swissquote Capital Markets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Systrade AG",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "T Markets EU Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TAURUS (EUROPE) LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TCW Italy SIM S.p.A. (TCW Italy Societŕ di Intermediazione Mobiliare S.p.A.,)",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TD Global Finance Unlimited Company",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Templar EIS Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TF Global Markets (Europe) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TFI Ecommpay Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "The Alliance Partnership Netherlands B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "The Cyprus Investment and Securities Corporation Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "The First Interstellar Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "The New Amsterdam Group B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "The Spectrum IFA Group Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "THE ULTIMA INVESTMENTS CYPRUS LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Tickmill Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Timberland Invest Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TIOMARKETS CY LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Titanedge Securities Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Today’s Group B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TOM B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Top Markets Solutions Ltd.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TOPFX Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Tower Research Capital Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TP ICAP (Europe) SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Trade Capital Markets (TCM) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TRADEPLACE LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TradeStation Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TRADESTONE LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Tradeview Europe Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Tradeweb EU B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Tradeweb Execution Services B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Trading 212 EU GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Trading 212 Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Trading 212 Markets Ltd.",
+      "aliases": [
+        "Trading 212",
+        "Trading212",
+        "trading212.com"
+      ],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "CY",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Trading Point of Financial Instruments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TRADING.COM MARKETS EU LIMITED",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Tradition Financial Services España, Sociedad De Valores S.A.U.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Tradition Financial Services GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Tradition Luxembourg SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Tradition Securities and Futures S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Trek Labs Europe Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Triangleview Investments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TriOptima AB",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Trive Financial Services Europe Ltd.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Trust Capital TC Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TSAF OTC SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "TSG Brokers Ltd.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Turquoise Global Holdings Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "UAB ,,Axiology DLT”",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "UAB FMI \"MRC Markets\"",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "UBK Markets Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Unifinanz Tust reg.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Union Corporate AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "UNIQUA Capital Markets GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "UP Trend Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "UPTEVIA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Upvest Securities GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "UTI INTERNATIONAL (FRANCE) SAS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Validas N.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Validus Europe AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "VALOR o.c.p., a. s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Van Sterling Capital Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "VanEck (Europe) GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Veles International Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Velthuyse & Mulder Vermogensbeheer B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Venturebeam Markets AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Verdispar Securities AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "VermogensParaplu Beheer B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Vernier Capital Advisors (Europe) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Vertis Environmental Financial Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "VICTORIAPARTNERS GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Virtu Europe Trading Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Virtu Financial Ireland Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Vivid Money B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "VLK-KBCS B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "VSMARKETS LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "VTC Europe B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "W.G. WEALTH GUARDIAN LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "W1M EUROPE, A.V., S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Waystone Investment Management (IE) Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "WB TRADE EU LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "WEALTHYHOOD EUROPE INVESTMENT SERVICES SINGLE MEMBER SOCIETE ANONYME",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Webull Securities (Europe) B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Wellington Management Euorpe GmbH",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Wells Fargo Securities Europe",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "WGM Services Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "WH Selfinvest SA",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Wijs & Van Oostveen B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "William Blair B.V.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Winners Investments o.c.p., a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Wisdompoint Capital Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "WisdomTree Ireland Limited",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Wise Assets Europe AS",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Wise Wolves Finance Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "WOOD & Company Financial Services a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "WOOD Retail Investments a.s.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "WRDNB Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "XBorder Partners Wealth — Empresa de Investimento, S.A.",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "XNT Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "XSpot Wealth (EU) Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "XTB Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "XTELLUS EUROPE LTD",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Zemblanco Investments Ltd",
+      "aliases": [],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "EU",
+      "is_synthetic_demo": false
+    },
+    {
+      "official_name": "Saxo Bank A/S (notyfikacja transgraniczna)",
+      "aliases": [
+        "Saxo Bank",
+        "SaxoTrader"
+      ],
+      "category": "zagraniczna_bez_oddzialu",
+      "registry_status": "registered_eu_crossborder",
+      "country": "DK",
+      "is_synthetic_demo": false
     }
   ]
 }

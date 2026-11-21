@@ -34,7 +34,7 @@ from bs4 import BeautifulSoup
 
 from app.config import DEFAULT_KNF_SYNC_USER_AGENT, Settings
 from app.knf_registry import KNFRegistrySnapshot, _alnum
-from app.scraper.ssrf import SSRFError, validate_public_url
+from app.scraper.ssrf import SSRFError, pinned_request, validate_public_url
 
 logger = logging.getLogger("investwatch.knf_sync")
 
@@ -215,12 +215,13 @@ def parse_xlsx(data: bytes) -> list[str]:
 
 async def _download(client: httpx.AsyncClient, url: str, max_redirects: int) -> tuple[bytes, str]:
     """GET with anti-SSRF on every redirect hop; the User-Agent comes from the client's headers."""
-    current = validate_public_url(url)
+    current = await asyncio.to_thread(validate_public_url, url)
     for _ in range(max_redirects + 1):
-        async with client.stream("GET", current) as resp:
+        # Client-level headers (User-Agent) are merged by httpx; pinning connects to the checked IP
+        async with client.stream("GET", **pinned_request(current, {})) as resp:
             location = resp.headers.get("location")
             if resp.is_redirect and location:
-                current = validate_public_url(urljoin(current, location))
+                current = await asyncio.to_thread(validate_public_url, urljoin(current, location))
                 continue
             resp.raise_for_status()
             raw = bytearray()

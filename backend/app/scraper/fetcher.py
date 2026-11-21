@@ -127,8 +127,8 @@ class PageFetcher:
         self._robots = RobotsCache(self._load_robots, ttl_seconds=settings.crawler_robots_ttl_hours * 3600)
 
     async def _load_robots(self, robots_url: str) -> tuple[int, str]:
-        """Fetch robots.txt with the same anti-SSRF, redirect and size limits as regular pages."""
-        current = validate_public_url(robots_url)
+        """Fetch robots.txt with the same anti-SSRF (IP pinning), redirect and size limits as pages."""
+        current = await asyncio.to_thread(validate_public_url, robots_url)
         headers = {"User-Agent": ETHICAL_USER_AGENTS[0], "Accept": "text/plain,*/*;q=0.5"}
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(self.settings.crawler_timeout_seconds),
@@ -137,10 +137,10 @@ class PageFetcher:
             trust_env=False,
         ) as client:
             for _ in range(self.settings.crawler_max_redirects + 1):
-                async with client.stream("GET", current, headers=headers) as resp:
+                async with client.stream("GET", **pinned_request(current, headers)) as resp:
                     location = resp.headers.get("location")
                     if resp.is_redirect and location:
-                        current = validate_public_url(urljoin(current, location))
+                        current = await asyncio.to_thread(validate_public_url, urljoin(current, location))
                         continue
                     if resp.status_code != 200:
                         return resp.status_code, ""
