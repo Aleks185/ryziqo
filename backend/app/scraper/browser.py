@@ -37,6 +37,12 @@ CHROMIUM_ARGS = [
     "--disable-sync",
 ]
 MAX_CONCURRENT_RENDERS = 2
+# Rule 8 (UKNF criteria): risk information must stay readable on desktop, tablet and phone
+VIEWPORTS: dict[str, dict[str, int]] = {
+    "desktop": {"width": 1280, "height": 800},
+    "tablet": {"width": 768, "height": 1024},
+    "mobile": {"width": 375, "height": 667},
+}
 
 # Runs in the page. Mirrors preprocessor.extract_dom_metrics, but on computed styles,
 # so external stylesheets, CSS classes and JS-applied styles are taken into account.
@@ -213,7 +219,7 @@ class BrowserRenderer:
             )
             try:
                 context = await browser.new_context(
-                    viewport={"width": 1280, "height": 800},
+                    viewport=VIEWPORTS["desktop"],
                     user_agent=user_agent,
                     locale="pl-PL",
                     service_workers="block",
@@ -294,10 +300,14 @@ class BrowserRenderer:
                 )}
                 if capture_screenshots:
                     screenshots.append(await page.screenshot(type="jpeg", quality=SCREENSHOT_JPEG_QUALITY))
-                await page.set_viewport_size({"width": 375, "height": 667})
-                metrics["responsive_overflow_detected"] = bool(await page.evaluate(MOBILE_OVERFLOW_JS))
-                if capture_screenshots:
-                    screenshots.append(await page.screenshot(type="jpeg", quality=SCREENSHOT_JPEG_QUALITY))
+                overflow: dict[str, bool] = {}
+                for name in ("tablet", "mobile"):
+                    await page.set_viewport_size(VIEWPORTS[name])
+                    overflow[name] = bool(await page.evaluate(MOBILE_OVERFLOW_JS))
+                    if capture_screenshots:
+                        screenshots.append(await page.screenshot(type="jpeg", quality=SCREENSHOT_JPEG_QUALITY))
+                metrics["responsive_overflow_by_viewport"] = overflow
+                metrics["responsive_overflow_detected"] = any(overflow.values())
                 return RenderResult(
                     html=html,
                     final_url=final_url,

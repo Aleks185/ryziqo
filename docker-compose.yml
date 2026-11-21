@@ -40,6 +40,25 @@ services:
       AGGREGATOR_MULTI_MODULE_MODE: "${AGGREGATOR_MULTI_MODULE_MODE:-primary}"
       AGGREGATOR_SECONDARY_MIN_SCORE: "${AGGREGATOR_SECONDARY_MIN_SCORE:-0.55}"
       CRAWLER_EXPAND_SHORT_LINKS: "${CRAWLER_EXPAND_SHORT_LINKS:-false}"
+      CRAWLER_EXPAND_SHORT_LINKS_MAX: "${CRAWLER_EXPAND_SHORT_LINKS_MAX:-5}"
+      CRAWLER_TIMEOUT_SECONDS: "${CRAWLER_TIMEOUT_SECONDS:-12}"
+      CRAWLER_MAX_BYTES: "${CRAWLER_MAX_BYTES:-2097152}"
+      CRAWLER_MAX_REDIRECTS: "${CRAWLER_MAX_REDIRECTS:-5}"
+      CRAWLER_RATE_LIMIT_SECONDS: "${CRAWLER_RATE_LIMIT_SECONDS:-0.5}"
+      CRAWLER_RESPECT_ROBOTS: "${CRAWLER_RESPECT_ROBOTS:-true}"
+      CRAWLER_ROBOTS_TTL_HOURS: "${CRAWLER_ROBOTS_TTL_HOURS:-24}"
+      CRAWLER_PER_HOST_DELAY_SECONDS: "${CRAWLER_PER_HOST_DELAY_SECONDS:-2}"
+      WATCHLIST_SEED_ON_START: "${WATCHLIST_SEED_ON_START:-true}"
+      # Discovery przez lokalny SearXNG (profil "discovery"): DISCOVERY_ENABLED=true w .env
+      DISCOVERY_ENABLED: "${DISCOVERY_ENABLED:-false}"
+      SEARXNG_BASE_URL: "${SEARXNG_BASE_URL:-http://searxng:8080}"
+      DISCOVERY_CRON: "${DISCOVERY_CRON:-0 */6 * * *}"
+      DISCOVERY_QUERIES_PER_RUN: "${DISCOVERY_QUERIES_PER_RUN:-10}"
+      DISCOVERY_RESULTS_PER_QUERY: "${DISCOVERY_RESULTS_PER_QUERY:-10}"
+      DISCOVERY_MAX_NEW_URLS_PER_RUN: "${DISCOVERY_MAX_NEW_URLS_PER_RUN:-20}"
+      DISCOVERY_REVISIT_DAYS: "${DISCOVERY_REVISIT_DAYS:-7}"
+      DISCOVERY_DOMAIN_DENYLIST: "${DISCOVERY_DOMAIN_DENYLIST:-knf.gov.pl,gov.pl,wikipedia.org,wikimedia.org,google.com,bing.com,duckduckgo.com,europa.eu,esma.europa.eu,gpw.pl,nbp.pl}"
+      KNF_REFRESH_CRON: "${KNF_REFRESH_CRON:-}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -67,6 +86,19 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    restart: unless-stopped
+
+  # Opcjonalny metawyszukiwarka do odkrywania nowych treści: docker compose --profile discovery up -d
+  # (ustaw DISCOVERY_ENABLED=true w .env). Bez portu na hoście — dostępna tylko dla backendu.
+  searxng:
+    image: "searxng/searxng:${SEARXNG_IMAGE_TAG:-latest}"
+    container_name: investwatch-searxng
+    profiles: ["discovery"]
+    environment:
+      SEARXNG_SECRET: "${SEARXNG_SECRET:-change-me}"
+      SEARXNG_BASE_URL: "http://searxng:8080/"
+    volumes:
+      - ./deploy/searxng/settings.yml:/etc/searxng/settings.yml:ro
     restart: unless-stopped
 
   # Opcjonalny lokalny silnik AI w kontenerze: docker compose --profile ai up -d

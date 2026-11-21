@@ -15,7 +15,14 @@ from bs4 import BeautifulSoup
 
 from app.config import Settings
 from app.scraper.browser import BrowserRenderer, RenderResult
+from app.scraper.politeness import (
+    ROBOTS_MAX_BYTES,
+    HostRateLimiter,
+    RobotsCache,
+    RobotsDisallowedError,
+)
 from app.scraper.ssrf import SSRFError, validate_public_url
+from app.scraper.urlnorm import site_key
 
 logger = logging.getLogger("investwatch.scraper")
 
@@ -53,7 +60,7 @@ class FetchedPage:
     used_playwright: bool = False
     is_mock_source: bool = False
     playwright_dom_metrics: dict[str, object] | None = None
-    # JPEG screenshots [desktop, mobile] from Playwright when OLLAMA_VISION_ENABLED=true
+    # JPEG screenshots [desktop, tablet, mobile] from Playwright when OLLAMA_VISION_ENABLED=true
     screenshots: list[bytes] | None = None
 
 
@@ -100,6 +107,43 @@ class PageFetcher:
         self._last_public_request_ts: float = 0.0
         self._rate_lock = asyncio.Lock()
         self._renderer = BrowserRenderer(settings)
+        self._host_limiter = HostRateLimiter()
+        self._robots = RobotsCache(self._load_robots, ttl_seconds=settings.crawler_robots_ttl_hours * 3600)
+
+    async def _load_robots(self, robots_url: str) -> tuple[int, str]:
+        """Fetch robots.txt with the same anti-SSRF, redirect and size limits as regular pages."""
+        current = validate_public_url(robots_url)
+        headers = {"User-Agent": ETHICAL_USER_AGENTS[0], "Accept": "text/plain,*/*;q=0.5"}
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(self.settings.crawler_timeout_seconds),
+            follow_redirects=False,
+            proxy=self.pick_proxy(),
+            trust_env=False,
+        ) as client:
+            for _ in range(self.settings.crawler_max_redirects + 1):
+                async with client.stream("GET", current, headers=headers) as resp:
+                    location = resp.headers.get("location")
+                    if resp.is_redirect and location:
+                        current = validate_public_url(urljoin(current, location))
+                        continue
+                    if resp.status_code != 200:
+                        return resp.status_code, ""
+                    raw = bytearray()
+                    async for chunk in resp.aiter_bytes():
+                        raw.extend(chunk)
+                        if len(raw) > ROBOTS_MAX_BYTES:
+                            break
+                    return resp.status_code, raw[:ROBOTS_MAX_BYTES].decode("utf-8", errors="replace")
+        raise SSRFError("Przekroczono maksymalną liczbę przekierowań HTTP (robots.txt).")
+
+    async def _be_polite(self, url: str, user_agent: str) -> None:
+        """robots.txt check + per-host spacing (max of CRAWLER_PER_HOST_DELAY_SECONDS and Crawl-delay)."""
+        delay = self.settings.crawler_per_host_delay_seconds
+        if self.settings.crawler_respect_robots:
+            if not await self._robots.can_fetch(user_agent, url):
+                raise RobotsDisallowedError(f"robots.txt nie zezwala na pobranie {url}")
+            delay = max(delay, await self._robots.crawl_delay(user_agent, url))
+        await self._host_limiter.wait(site_key(url), delay)
 
     async def _respect_rate_limit(self) -> None:
         async with self._rate_lock:
@@ -161,10 +205,12 @@ class PageFetcher:
     async def fetch_public_url(self, url: str, use_playwright: bool = False) -> FetchedPage:
         """Fetch a public HTTP(S) page with strict anti-SSRF validation on every redirect."""
         current_url = validate_public_url(url)
+        user_agent = self.pick_user_agent()
+        await self._be_polite(current_url, user_agent)
         await self._respect_rate_limit()
 
         headers = {
-            "User-Agent": self.pick_user_agent(),
+            "User-Agent": user_agent,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "pl-PL,pl;q=0.9,en;q=0.5",
         }
@@ -186,6 +232,7 @@ class PageFetcher:
                             raise SSRFError("Przekroczono maksymalną liczbę przekierowań HTTP.")
                         next_url = urljoin(current_url, resp.headers["location"])
                         current_url = validate_public_url(next_url)
+                        await self._be_polite(current_url, user_agent)
                         continue
 
                     resp.raise_for_status()

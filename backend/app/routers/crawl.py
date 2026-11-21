@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse
 
 from app.models import CrawlJobsResponse, CrawlTriggerRequest, CrawlTriggerResponse
 from app.scraper.ssrf import SSRFError, validate_public_url
+from app.scraper.urlnorm import canonicalize_url
 
 router = APIRouter(tags=["crawler"])
 
@@ -30,6 +31,8 @@ async def trigger_crawl(request: Request, body: CrawlTriggerRequest) -> CrawlTri
             validate_public_url(body.target_url)
         except SSRFError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        # Fetch and store the canonical URL (no utm_*/fbclid), the same key the queue dedups on
+        body = body.model_copy(update={"target_url": canonicalize_url(body.target_url)})
     elif body.mode == "mock_single":
         available = fetcher.list_mock_files()
         if not body.mock_file or body.mock_file not in available:
@@ -38,6 +41,11 @@ async def trigger_crawl(request: Request, body: CrawlTriggerRequest) -> CrawlTri
                 detail=f"Nieprawidłowy plik mock. Dostępne: {available}",
             )
 
+    if worker.is_active(body):
+        raise HTTPException(
+            status_code=409,
+            detail="Ten cel jest już w kolejce lub w trakcie analizy — postęp widać w /api/v1/crawl/jobs.",
+        )
     job_id = await worker.enqueue(body)
     return CrawlTriggerResponse(
         job_id=job_id,
@@ -81,3 +89,12 @@ async def preview_mock_site(request: Request, filename: str) -> HTMLResponse:
     if not str(path).startswith(str(settings.mock_sites_dir.resolve())) or not path.exists():
         raise HTTPException(status_code=404, detail="Plik mock nie istnieje.")
     return HTMLResponse(content=path.read_text(encoding="utf-8"))
+
+
+@router.post("/api/v1/knf-registry/refresh")
+async def refresh_knf_registry(request: Request, dry_run: bool = False) -> dict[str, Any]:
+    """Refresh the KNF snapshot from the official knf.gov.pl lists (safe merge, see app/knf_sync.py)."""
+    from app.knf_sync import refresh_registry
+
+    report = await refresh_registry(request.app.state.settings, request.app.state.registry, dry_run=dry_run)
+    return report.to_dict()

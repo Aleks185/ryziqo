@@ -32,6 +32,8 @@ def _settings(tmp_path: Path, **overrides: object) -> Settings:
         "object_store_dir": str(tmp_path / "object_store"),
         "ollama_base_url": "http://127.0.0.1:1",
         "crawler_enable_scheduler": False,
+        "watchlist_seed_on_start": False,
+        "crawler_per_host_delay_seconds": 0,
     }
     base.update(overrides)
     return Settings(**base)  # type: ignore[arg-type]

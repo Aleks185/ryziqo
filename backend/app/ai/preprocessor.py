@@ -226,8 +226,13 @@ def extract_dom_metrics(
             if font_px is not None and font_px >= 12.0:
                 main_fonts.append(font_px)
 
-    if playwright_metrics and playwright_metrics.get("responsive_overflow_detected"):
-        responsive_overflow = True
+    overflow_viewports: list[str] = []
+    if playwright_metrics:
+        by_viewport = playwright_metrics.get("responsive_overflow_by_viewport")
+        if isinstance(by_viewport, dict):
+            overflow_viewports = [str(k) for k, v in by_viewport.items() if v]
+        if playwright_metrics.get("responsive_overflow_detected"):
+            responsive_overflow = True
 
     dominant_font = round(max(main_fonts), 1) if main_fonts else 16.0
     # Prefer body/paragraph scale rather than giant hero banner if multiple exist
@@ -264,6 +269,7 @@ def extract_dom_metrics(
         requires_click_to_view_risk=requires_click,
         low_contrast_detected=low_contrast,
         responsive_overflow_detected=responsive_overflow,
+        responsive_overflow_viewports=overflow_viewports,
     )
 
 
@@ -366,7 +372,7 @@ def extract_hidden_text(soup: BeautifulSoup) -> list[str]:
     return snippets
 
 
-def _absolute_http_link(href: str, base_url: str) -> str | None:
+def absolute_http_link(href: str, base_url: str) -> str | None:
     href = href.strip()
     if not href or href.startswith(("#", "javascript:", "mailto:", "tel:", "data:")):
         return None
@@ -410,7 +416,7 @@ def extract_sections(
     for tag in soup.find_all(["a", "button"]):
         anchor = clean_text(tag.get_text(" ", strip=True))[:120]
         href = tag.get("href")
-        target = _absolute_http_link(href, base_url) if isinstance(href, str) else None
+        target = absolute_http_link(href, base_url) if isinstance(href, str) else None
         if target and target not in outbound:
             outbound.append(target)
         domain = urlparse(target).hostname if target else None

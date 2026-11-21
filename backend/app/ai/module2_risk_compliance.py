@@ -179,12 +179,16 @@ async def analyze_module2(
             "Wyświetlenie informacji o ryzyku wymaga kliknięcia / rozwinięcia ukrytej sekcji.",
         )
 
-    # Rule 8: Mobile responsiveness overflow
+    # Rule 8: responsiveness — risk information must fit desktop, tablet and phone screens
     if dom.responsive_overflow_detected:
+        labels = {"tablet": "tablet (768 px)", "mobile": "telefon (375 px)"}
+        where = ", ".join(labels.get(v, v) for v in dom.responsive_overflow_viewports)
         add_violation(
             "8",
             "medium",
-            "Blok informacji o ryzyku przekracza szerokość ekranu mobilnego i ulega ucięciu.",
+            f"Treść strony przekracza szerokość ekranu ({where}) i ulega ucięciu."
+            if where
+            else "Blok informacji o ryzyku przekracza szerokość ekranu mobilnego i ulega ucięciu.",
         )
 
     # Rule 10: Language consistency (Polish ad with English risk warning)
