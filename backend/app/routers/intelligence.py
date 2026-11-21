@@ -31,6 +31,27 @@ def public_row(row):
 LIST_FIELDS="id,created_at,source_channel,reporter_display_name,source_type,target_url,canonical_domain,platform,target_server_ip,campaign_id,detected_entities,risk_score,verdict_status,excerpt,origin,incident_ids"
 
 
+@router.get("/leaderboard")
+def leaderboard(request: Request):
+    """Expose points and public nicknames without reporter identifiers."""
+    with request.app.state.intel.connection() as conn:
+        rows = conn.execute("""
+            WITH confirmed AS (
+                SELECT reporter_display_name AS nickname,
+                       count(*) OVER (PARTITION BY reporter_key_hash) AS points,
+                       row_number() OVER (
+                           PARTITION BY reporter_key_hash ORDER BY created_at DESC, rowid DESC
+                       ) AS latest
+                FROM threat_reports
+                WHERE source_channel = 'public_form' AND verdict_status = 'confirmed_fake'
+                  AND reporter_display_name IS NOT NULL AND reporter_key_hash IS NOT NULL
+            )
+            SELECT nickname, points FROM confirmed WHERE latest = 1
+            ORDER BY points DESC, nickname COLLATE NOCASE, nickname
+        """)
+        return [dict(row) for row in rows]
+
+
 @router.get("/reports")
 def reports(request:Request,q:str=Query("",max_length=240),verdict:Verdict|None=None,campaign:str|None=None,
             incident:str|None=None,limit:int=Query(50,ge=1,le=200),offset:int=Query(0,ge=0)):

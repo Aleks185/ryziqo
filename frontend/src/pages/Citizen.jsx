@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Trophy } from "lucide-react";
+import { Link } from "react-router-dom";
 import { MODULES, riskLevel } from "@/lib/config";
 import { RULE_LABELS } from "@/lib/i18n";
 import { useApp } from "@/lib/store";
@@ -69,7 +71,8 @@ function Verdict({ inc, report, shared }) {
 }
 
 export default function Citizen() {
-  const { mode, analyze, t } = useApp();
+  const { mode, analyze, t, lang } = useApp();
+  const leaderboardLabel = lang === "pl" ? "Zobacz drabinkę (Leaderboard)" : "View leaderboard";
   const [kind, setKind] = useState("text");
   const [content, setContent] = useState("");
   const [url, setUrl] = useState("");
@@ -115,6 +118,11 @@ export default function Citizen() {
   }
   return <div className="w-full max-w-2xl mx-auto space-y-5">
     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center text-[#0B192C]">{t("public_title")}</h1>
+    <div className="flex justify-center">
+      <Link to="/leaderboard" className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#0A1E33] hover:bg-slate-50 focus-ring">
+        <Trophy className="size-4" aria-hidden="true" />{leaderboardLabel}
+      </Link>
+    </div>
     <Panel><form onSubmit={submit} onChange={() => { setResult(null); setError(""); }}>
       <fieldset disabled={busy} className="space-y-4">
         <div className="flex flex-wrap justify-center gap-2">{["text", "url", "image"].map(k =>
