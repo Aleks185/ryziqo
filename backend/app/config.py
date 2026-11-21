@@ -8,6 +8,10 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+DEFAULT_KNF_SYNC_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+)
+
 class Settings(BaseSettings):
     """Runtime settings for #InvestWatch backend."""
 
@@ -60,6 +64,10 @@ class Settings(BaseSettings):
     crawler_max_bytes: int = 2_097_152
     crawler_max_redirects: int = 5
     crawler_rate_limit_seconds: float = 0.5
+    # Politeness: honour robots.txt (cached per origin) and space requests to the same host
+    crawler_respect_robots: bool = True
+    crawler_robots_ttl_hours: float = 24.0
+    crawler_per_host_delay_seconds: float = 2.0
     crawler_use_playwright_fallback: bool = False
     crawler_playwright_timeout_seconds: float = 20.0
     # Pages whose visible text (without scripts/styles) is shorter are re-rendered with Playwright
@@ -81,6 +89,30 @@ class Settings(BaseSettings):
 
     high_risk_alert_threshold: float = 0.65
 
+    # Seed the watchlist from data/watchlist_seed.json when it is empty at startup
+    watchlist_seed_on_start: bool = True
+
+    # Discovery of new content through a local SearXNG instance (docker compose --profile discovery)
+    discovery_enabled: bool = False
+    searxng_base_url: str = "http://localhost:8888"
+    discovery_cron: str = "0 */6 * * *"
+    discovery_queries_per_run: int = 10
+    discovery_results_per_query: int = 10
+    discovery_max_new_urls_per_run: int = 20
+    # A URL seen earlier is not re-enqueued by discovery for this many days (the watchlist covers rescans)
+    discovery_revisit_days: int = 7
+    # Comma-separated domains (and their subdomains) never enqueued from search results
+    discovery_domain_denylist: str = (
+        "knf.gov.pl,gov.pl,wikipedia.org,wikimedia.org,google.com,bing.com,duckduckgo.com,"
+        "europa.eu,esma.europa.eu,gpw.pl,nbp.pl"
+    )
+
+    # Optional crontab for refreshing the KNF registry snapshot from the official sources ("" = off)
+    knf_refresh_cron: str = ""
+    # knf.gov.pl resets connections for bot user agents (robots.txt allows all), so the registry
+    # sync identifies as a browser. Only used for the official KNF lists, never for crawling.
+    knf_sync_user_agent: str = DEFAULT_KNF_SYNC_USER_AGENT  # empty (unset in compose) = default
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
@@ -88,6 +120,10 @@ class Settings(BaseSettings):
     @property
     def crawler_proxy_list(self) -> list[str]:
         return [p.strip() for p in self.crawler_proxies.split(",") if p.strip()]
+
+    @property
+    def discovery_denylist(self) -> list[str]:
+        return [d.strip().lower().lstrip(".") for d in self.discovery_domain_denylist.split(",") if d.strip()]
 
     def resolve_path(self, raw_path: str) -> Path:
         p = Path(raw_path)
@@ -107,6 +143,11 @@ class Settings(BaseSettings):
     @property
     def resolved_object_store_dir(self) -> Path:
         return self.resolve_path(self.object_store_dir)
+
+    @property
+    def knf_registry_live_path(self) -> Path:
+        """Writable copy of the KNF snapshot (next to the database, i.e. on the data volume in Docker)."""
+        return self.resolved_db_path.parent / "knf_registry_snapshot.json"
 
     @property
     def mock_sites_dir(self) -> Path:

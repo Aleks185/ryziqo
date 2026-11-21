@@ -12,6 +12,7 @@ from typing import Any
 from app.models import (
     CalibrationMetrics,
     CrawlJobRecord,
+    DiscoveredUrl,
     DomMetrics,
     Incident,
     IncidentDetail,
@@ -23,6 +24,7 @@ from app.models import (
     WatchTarget,
 )
 from app.ai.preprocessor import cosine_similarity
+from app.scraper.urlnorm import canonicalize_url
 
 
 def utc_now_iso() -> str:
@@ -136,15 +138,45 @@ class Database:
                     created_at TEXT NOT NULL,
                     last_enqueued_at TEXT
                 );
+
+                CREATE TABLE IF NOT EXISTS discovered_urls (
+                    url TEXT PRIMARY KEY,
+                    query TEXT NOT NULL,
+                    engine TEXT,
+                    title TEXT,
+                    first_seen_at TEXT NOT NULL,
+                    last_enqueued_at TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_discovered_seen ON discovered_urls(first_seen_at);
+
+                CREATE TABLE IF NOT EXISTS app_state (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
                 """
             )
             # Additive migrations for databases created by earlier versions
             self._add_column_if_missing(conn, "crawl_jobs", "request_json", "TEXT")
             self._add_column_if_missing(conn, "content_snapshots", "embedding_json", "TEXT")
             self._add_column_if_missing(conn, "content_snapshots", "local_embedding_json", "TEXT")
+            self._add_column_if_missing(conn, "watch_targets", "follow_depth", "INTEGER NOT NULL DEFAULT 0")
+            self._canonicalize_watch_target_urls(conn)
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_incidents_source ON incidents(module_id, source_url)"
             )
+
+    @staticmethod
+    def _canonicalize_watch_target_urls(conn: sqlite3.Connection) -> None:
+        """One-off normalisation of URLs stored before canonicalisation; on collision the older row wins."""
+        seen: set[str] = set()
+        for row in conn.execute("SELECT id, url FROM watch_targets ORDER BY id").fetchall():
+            canonical = canonicalize_url(row["url"])
+            if canonical in seen:
+                conn.execute("DELETE FROM watch_targets WHERE id = ?", (row["id"],))
+                continue
+            seen.add(canonical)
+            if canonical != row["url"]:
+                conn.execute("UPDATE watch_targets SET url = ? WHERE id = ?", (canonical, row["id"]))
 
     @staticmethod
     def _add_column_if_missing(conn: sqlite3.Connection, table: str, column: str, col_type: str) -> None:
@@ -215,9 +247,9 @@ class Database:
         return storage_key
 
     def save_screenshots(self, content_hash: str, screenshots: list[bytes]) -> list[str]:
-        """Store Playwright JPEG screenshots next to the HTML snapshot (desktop, mobile)."""
+        """Store Playwright JPEG screenshots next to the HTML snapshot (desktop, tablet, mobile)."""
         names: list[str] = []
-        for label, data in zip(("desktop", "mobile"), screenshots):
+        for label, data in zip(("desktop", "tablet", "mobile"), screenshots):
             extension = "png" if data.startswith(bytes.fromhex("89504e470d0a1a0a")) else "jpg"
             name = f"{content_hash}_{label}.{extension}"
             (self.object_store_dir / name).write_bytes(data)
@@ -723,7 +755,15 @@ class Database:
                 "SELECT * FROM crawl_jobs ORDER BY created_at DESC, rowid DESC LIMIT ?", (limit,)
             ).fetchall()
         fields = CrawlJobRecord.model_fields.keys()
-        return [CrawlJobRecord(**{k: r[k] for k in r.keys() if k in fields}) for r in rows]
+        records: list[CrawlJobRecord] = []
+        for r in rows:
+            data = {k: r[k] for k in r.keys() if k in fields}
+            try:
+                data["origin"] = str(json.loads(r["request_json"] or "{}").get("origin") or "manual")
+            except (TypeError, ValueError, AttributeError):
+                data["origin"] = "manual"
+            records.append(CrawlJobRecord(**data))
+        return records
 
     # --- Watchlist (periodically re-scanned public sources) ---
 
@@ -735,27 +775,35 @@ class Database:
             label=row["label"],
             module_ids=json.loads(row["module_ids_json"] or "[1, 2, 3]"),
             use_playwright=bool(row["use_playwright"]),
+            follow_depth=int(row["follow_depth"] or 0),
             enabled=bool(row["enabled"]),
             created_at=row["created_at"],
             last_enqueued_at=row["last_enqueued_at"],
         )
 
     def add_watch_target(
-        self, url: str, label: str | None, module_ids: list[int], use_playwright: bool
+        self,
+        url: str,
+        label: str | None,
+        module_ids: list[int],
+        use_playwright: bool,
+        follow_depth: int = 0,
     ) -> WatchTarget | None:
-        """Insert a watch target; returns None when the URL is already on the watchlist."""
+        """Insert a watch target (URL canonicalised); returns None when it is already on the watchlist."""
         with self._connect() as conn:
             try:
                 cur = conn.execute(
                     """
-                    INSERT INTO watch_targets (url, label, module_ids_json, use_playwright, created_at)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO watch_targets
+                        (url, label, module_ids_json, use_playwright, follow_depth, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
                     """,
                     (
-                        url,
+                        canonicalize_url(url),
                         label,
                         json.dumps(sorted(set(module_ids))),
                         1 if use_playwright else 0,
+                        max(0, min(2, int(follow_depth))),
                         utc_now_iso(),
                     ),
                 )
@@ -785,6 +833,70 @@ class Database:
     def delete_watch_target(self, target_id: int) -> bool:
         with self._connect() as conn:
             return conn.execute("DELETE FROM watch_targets WHERE id = ?", (target_id,)).rowcount > 0
+
+    def count_watch_targets(self) -> int:
+        with self._connect() as conn:
+            return int(conn.execute("SELECT COUNT(*) FROM watch_targets").fetchone()[0])
+
+    def seed_watch_targets(self, items: list[dict[str, Any]]) -> int:
+        """Idempotent bulk insert of seed targets (duplicates by canonical URL are ignored)."""
+        added = 0
+        for item in items:
+            url = str(item.get("url") or "").strip()
+            if not url:
+                continue
+            modules = [int(m) for m in item.get("module_ids") or [1, 2, 3] if int(m) in (1, 2, 3)]
+            created = self.add_watch_target(
+                url=url,
+                label=item.get("label"),
+                module_ids=modules or [1, 2, 3],
+                use_playwright=bool(item.get("use_playwright", False)),
+                follow_depth=int(item.get("follow_depth", 0)),
+            )
+            added += created is not None
+        return added
+
+    # --- Discovery (SearXNG) ---
+
+    def get_discovered_url(self, url: str) -> DiscoveredUrl | None:
+        with self._connect() as conn:
+            row = conn.execute("SELECT * FROM discovered_urls WHERE url = ?", (url,)).fetchone()
+        return DiscoveredUrl(**dict(row)) if row else None
+
+    def record_discovered_url(
+        self, url: str, query: str, engine: str | None, title: str | None, enqueued: bool
+    ) -> None:
+        now = utc_now_iso()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO discovered_urls (url, query, engine, title, first_seen_at, last_enqueued_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(url) DO UPDATE SET
+                    last_enqueued_at = COALESCE(excluded.last_enqueued_at, discovered_urls.last_enqueued_at)
+                """,
+                (url, query, engine, (title or "")[:300] or None, now, now if enqueued else None),
+            )
+
+    def list_discovered_urls(self, limit: int = 50) -> list[DiscoveredUrl]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM discovered_urls ORDER BY first_seen_at DESC, rowid DESC LIMIT ?", (limit,)
+            ).fetchall()
+        return [DiscoveredUrl(**dict(r)) for r in rows]
+
+    def get_state(self, key: str, default: str | None = None) -> str | None:
+        with self._connect() as conn:
+            row = conn.execute("SELECT value FROM app_state WHERE key = ?", (key,)).fetchone()
+        return str(row["value"]) if row else default
+
+    def set_state(self, key: str, value: str) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO app_state (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (key, value),
+            )
 
     def mark_watch_target_enqueued(self, target_id: int) -> None:
         with self._connect() as conn:

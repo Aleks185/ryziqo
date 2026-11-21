@@ -21,6 +21,8 @@ def _build_test_client(tmp_path: Path) -> TestClient:
         object_store_dir=str(tmp_path / "object_store"),
         ollama_base_url="http://127.0.0.1:1",
         crawler_enable_scheduler=False,
+        watchlist_seed_on_start=False,
+        crawler_per_host_delay_seconds=0,
     )
     app = create_app(custom_settings=settings)
     return TestClient(app)

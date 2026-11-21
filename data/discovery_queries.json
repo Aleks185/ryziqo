@@ -1,0 +1,21 @@
+{
+  "description": "Szablony zapytań do SearXNG (discovery). {name} = krótka nazwa podmiotu z rejestru KNF (bez wpisów syntetycznych). Każdy run bierze kolejne DISCOVERY_QUERIES_PER_RUN zapytań (rotacja).",
+  "entity_templates": [
+    "{name} kod polecający",
+    "{name} link afiliacyjny bonus",
+    "{name} reklama inwestycje",
+    "{name} CFD sygnały",
+    "{name} darmowe szkolenie",
+    "{name} VIP grupa telegram"
+  ],
+  "generic_queries": [
+    "gwarantowany zysk inwestycja",
+    "sygnały forex grupa VIP",
+    "darmowe szkolenie trading CFD",
+    "kopiuj moje transakcje kod polecający",
+    "pasywny dochód krypto bez ryzyka",
+    "bot inwestycyjny AI zysk dziennie",
+    "inwestuj od 250 zł zarabiaj",
+    "porady inwestycyjne kup teraz akcje"
+  ]
+}

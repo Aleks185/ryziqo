@@ -34,7 +34,7 @@ const ModuleFilter = ({ value, onChange }) => {
 };
 
 export default function Dashboard() {
-  const { incidents, t } = useApp();
+  const { incidents, knfSnapshotDate, t } = useApp();
   const [filter, setFilter] = useState("all");
   const list = filter === "all" ? incidents : incidents.filter((i) => i.module_id === filter);
   return (
@@ -43,6 +43,9 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0B192C]">{t("nav_dashboard")}</h1>
           <p className="text-xs text-slate-500 mt-1">{t("kpi_note")}</p>
+          <p className="text-xs text-slate-500 mt-0.5" data-testid="knf-snapshot-date">
+            {t("knf_snapshot")}: {knfSnapshotDate || "—"}
+          </p>
         </div>
         <ModuleFilter value={filter} onChange={setFilter} />
       </div>

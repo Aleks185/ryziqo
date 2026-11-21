@@ -16,6 +16,7 @@ RegistryStatus = Literal[
     "unknown",
 ]
 CrawlMode = Literal["mock_all", "mock_single", "public_url"]
+CrawlOrigin = Literal["manual", "watchlist", "discovery", "seed", "link_follow"]
 
 
 class ViolatedRule(BaseModel):
@@ -34,6 +35,8 @@ class DomMetrics(BaseModel):
     requires_click_to_view_risk: bool = False
     low_contrast_detected: bool = False
     responsive_overflow_detected: bool = False
+    # Playwright viewports with horizontal overflow ("tablet", "mobile"); empty for the static heuristic
+    responsive_overflow_viewports: list[str] = Field(default_factory=list)
 
 
 class Incident(BaseModel):
@@ -177,6 +180,11 @@ class CrawlTriggerRequest(BaseModel):
     mock_file: str | None = None
     module_ids: list[Literal[1, 2, 3]] = Field(default_factory=lambda: [1, 2, 3])
     use_playwright: bool = False
+    # Where the job came from (dashboard, scheduler, SearXNG discovery, ...)
+    origin: CrawlOrigin = "manual"
+    # Same-site link following for public_url: 0 = only the given page
+    follow_depth: int = Field(default=0, ge=0, le=2)
+    follow_max_pages: int = Field(default=10, ge=1, le=30)
 
 
 class CrawlTriggerResponse(BaseModel):
@@ -190,6 +198,7 @@ class CrawlJobRecord(BaseModel):
     job_id: str
     mode: str
     target: str | None = None
+    origin: str = "manual"
     status: str
     processed_count: int = 0
     incidents_created: int = 0
@@ -209,6 +218,7 @@ class WatchTargetCreate(BaseModel):
     label: str | None = Field(default=None, max_length=200)
     module_ids: ModuleIds = Field(default_factory=lambda: [1, 2, 3], min_length=1)
     use_playwright: bool = False
+    follow_depth: int = Field(default=0, ge=0, le=2)
 
 
 class WatchTargetUpdate(BaseModel):
@@ -221,6 +231,7 @@ class WatchTarget(BaseModel):
     label: str | None = None
     module_ids: list[int]
     use_playwright: bool = False
+    follow_depth: int = 0
     enabled: bool = True
     created_at: str
     last_enqueued_at: str | None = None
@@ -235,6 +246,36 @@ class WatchlistResponse(BaseModel):
 class WatchlistRunResponse(BaseModel):
     job_ids: list[str]
     skipped: list[str] = Field(default_factory=list)
+
+
+class WatchlistSeedResponse(BaseModel):
+    added: int
+    total: int
+
+
+class DiscoveredUrl(BaseModel):
+    url: str
+    query: str
+    engine: str | None = None
+    title: str | None = None
+    first_seen_at: str
+    last_enqueued_at: str | None = None
+
+
+class DiscoveryRunResponse(BaseModel):
+    queries: list[str]
+    hits: int
+    enqueued: list[str] = Field(default_factory=list)
+    job_ids: list[str] = Field(default_factory=list)
+    skipped_seen: int = 0
+    rejected: int = 0
+    error: str | None = None
+
+
+class DiscoveryRecentResponse(BaseModel):
+    enabled: bool
+    schedule: str
+    items: list[DiscoveredUrl]
 
 
 class HealthResponse(BaseModel):

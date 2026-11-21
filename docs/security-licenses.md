@@ -18,6 +18,8 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
 | `sqlite3` (stdlib) | Relacyjna baza metadanych | PSF |
 | `pytest` | Testy jednostkowe i integracyjne | MIT |
 | `pip-audit` | Audyt podatności łańcucha dostaw (PyPA) | Apache-2.0 |
+| SearXNG (opcjonalnie, profil `discovery`, osobny kontener) | Lokalna metawyszukiwarka do odkrywania nowych treści | AGPL-3.0 (używana bez modyfikacji, jako niezależna usługa przez HTTP) |
+| `openpyxl` (opcjonalnie, nie instalowany domyślnie) | Odczyt list KNF w XLSX przy odświeżaniu rejestru | MIT |
 
 ### Wykaz głównych bibliotek Frontend (bezpłatne wykorzystanie komercyjne)
 
@@ -52,6 +54,9 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
 - **Odporność silnika AI na manipulacje:** treść strony w piaskownicy `<untrusted_content>`, wykrywanie prompt injection w ukrytym tekście (`AI_PROMPT_INJECTION`, blokuje weto FP), weryfikacja cytatów LLM w tekście źródłowym oraz normalizacja homoglifów i znaków zero-width (`backend/app/ai/`).
 - **Anty-SSRF dla rozwijania linków:** opcjonalne rozwijanie skracaczy (`CRAWLER_EXPAND_SHORT_LINKS`) waliduje każdy krok przekierowania tą samą funkcją `validate_public_url`.
 - **Limity scrapera:** limit rozmiaru odpowiedzi (`2 MB`), timeouty, limit przekierowań (`5`), łagodne tempo żądań.
+- **Etyka crawlera:** respektowanie `robots.txt` (cache per domena, `CRAWLER_RESPECT_ROBOTS`) i `Crawl-delay`, odstęp między żądaniami do jednego hosta (`CRAWLER_PER_HOST_DELAY_SECONDS`), jawny User-Agent bez podszywania się pod przeglądarki.
+- **Discovery i chodzenie po linkach:** każdy URL z SearXNG i każda podstrona przechodzi kanonikalizację, listę wykluczeń domen i `validate_public_url`; liczba nowych URL-i na rundę i podstron na zadanie jest ograniczona. SearXNG nie ma portu na hoście (dostępny tylko w sieci Dockera).
+- **Odświeżanie rejestru KNF:** pobieranie z tymi samymi limitami i anty-SSRF; zapis atomowy obok bazy, a kategoria, która zwróci mniej niż połowę poprzednich wpisów, zostaje bez zmian (ochrona przed zmianą struktury strony).
 
 ## 3. Wynik audytu `pip-audit`
 

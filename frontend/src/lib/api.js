@@ -1,6 +1,6 @@
 import { API_URL } from "./config";
 
-// Klient REST zgodny z CONTRACT.md v1.1.0.
+// Klient REST zgodny z CONTRACT.md v1.3.0.
 async function req(path, { body, method = "GET", signal, timeout = 90000 } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);

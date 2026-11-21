@@ -27,7 +27,7 @@
     },
     {
       "official_name": "Biuro Maklerskie PKO Banku Polskiego",
-      "aliases": ["BM PKO BP", "PKO BP Makler"],
+      "aliases": ["BM PKO BP", "PKO BP Makler", "pkobp.pl"],
       "category": "bank_maklerski",
       "registry_status": "registered_pl",
       "country": "PL",
@@ -35,7 +35,7 @@
     },
     {
       "official_name": "Biuro Maklerskie mBanku",
-      "aliases": ["eMakler", "BM mBank", "mInwestor"],
+      "aliases": ["eMakler", "BM mBank", "mInwestor", "mbank.pl"],
       "category": "bank_maklerski",
       "registry_status": "registered_pl",
       "country": "PL",
@@ -43,7 +43,7 @@
     },
     {
       "official_name": "Santander Biuro Maklerskie",
-      "aliases": ["BM Santander"],
+      "aliases": ["BM Santander", "santander.pl"],
       "category": "bank_maklerski",
       "registry_status": "registered_pl",
       "country": "PL",
@@ -67,7 +67,7 @@
     },
     {
       "official_name": "Interactive Brokers Ireland Limited",
-      "aliases": ["Interactive Brokers", "IBKR"],
+      "aliases": ["Interactive Brokers", "IBKR", "interactivebrokers.com", "interactivebrokers.ie"],
       "category": "zagraniczna_bez_oddzialu",
       "registry_status": "registered_eu_crossborder",
       "country": "IE",
@@ -75,7 +75,7 @@
     },
     {
       "official_name": "eToro (Europe) Ltd.",
-      "aliases": ["eToro"],
+      "aliases": ["eToro", "etoro.com"],
       "category": "zagraniczna_bez_oddzialu",
       "registry_status": "registered_eu_crossborder",
       "country": "CY",
@@ -83,7 +83,7 @@
     },
     {
       "official_name": "Trading 212 Markets Ltd.",
-      "aliases": ["Trading 212", "Trading212"],
+      "aliases": ["Trading 212", "Trading212", "trading212.com"],
       "category": "zagraniczna_bez_oddzialu",
       "registry_status": "registered_eu_crossborder",
       "country": "CY",

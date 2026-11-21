@@ -184,6 +184,9 @@ Dodaje zadanie scrapowania i analizy do kolejki zadań backendu.
 }
 ```
   - `mode`: `"mock_all"` (skanuje wszystkie lokalne strony demonstracyjne), `"mock_single"` (wymaga `mock_file`, np. `"broker_promo_hidden_risk.html"`), `"public_url"` (wymaga `target_url` — przechodzi walidację anty-SSRF!).
+  - *(od 1.3.0, opcjonalne)* `origin`: `"manual"` (domyślnie) | `"watchlist"` | `"discovery"` | `"seed"` | `"link_follow"`; `follow_depth` (0–2, domyślnie 0) i `follow_max_pages` (1–30, domyślnie 10) — chodzenie po podstronach tej samej domeny dla `public_url`.
+  - *(od 1.3.0)* `409` gdy ten sam cel (URL po kanonikalizacji) jest już w kolejce lub w trakcie analizy. Strona zablokowana przez `robots.txt` kończy zadanie statusem `completed` z `error_message: "robots.txt disallow"`.
+  - `CrawlJobRecord` w `GET /api/v1/crawl/jobs` ma od 1.3.0 pole `origin`.
 - Odpowiedź (`202 Accepted`):
 ```json
 {
@@ -247,7 +250,10 @@ Publiczne adresy (np. profile finfluencerów) skanowane przez harmonogram razem 
 - `DELETE /api/v1/watchlist/{id}` → `204`; `404` dla nieistniejącego ID.
 - `POST /api/v1/watchlist/run` → `202 {"job_ids": [...], "skipped": [...]}` — natychmiastowe uruchomienie skanu harmonogramu; cele już przetwarzane trafiają do `skipped`.
 
-`WatchTarget`: `{"id": 1, "url": "https://...", "label": null, "module_ids": [1,2,3], "use_playwright": false, "enabled": true, "created_at": "ISO-8601", "last_enqueued_at": "ISO-8601" | null}`
+- *(od 1.3.0)* `POST /api/v1/watchlist/seed` → `200 {"added": 4, "total": 6}` — idempotentne dodanie startowych celów (`data/watchlist_seed.json` + domeny podmiotów z rejestru KNF).
+- *(od 1.3.0)* URL-e są kanonikalizowane (mała litera hosta, bez fragmentu, parametrów `utm_*`/`fbclid`/..., domyślnego portu i końcowego `/`), więc `409` obejmuje też inne zapisy tego samego adresu. `POST` przyjmuje opcjonalne `follow_depth` (0–2).
+
+`WatchTarget`: `{"id": 1, "url": "https://...", "label": null, "module_ids": [1,2,3], "use_playwright": false, "follow_depth": 0, "enabled": true, "created_at": "ISO-8601", "last_enqueued_at": "ISO-8601" | null}`
 
 ### `GET /api/v1/reports/{module_id}` *(od 1.2.0)*
 Raport modułu (`1`–`3`): dane firmy inwestycyjnej, dane podmiotu reklamującego, treść i dokładny URL.
@@ -256,8 +262,13 @@ Raport modułu (`1`–`3`): dane firmy inwestycyjnej, dane podmiotu reklamujące
 - `csv`: UTF-8 z BOM, separator `;`, nagłówek `Content-Disposition: attachment`; listy (`evidence_quotes`, `violated_rule_ids`) łączone ` | `; komórki zaczynające się od `=`, `+`, `-`, `@` poprzedzone `'` (ochrona przed CSV injection).
 - Kolumny: `id, detected_at, updated_at, risk_score, risk_level, status, entity_name, knf_registry_status, promoter_name, source_platform, source_url, title, content_excerpt, evidence_quotes, violated_rule_ids, analyst_note`.
 
+### Discovery *(od 1.3.0)*
+- `POST /api/v1/discovery/run` → `202 {"queries": [...], "hits": 42, "enqueued": ["https://..."], "job_ids": [...], "skipped_seen": 3, "rejected": 5, "error": null}`; `409` gdy `DISCOVERY_ENABLED=false`. Brak odpowiedzi SearXNG daje `error` i pustą listę `enqueued`.
+- `GET /api/v1/discovery/recent?limit=50` → `{"enabled": true, "schedule": "cron: 0 */6 * * * (UTC)" | "disabled", "items": [{"url", "query", "engine", "title", "first_seen_at", "last_enqueued_at"}]}`.
+
 ### `GET /api/v1/knf-registry` & `GET /api/v1/rules`
 - `/api/v1/knf-registry`: lokalny snapshot podmiotów KNF (data, źródła URL z załączników UKNF, lista podmiotów).
+- *(od 1.3.0)* `POST /api/v1/knf-registry/refresh?dry_run=false` → `{"snapshot_date", "written_to", "added": {kategoria: [...]}, "removed": {...}, "kept_old": {kategoria: powód}, "errors": {kategoria: błąd}}`. Kategoria, która zwróci mniej niż połowę poprzednich wpisów, zostaje bez zmian.
 - `/api/v1/rules`: pełna lista 18 reguł UKNF z załącznika do Modułu 2 wraz z podstawami prawnymi.
 
 ---
@@ -288,6 +299,7 @@ Format komunikatów serwera:
 
 | Wersja | Zmiany |
 |---|---|
+| `1.3.0` | Crawler: pola `origin`, `follow_depth`, `follow_max_pages` w `CrawlTriggerRequest`; `origin` w `CrawlJobRecord`; `409` dla duplikatu w kolejce; `follow_depth` w `WatchTarget`; `POST /api/v1/watchlist/seed`; `/api/v1/discovery/*`; `POST /api/v1/knf-registry/refresh`; `DomMetrics.responsive_overflow_viewports`. Bez usuwania istniejących pól i ścieżek. |
 | `1.2.0` | Filtr `risk_level` w `GET /api/v1/incidents`; endpointy `/api/v1/watchlist*` i `GET /api/v1/reports/{module_id}`; nowa wartość `source_platform: "x"`. Bez zmian istniejących pól, typów i ścieżek. |
 | `1.1.0` | Dodane endpointy `POST /api/v1/analyze/text`, `POST /api/v1/analyze/url`, `PATCH /api/v1/incidents/{incident_id}/label`; nowa wartość `source_platform: "manual"`; `analysis_complete` może zawierać `extra.incident_ids`. Bez zmian istniejących pól, typów i ścieżek. |
 | `1.0.0` | Zamrożenie kontraktu: model `Incident`, REST (`/health`, `/incidents`, `/status`, `/stats`, `/crawl/*`, `/knf-registry`, `/rules`), WebSocket `/ws/alerts`. |

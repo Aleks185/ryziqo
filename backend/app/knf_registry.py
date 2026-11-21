@@ -86,6 +86,22 @@ def levenshtein(a: str, b: str, max_dist: int = 3) -> int:
     return prev[-1]
 
 
+def _snapshot_date_of(path: Path) -> str:
+    try:
+        return str(json.loads(path.read_text(encoding="utf-8")).get("snapshot_date") or "")
+    except (OSError, ValueError):
+        return ""
+
+
+def pick_snapshot_path(seed_path: Path, live_path: Path) -> Path:
+    """Use the refreshed snapshot (data volume) when it exists and is not older than the seed copy."""
+    if live_path.exists() and live_path.resolve() != seed_path.resolve():
+        live_date = _snapshot_date_of(live_path)
+        if live_date and live_date >= _snapshot_date_of(seed_path):
+            return live_path
+    return seed_path
+
+
 class KNFRegistrySnapshot:
     """Loads local KNF registry snapshot with documented date and source disclaimer."""
 
@@ -97,6 +113,14 @@ class KNFRegistrySnapshot:
         if warnings_path is None:
             warnings_path = snapshot_path.parent / "knf_warnings_snapshot.json"
         self._warnings_doc: dict[str, Any] = self._load_json(warnings_path, default={"entries": []})
+
+    def reload(self, snapshot_path: Path | None = None) -> None:
+        """Re-read the registry snapshot (after a refresh) and drop the cached brand index."""
+        if snapshot_path is not None:
+            self.snapshot_path = snapshot_path
+        self._snapshot = self._load_json(self.snapshot_path, default={})
+        self.__dict__.pop("_brand_index", None)
+        self.__dict__.pop("_legit_domains", None)
 
     @staticmethod
     def _load_json(path: Path, default: dict[str, Any]) -> dict[str, Any]:
@@ -142,11 +166,17 @@ class KNFRegistrySnapshot:
         for entry in self._snapshot.get("entities", []):
             names = [entry.get("official_name", ""), *entry.get("aliases", [])]
             entry_keys: set[str] = set()
+            # Fuzzy look-alike keys only for curated brands (manual aliases): the ~750 firms imported
+            # from the KNF lists would turn every "capital"/"invest…" domain into a typosquat
+            # (money.pl → Monex, capital.com → Lago Kapital). Imported names still count as legit.
+            curated = bool(entry.get("aliases"))
             for raw in names:
                 name = str(raw).replace("[DEMO]", "").strip()
                 if not name:
                     continue
                 legit.add(_alnum(name))
+                if not curated:
+                    continue
                 host = name.lower()
                 if "." in host and " " not in host:  # a domain alias, e.g. xtb.com
                     label = host.split(".")[0]
@@ -163,6 +193,22 @@ class KNFRegistrySnapshot:
                         entry_keys.add(key)
             keys.extend((k, entry) for k in sorted(entry_keys))
         return keys, legit
+
+    @cached_property
+    def _legit_domains(self) -> set[str]:
+        """Domain aliases of registry entities (e.g. bossa.pl) — their subdomains are the firm's own."""
+        domains: set[str] = set()
+        for entry in self._snapshot.get("entities", []):
+            for raw in entry.get("aliases", []):
+                host = str(raw).strip().lower()
+                if "." in host and " " not in host:
+                    domains.add(host[4:] if host.startswith("www.") else host)
+        return domains
+
+    def is_official_host(self, token: str) -> bool:
+        """True for a registry entity's own domain or its subdomain (online.bossa.pl → bossa.pl)."""
+        host = token.lower().rstrip(".")
+        return any(host == d or host.endswith(f".{d}") for d in self._legit_domains)
 
     @staticmethod
     def _candidate_tokens(text: str, urls: Iterable[str]) -> list[tuple[str, bool]]:
@@ -189,6 +235,8 @@ class KNFRegistrySnapshot:
                 parts = parts[:-1] if parts[-1] in COMMON_TLDS else parts
             folded_parts = [_alnum(p) for p in parts]
             if _alnum(token) in legit or "".join(folded_parts) in legit:
+                continue
+            if is_domain and self.is_official_host(token):  # online.bossa.pl is bossa.pl, not a look-alike
                 continue
             for key, entry in keys:
                 hit_kind: str | None = None

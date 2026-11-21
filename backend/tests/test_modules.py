@@ -167,3 +167,15 @@ async def test_pension_tax_offer_is_not_a_promised_return():
     assert any("ulgę podatkową" in q for q in result.evidence_quotes)
     mixed = await evaluate(content + " Zyskaj 300% w tydzień.")
     assert {"3", "16"}.issubset({r.rule_id for r in mixed.violated_rules})
+
+
+@pytest.mark.anyio
+async def test_module1_ignores_referral_codes_on_the_firms_own_site() -> None:
+    html = "<html><body><h1>Kod polecający XTB</h1><p>Wpisz kod polecający przy zakładaniu konta.</p></body></html>"
+    registry, ollama = _make_registry(), _offline_ollama()
+
+    own = await analyze_module1(preprocess_html(html, "https://www.xtb.com/pl/kod", "web"), registry, ollama)
+    assert not any(r.rule_id == "M1_UNDISCLOSED_AD" for r in own.violated_rules)
+
+    third_party = await analyze_module1(preprocess_html(html, "https://bonusy-forex.pl/xtb", "web"), registry, ollama)
+    assert any(r.rule_id == "M1_UNDISCLOSED_AD" for r in third_party.violated_rules)

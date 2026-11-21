@@ -78,7 +78,10 @@ async def test_url_revalidates_strong_etag(monkeypatch):
 
     client = httpx.AsyncClient
     monkeypatch.setattr(fetcher.httpx, "AsyncClient", lambda **kw: client(transport=httpx.MockTransport(serve), **kw))
-    reader = fetcher.PageFetcher(Settings(crawler_rate_limit_seconds=0, crawler_use_playwright_fallback=False))
+    reader = fetcher.PageFetcher(Settings(
+        crawler_rate_limit_seconds=0, crawler_use_playwright_fallback=False,
+        crawler_respect_robots=False, crawler_per_host_delay_seconds=0,  # only page requests are counted
+    ))
     first = await reader.fetch_public_url("https://1.1.1.1/")
     second = await reader.fetch_public_url("https://1.1.1.1/")
     assert seen == [None, '"v1"']

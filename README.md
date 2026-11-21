@@ -35,6 +35,12 @@ Z lokalnym AI w kontenerze (pobiera modele przy pierwszym starcie; w `.env` usta
 docker compose --profile ai up --build
 ```
 
+Z automatycznym odkrywaniem nowych treści (lokalny SearXNG; w `.env` ustaw `DISCOVERY_ENABLED=true`):
+
+```bash
+docker compose --profile discovery up --build
+```
+
 Strony renderowane JavaScriptem: `INSTALL_PLAYWRIGHT=true` i `CRAWLER_USE_PLAYWRIGHT_FALLBACK=true` w `.env`, potem `docker compose build`.
 
 Po uruchomieniu:
@@ -43,7 +49,8 @@ Po uruchomieniu:
 - **Swagger / OpenAPI:** `http://localhost:8000/docs`
 - **WebSocket alertów:** `ws://localhost:8000/ws/alerts`
 - **Analiza na żądanie:** `POST /api/v1/analyze/text` i `POST /api/v1/analyze/url` (szczegóły w [CONTRACT.md](CONTRACT.md))
-- **Okresowo skanowane źródła:** `/api/v1/watchlist`; **raporty modułów (JSON/CSV):** `/api/v1/reports/{1|2|3}?format=csv`
+- **Discovery (SearXNG):** `POST /api/v1/discovery/run`, `GET /api/v1/discovery/recent`; **odświeżenie rejestru KNF:** `POST /api/v1/knf-registry/refresh?dry_run=true`
+- **Okresowo skanowane źródła:** `/api/v1/watchlist` (startowa lista: `POST /api/v1/watchlist/seed`); **raporty modułów (JSON/CSV):** `/api/v1/reports/{1|2|3}?format=csv`
 - **Podgląd lokalnych mock-stron demo:** `http://localhost:8000/mock-sites/broker_promo_hidden_risk.html`
 
 ## Quick Start (lokalnie bez Dockera)
@@ -94,6 +101,14 @@ Wszystkie parametry znajdują się w [.env.example](.env.example). Sekrety są i
 | `AI_STRICT_QUOTE_VERIFICATION` | `true` | Sygnał LLM bez cytatu obecnego w treści jest odrzucany |
 | `AGGREGATOR_MULTI_MODULE_MODE` | `primary` | `primary` — jeden incydent na stronę; `all_significant` — incydent per moduł z naruszeniami |
 | `CRAWLER_EXPAND_SHORT_LINKS` | `false` | Rozwijanie skracaczy / link-in-bio do domen docelowych (anty-SSRF) |
+| `CRAWLER_RESPECT_ROBOTS` | `true` | Respektowanie `robots.txt` (cache per domena, `CRAWLER_ROBOTS_TTL_HOURS`) |
+| `CRAWLER_PER_HOST_DELAY_SECONDS` | `2` | Minimalny odstęp między żądaniami do jednego hosta (lub `Crawl-delay`, jeśli większy) |
+| `WATCHLIST_SEED_ON_START` | `true` | Startowa watchlista z `data/watchlist_seed.json` i domen podmiotów z rejestru KNF |
+| `DISCOVERY_ENABLED` | `false` | Odkrywanie nowych URL-i przez SearXNG (profil `discovery`) według `data/discovery_queries.json` |
+| `DISCOVERY_CRON` | `0 */6 * * *` | Harmonogram rund discovery (UTC); limity: `DISCOVERY_QUERIES_PER_RUN`, `DISCOVERY_MAX_NEW_URLS_PER_RUN` |
+| `DISCOVERY_REVISIT_DAYS` | `7` | Po ilu dniach URL znaleziony wcześniej może wrócić do kolejki |
+| `KNF_REFRESH_CRON` | puste | Cykliczne odświeżanie snapshotu rejestru KNF z oficjalnych list (`python -m scripts.refresh_knf_registry`) |
+| `KNF_SYNC_USER_AGENT` | nagłówek Chrome | User-Agent synchronizacji rejestru KNF; knf.gov.pl odrzuca nagłówki botów. Crawler treści nadal przedstawia się jako bot |
 
 Zmienne frontendu (`REACT_APP_INVESTWATCH_API_URL`, `REACT_APP_ALERT_THRESHOLD`) opisuje [frontend/.env.example](frontend/.env.example). Są wklejane do bundla w czasie builda — nie umieszczaj w nich sekretów.
 
@@ -115,6 +130,7 @@ Wyniki audytów i analiza wpływu: [docs/security-licenses.md](docs/security-lic
 ## Tryb demo i znane ograniczenia
 
 - **Fallback bez Ollama:** jeżeli Ollama na hoście jest niedostępna, system automatycznie działa w trybie `demo_fallback` (silnik deterministyczny 18 reguł UKNF + analiza DOM/CSS + etykietowane dane startowe w SQLite).
+- **Chodzenie po linkach:** zadanie `public_url` i cel watchlisty przyjmują `follow_depth` (0–2, domyślnie 0) i `follow_max_pages` (≤30); odwiedzane są tylko podstrony tej samej domeny, najpierw regulaminy, ostrzeżenia o ryzyku i oferta.
 - **Lokalny snapshot KNF:** `data/knf_registry_snapshot.json` zawiera udokumentowany lokalny snapshot rejestrów KNF (data w polu `snapshot_date`) wraz z fikcyjnymi podmiotami `[DEMO]` dla lokalnych mock-stron — nie zastępuje bieżącej weryfikacji statusu prawnego w KNF.
 - **Wskaźnik `risk_score` (0.00–1.00):** służy analitykowi do priorytetyzacji i kalibracji progu FP/FN; nie stanowi wiążącego rozstrzygnięcia prawnego.
 - **Tryb DEMO panelu:** gdy backend jest nieosiągalny, panel działa w jawnie oznaczonym trybie DEMO (heurystyka regułowa w przeglądarce, nie AI, dane w `localStorage`). Panel nie wysyła obrazów do analizy; backend opcjonalnie analizuje zrzuty ekranu stron modelem VLM (`OLLAMA_VISION_ENABLED=true`, wymaga Playwrighta i modelu z obsługą obrazów).

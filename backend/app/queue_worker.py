@@ -10,6 +10,7 @@ import asyncio
 import logging
 import uuid
 
+import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -21,19 +22,32 @@ from app.ai.preprocessor import preprocess_html
 from app.ai.retrieval import Retriever
 from app.config import Settings
 from app.database import Database, utc_now_iso
+from app.discovery import DiscoveryService
 from app.knf_registry import KNFRegistrySnapshot
 from app.models import CrawlTriggerRequest, IncidentDetail, WebSocketAlertEvent
 from app.scraper.fetcher import FetchedPage, PageFetcher
+from app.scraper.links import extract_same_site_links
+from app.scraper.politeness import RobotsDisallowedError
+from app.scraper.ssrf import SSRFError
+from app.scraper.urlnorm import canonicalize_url
 from app.ws_manager import AlertWebSocketManager
 
 logger = logging.getLogger("investwatch.worker")
 
 SCHEDULER_JOB_ID = "periodic_scan"
+DISCOVERY_JOB_ID = "discovery_scan"
+KNF_REFRESH_JOB_ID = "knf_registry_refresh"
 QUEUE_POLL_SECONDS = 2.0
+ROBOTS_SKIP_MESSAGE = "robots.txt disallow"
+
+# Failures of a single followed subpage that must not fail the whole job
+SUBPAGE_ERRORS = (RobotsDisallowedError, SSRFError, httpx.HTTPError, ValueError)
 
 
 def _target_key(req: CrawlTriggerRequest) -> str:
-    return req.target_url or req.mock_file or req.mode
+    if req.target_url:
+        return canonicalize_url(req.target_url)
+    return req.mock_file or req.mode
 
 
 class CrawlQueueWorker:
@@ -68,6 +82,7 @@ class CrawlQueueWorker:
         self._worker_task: asyncio.Task[None] | None = None
         self._scheduler: AsyncIOScheduler | None = None
         self._active_targets: set[str] = set()
+        self.discovery = DiscoveryService(settings=settings, db=db, registry=registry, worker=self)
 
     # --- lifecycle ---------------------------------------------------------------
 
@@ -80,18 +95,38 @@ class CrawlQueueWorker:
             self._worker_task = asyncio.create_task(self._run_loop(), name="investwatch-crawl-worker")
             self._wakeup.set()
 
-        if self.settings.crawler_enable_scheduler and self._scheduler is None:
+        if self._scheduler is None and (
+            self.settings.crawler_enable_scheduler
+            or self.discovery.enabled
+            or self.settings.knf_refresh_cron.strip()
+        ):
             self._scheduler = AsyncIOScheduler(timezone="UTC")
-            self._scheduler.add_job(
-                self.scheduled_scan,
-                trigger=self._build_trigger(),
-                id=SCHEDULER_JOB_ID,
-                replace_existing=True,
-                max_instances=1,
-                coalesce=True,
-            )
+            job_opts = {"replace_existing": True, "max_instances": 1, "coalesce": True}
+            if self.settings.crawler_enable_scheduler:
+                self._scheduler.add_job(
+                    self.scheduled_scan, trigger=self._build_trigger(), id=SCHEDULER_JOB_ID, **job_opts
+                )
+            if self.discovery.enabled:
+                self._scheduler.add_job(
+                    self.discovery.run,
+                    trigger=CronTrigger.from_crontab(self.settings.discovery_cron.strip(), timezone="UTC"),
+                    id=DISCOVERY_JOB_ID,
+                    **job_opts,
+                )
+            if self.settings.knf_refresh_cron.strip():
+                self._scheduler.add_job(
+                    self.refresh_knf_registry,
+                    trigger=CronTrigger.from_crontab(self.settings.knf_refresh_cron.strip(), timezone="UTC"),
+                    id=KNF_REFRESH_JOB_ID,
+                    **job_opts,
+                )
             self._scheduler.start()
-            logger.info("APScheduler uruchomiony (%s).", self.schedule_description)
+            logger.info(
+                "APScheduler uruchomiony (skan: %s, discovery: %s, rejestr KNF: %s).",
+                self.schedule_description,
+                self.discovery.schedule_description,
+                self.settings.knf_refresh_cron.strip() or "disabled",
+            )
 
     async def stop(self) -> None:
         if self._scheduler is not None:
@@ -124,12 +159,29 @@ class CrawlQueueWorker:
 
     @property
     def scheduler_next_run(self) -> str | None:
+        return self.next_run_of(SCHEDULER_JOB_ID)
+
+    def next_run_of(self, job_id: str) -> str | None:
         if not self._scheduler:
             return None
-        job = self._scheduler.get_job(SCHEDULER_JOB_ID)
+        job = self._scheduler.get_job(job_id)
         if job and job.next_run_time:
             return job.next_run_time.isoformat()
         return None
+
+    def is_active(self, req: CrawlTriggerRequest) -> bool:
+        """True when the same target is already queued or running."""
+        return _target_key(req) in self._active_targets
+
+    async def refresh_knf_registry(self) -> None:
+        """Scheduled refresh of the KNF registry snapshot from the official sources."""
+        from app.knf_sync import refresh_registry  # local import: optional, network-heavy path
+
+        try:
+            report = await refresh_registry(self.settings, self.registry)
+            logger.info("Odświeżono rejestr KNF: %s", report.summary())
+        except Exception as exc:
+            logger.warning("Odświeżenie rejestru KNF nie powiodło się: %s", exc)
 
     # --- scheduling --------------------------------------------------------------
 
@@ -149,15 +201,17 @@ class CrawlQueueWorker:
                 job_ids.append(await self.enqueue(CrawlTriggerRequest(mode="mock_all", module_ids=[1, 2, 3])))
 
         for target in self.db.list_watch_targets(only_enabled=True):
-            if target.url in self._active_targets:
-                skipped.append(target.url)
-                continue
             req = CrawlTriggerRequest(
                 mode="public_url",
                 target_url=target.url,
                 module_ids=[m for m in target.module_ids if m in (1, 2, 3)] or [1, 2, 3],  # type: ignore[misc]
                 use_playwright=target.use_playwright,
+                origin="watchlist",
+                follow_depth=target.follow_depth,
             )
+            if self.is_active(req):
+                skipped.append(target.url)
+                continue
             job_ids.append(await self.enqueue(req))
             self.db.mark_watch_target_enqueued(target.id)
 
@@ -230,6 +284,10 @@ class CrawlQueueWorker:
         # Refresh Ollama availability once per job
         await self.ollama.check_health()
 
+        if req.mode == "public_url":
+            await self._process_public_url(job_id, req)
+            return
+
         pages: list[FetchedPage] = []
         if req.mode == "mock_all":
             for fname in self.fetcher.list_mock_files():
@@ -242,13 +300,6 @@ class CrawlQueueWorker:
                 job_id, "fetching", f"mock://{req.mock_file}", f"Pobieranie strony demo: {req.mock_file}"
             )
             pages.append(await self.fetcher.fetch_mock_page(req.mock_file))
-        elif req.mode == "public_url":
-            if not req.target_url:
-                raise ValueError("Tryb 'public_url' wymaga pola 'target_url'.")
-            await self._emit_stage(
-                job_id, "fetching", req.target_url, f"Pobieranie URL (anty-SSRF): {req.target_url}"
-            )
-            pages.append(await self.fetcher.fetch_public_url(req.target_url, use_playwright=req.use_playwright))
 
         processed = 0
         created_or_updated = 0
@@ -257,13 +308,70 @@ class CrawlQueueWorker:
             created_or_updated += len(saved)
             processed += 1
 
+        await self._finish_job(job_id, req, processed, created_or_updated)
+
+    async def _process_public_url(self, job_id: str, req: CrawlTriggerRequest) -> None:
+        """Fetch the target (robots.txt honoured) and, with follow_depth > 0, same-site subpages (BFS)."""
+        if not req.target_url:
+            raise ValueError("Tryb 'public_url' wymaga pola 'target_url'.")
+        await self._emit_stage(job_id, "fetching", req.target_url, f"Pobieranie URL (anty-SSRF): {req.target_url}")
+        try:
+            root = await self.fetcher.fetch_public_url(req.target_url, use_playwright=req.use_playwright)
+        except RobotsDisallowedError:
+            await self._finish_job(job_id, req, 0, 0, note=ROBOTS_SKIP_MESSAGE)
+            return
+
+        modules = list(req.module_ids)
+        processed = 1
+        created_or_updated = len(await self.analyze_page(root, modules, job_id=job_id))
+
+        visited = {canonicalize_url(req.target_url), canonicalize_url(root.final_url)}
+        frontier: list[tuple[FetchedPage, int]] = [(root, 0)]
+        while frontier and processed < req.follow_max_pages:
+            page, depth = frontier.pop(0)
+            if depth >= req.follow_depth:
+                continue
+            for link in extract_same_site_links(page.raw_html, page.final_url):
+                if processed >= req.follow_max_pages:
+                    break
+                if link in visited:
+                    continue
+                visited.add(link)
+                await self._emit_stage(job_id, "fetching", link, f"Podstrona (głębokość {depth + 1}): {link}")
+                try:
+                    child = await self.fetcher.fetch_public_url(link, use_playwright=req.use_playwright)
+                except SUBPAGE_ERRORS as exc:
+                    logger.info("Pominięto podstronę %s: %s", link, exc)
+                    continue
+                visited.add(canonicalize_url(child.final_url))
+                created_or_updated += len(await self.analyze_page(child, modules, job_id=job_id))
+                processed += 1
+                frontier.append((child, depth + 1))
+
+        await self._finish_job(job_id, req, processed, created_or_updated)
+
+    async def _finish_job(
+        self,
+        job_id: str,
+        req: CrawlTriggerRequest,
+        processed: int,
+        created_or_updated: int,
+        note: str | None = None,
+    ) -> None:
         self.db.update_crawl_job(
             job_id,
             status="completed",
             processed_count=processed,
             incidents_created=created_or_updated,
+            error_message=note,
             finished=True,
         )
+        message = (
+            f"Zakończono zadanie {job_id}: przeanalizowano {processed} źródeł, "
+            f"zapisano {created_or_updated} wyników."
+        )
+        if note == ROBOTS_SKIP_MESSAGE:
+            message = f"Pominięto {_target_key(req)}: robots.txt nie zezwala na pobranie."
         await self.ws_manager.broadcast(
             WebSocketAlertEvent(
                 type="analysis_complete",
@@ -271,10 +379,7 @@ class CrawlQueueWorker:
                 job_id=job_id,
                 stage="completed",
                 source=_target_key(req),
-                message=(
-                    f"Zakończono zadanie {job_id}: przeanalizowano {processed} źródeł, "
-                    f"zapisano {created_or_updated} wyników."
-                ),
+                message=message,
                 extra={"processed": processed, "incidents_saved": created_or_updated},
             )
         )
