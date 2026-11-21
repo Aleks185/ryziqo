@@ -11,8 +11,10 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import httpx
+from bs4 import BeautifulSoup
 
 from app.config import Settings
+from app.scraper.browser import BrowserRenderer, RenderResult
 from app.scraper.ssrf import SSRFError, validate_public_url
 
 logger = logging.getLogger("investwatch.scraper")
@@ -79,6 +81,7 @@ class PageFetcher:
         self.settings = settings
         self._last_public_request_ts: float = 0.0
         self._rate_lock = asyncio.Lock()
+        self._renderer = BrowserRenderer(settings)
 
     async def _respect_rate_limit(self) -> None:
         async with self._rate_lock:
@@ -187,12 +190,15 @@ class PageFetcher:
         used_pw = False
 
         should_try_pw = use_playwright or (
-            self.settings.crawler_use_playwright_fallback and len(html.strip()) < 600
+            self.settings.crawler_use_playwright_fallback
+            and self.looks_js_rendered(html, self.settings.crawler_playwright_min_text_chars)
         )
         if should_try_pw:
-            pw_html, pw_metrics = await self._try_playwright_render(current_url, proxy=proxy)
-            if pw_html:
-                html = pw_html
+            rendered = await self._try_playwright_render(current_url, proxy=proxy)
+            if rendered is not None:
+                html = rendered.html
+                current_url = rendered.final_url
+                pw_metrics = rendered.metrics
                 used_pw = True
 
         return FetchedPage(
@@ -206,51 +212,23 @@ class PageFetcher:
             playwright_dom_metrics=pw_metrics,
         )
 
+    @staticmethod
+    def looks_js_rendered(html: str, min_text_chars: int) -> bool:
+        """True when the HTML is an app shell: little visible text once scripts/styles are removed."""
+        soup = BeautifulSoup(html, "html.parser")
+        for tag in soup.find_all(["script", "style", "noscript", "template", "svg"]):
+            tag.decompose()
+        return len(soup.get_text(" ", strip=True)) < min_text_chars
+
     async def _try_playwright_render(
         self, url: str, proxy: str | None = None
-    ) -> tuple[str | None, dict[str, object] | None]:
-        """Optional Playwright fallback for JS-rendered pages + responsive viewport check."""
-        try:
-            from playwright.async_api import async_playwright
-        except ImportError:
+    ) -> RenderResult | None:
+        """Optional Playwright fallback; any failure keeps the httpx result."""
+        if not self._renderer.is_available():
             logger.info("Playwright nie jest zainstalowany — używam wyników httpx.")
-            return None, None
-
+            return None
         try:
-            validate_public_url(url)
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(
-                    headless=True, proxy={"server": proxy} if proxy else None
-                )
-                try:
-                    page = await browser.new_page(
-                        viewport={"width": 1280, "height": 800},
-                        user_agent=self.pick_user_agent(),
-                    )
-
-                    # Anti-SSRF for the browser: every request (redirects, sub-resources) is re-validated
-                    async def _guard(route) -> None:  # type: ignore[no-untyped-def]
-                        req_url = route.request.url
-                        try:
-                            if not req_url.startswith(("data:", "blob:")):
-                                validate_public_url(req_url)
-                        except SSRFError:
-                            await route.abort()
-                            return
-                        await route.continue_()
-
-                    await page.route("**/*", _guard)
-                    await page.goto(url, wait_until="domcontentloaded", timeout=15000)
-                    html = await page.content()
-
-                    # Check mobile viewport overflow (Rule 8 — Responsiveness)
-                    await page.set_viewport_size({"width": 375, "height": 667})
-                    overflow_mobile = await page.evaluate(
-                        "() => document.documentElement.scrollWidth > window.innerWidth + 10"
-                    )
-                    return html, {"responsive_overflow_detected": bool(overflow_mobile)}
-                finally:
-                    await browser.close()
+            return await self._renderer.render(url, user_agent=self.pick_user_agent(), proxy=proxy)
         except Exception as exc:
             logger.warning("Playwright fallback nie powiódł się dla %s: %s", url, exc)
-            return None, None
+            return None

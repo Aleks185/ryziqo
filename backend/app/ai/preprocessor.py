@@ -159,6 +159,20 @@ def extract_dom_metrics(
         dominant_font = round(sum(non_hero) / len(non_hero), 1)
 
     risk_font = round(min(risk_fonts), 1) if risk_fonts else None
+
+    # Browser-computed styles (Playwright) see external stylesheets, classes and JS-applied CSS,
+    # so they take precedence over the static inline/<style> parsing above.
+    computed = playwright_metrics.get("computed") if playwright_metrics else None
+    if isinstance(computed, dict):
+        if isinstance(computed.get("dominant_font_px"), (int, float)):
+            dominant_font = round(float(computed["dominant_font_px"]), 1)
+        if isinstance(computed.get("risk_font_px"), (int, float)):
+            risk_font = round(float(computed["risk_font_px"]), 1)
+        if isinstance(computed.get("low_contrast_detected"), bool):
+            low_contrast = computed["low_contrast_detected"]
+        risk_in_footer = risk_in_footer or bool(computed.get("risk_hidden_in_footer"))
+        requires_click = requires_click or bool(computed.get("requires_click_to_view_risk"))
+
     font_ratio = (
         round(risk_font / dominant_font, 2)
         if (risk_font is not None and dominant_font > 0)

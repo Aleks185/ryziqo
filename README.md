@@ -82,6 +82,8 @@ Wszystkie parametry znajdują się w [.env.example](.env.example). Sekrety są i
 | `CRAWLER_PROXIES` | puste | Lista proxy rotowanych per żądanie (`http://...`, `socks5://...`) |
 | `DEDUP_SIMILARITY_THRESHOLD` | `0.92` | Próg podobieństwa embeddingów przy ponownym skanie tego samego URL |
 | `INSTALL_PLAYWRIGHT` | `false` | Build-arg Dockera: Chromium dla stron renderowanych JS |
+| `CRAWLER_USE_PLAYWRIGHT_FALLBACK` | `false` | Renderuj w Chromium strony z małą ilością tekstu (SPA) |
+| `CRAWLER_PLAYWRIGHT_MIN_TEXT_CHARS` | `400` | Próg widocznego tekstu uruchamiający render |
 | `HIGH_RISK_ALERT_THRESHOLD` | `0.65` | Próg emisji alertów `high_risk_alert` na `/ws/alerts` (w Dockerze także próg alertów w panelu) |
 | `FRONTEND_PORT` | `3000` | Port hosta, na którym Docker Compose wystawia panel |
 
@@ -91,8 +93,8 @@ Zmienne frontendu (`REACT_APP_INVESTWATCH_API_URL`, `REACT_APP_ALERT_THRESHOLD`)
 
 ```bash
 cd backend
-pytest -q
-pip-audit -r requirements-dev.txt
+pytest -q                    # testy Playwright wymagają: pip install -r requirements-playwright.txt && playwright install chromium
+pip-audit -r requirements-dev.txt -r requirements-playwright.txt
 
 cd ../frontend
 yarn audit

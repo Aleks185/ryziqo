@@ -44,7 +44,8 @@ backend/
 │   ├── queue_worker.py               # Trwała kolejka (SQLite) + harmonogram APScheduler (interwał/cron) + watchlista
 │   ├── scraper/
 │   │   ├── ssrf.py                   # Walidacja anty-SSRF (schemat, DNS, prywatne/metadata IP)
-│   │   ├── fetcher.py                # httpx (limity/redirecty/rotacja UA i proxy) + Playwright fallback + mock loader
+│   │   ├── fetcher.py                # httpx (limity/redirecty/rotacja UA i proxy) + wybór fallbacku + mock loader
+│   │   ├── browser.py                # Playwright/Chromium: render JS, metryki z computed styles, anty-SSRF przeglądarki
 │   │   └── social_parsers.py         # Autor, treść posta, data, hashtagi, wzmianki, linki (FB/IG/TikTok/YT/X)
 │   ├── ai/
 │   │   ├── preprocessor.py           # Czyszczenie HTML, NFKC, SHA-256, DOM/CSS, wektor 128-dim
@@ -96,7 +97,10 @@ backend/
   - Blokuje nazwy hostów lokalnych i wewnętrznych (`localhost`, `*.local`, `*.internal`, `metadata.google.internal`, `host.docker.internal`).
   - Rozwiązuje DNS (`socket.getaddrinfo`) i odrzuca adresy prywatne (`10/8`, `172.16/12`, `192.168/16`, `fc00::/7`), loopback (`127/8`, `::1`), IPv4-mapped IPv6 (`::ffff:127.0.0.1`), link-local / cloud metadata (`169.254.0.0/16`, `fe80::/10`), multicast oraz zarezerwowane.
   - W `fetcher.py` przekierowania są obsługiwane ręcznie (`follow_redirects=False`, max 5 hopów), a walidacja anty-SSRF jest wykonywana ponownie na każdym przekierowaniu.
-- **Pobieranie (`scraper/fetcher.py`):** asynchroniczny `httpx` z timeoutem (`12s`), limitem strumienia (`2 MB`), walidacją `Content-Type`, łagodnym rate-limitingiem (`0.5s`), transparentną rotacją User-Agent oraz rotacją proxy z `CRAWLER_PROXIES` (bez omijania kontroli dostępu). Opcjonalny fallback `Playwright` (obraz z `INSTALL_PLAYWRIGHT=true`) renderuje strony JS z tym samym proxy, waliduje anty-SSRF każde żądanie przeglądarki (`page.route`) i mierzy overflow na ekranie mobilnym (`375x667`).
+- **Pobieranie (`scraper/fetcher.py`):** asynchroniczny `httpx` z timeoutem (`12s`), limitem strumienia (`2 MB`), walidacją `Content-Type`, łagodnym rate-limitingiem (`0.5s`), transparentną rotacją User-Agent oraz rotacją proxy z `CRAWLER_PROXIES` (bez omijania kontroli dostępu). - **Renderowanie JS (`scraper/browser.py`, obraz z `INSTALL_PLAYWRIGHT=true`):** uruchamiane gdy `use_playwright: true` albo przy `CRAWLER_USE_PLAYWRIGHT_FALLBACK=true`, jeśli strona po usunięciu skryptów ma mniej niż `CRAWLER_PLAYWRIGHT_MIN_TEXT_CHARS` znaków widocznego tekstu (powłoka SPA). Headless Chromium z tym samym proxy co httpx, timeout `CRAWLER_PLAYWRIGHT_TIMEOUT_SECONDS`, maks. 2 równoległe rendery, `--disable-dev-shm-usage` (Docker), zablokowane service workery, pobieranie plików oraz obrazy/media/fonty.
+  - **Anty-SSRF w przeglądarce:** każde żądanie (nawigacja, skrypty, `fetch`/XHR) i każdy WebSocket przechodzi przez `validate_public_url` (DNS w wątku, cache per host). Chromium podąża za przekierowaniami bez ponownego wywołania `route`, dlatego handler sam pobiera odpowiedź (`route.fetch(max_redirects=0)`), waliduje każdy krok łańcucha `Location` (limit `CRAWLER_MAX_REDIRECTS`) i oddaje przeglądarce dopiero końcową odpowiedź. Wyrenderowany DOM jest ograniczony do `CRAWLER_MAX_BYTES`.
+  - **Metryki z computed styles:** w kontekście strony liczone są rozmiar czcionki ostrzeżenia vs. mediana ważona długością tekstu (Reguła 4), kontrast WCAG z rzeczywistym tłem i efektywną przezroczystością (< 4.5:1, Reguła 5), umieszczenie w stopce/sekcji prawnej (Reguła 6), treść w zamkniętym `<details>` (Reguła 7) i overflow przy `375x667` (Reguła 8). Uwzględniają zewnętrzne arkusze CSS i style nadane przez JS, więc mają pierwszeństwo przed statyczną analizą inline CSS.
+  - **Znane ograniczenie:** walidacja DNS i połączenie wykonywane przez Playwright to dwa osobne rozwiązania nazwy (teoretyczne okno na DNS rebinding). Przy wdrożeniu produkcyjnym ruch wychodzący crawlera powinien iść przez proxy egress z blokadą sieci prywatnych.
 - **Parsery social media (`scraper/social_parsers.py`):** dla `facebook`, `instagram`, `tiktok`, `youtube`, `x` odczytują schema.org JSON-LD (`SocialMediaPosting`, `VideoObject`), OpenGraph / Twitter Card, uchwyt z ścieżki URL (`tiktok.com/@user`, `instagram.com/user`) i widoczne oznaczenie autora. Wynik (autor, treść posta, data publikacji, hashtagi, wzmianki, linki wychodzące) trafia do artefaktu JSON w Object Storage, a autor — do `promoter_name` w Module 1.
 - **Lokalne źródła demonstracyjne (`data/mock_sites/*.html`):** ładowane osobną, odizolowaną ścieżką z ochroną przed path traversal, jawnie oznaczone jako syntetyczne (`mock://...`, `[MOCK DEMO]`).
 - **Kolejka i harmonogram (`queue_worker.py`):** trwała kolejka w tabeli `crawl_jobs` (parametry zadania w `request_json`, atomowe pobieranie `BEGIN IMMEDIATE`, zadania przerwane restartem wracają do kolejki) + `APScheduler` (`AsyncIOScheduler`) z wyzwalaczem interwałowym lub crontab (`CRAWLER_CRON`), `max_instances=1`, `coalesce=True`. Każdy cykl skanuje mock-strony demo (opcjonalnie) oraz wszystkie aktywne cele z tabeli `watch_targets` — to mechanizm okresowej aktualizacji raportu Modułu 1. Cele w trakcie przetwarzania są pomijane.
@@ -107,7 +111,7 @@ backend/
 
 ### Preprocessing (`ai/preprocessor.py`)
 - Usuwa elementy nietekstowe (`<script>`, `<style>`, `<noscript>`, `<svg>`), normalizuje tekst (Unicode NFKC + białe znaki), dzieli na zdania i liczy skrót `SHA-256` (`content_hash`) do deduplikacji.
-- Ekstrahuje **metryki DOM/CSS** z inline stylów i bloków `<style>` (plus opcjonalne metryki z Playwright): `dominant_font_px`, `risk_font_px`, `font_ratio`, `risk_hidden_in_footer`, `requires_click_to_view_risk` (`<details>`), `low_contrast_detected` (luminancja koloru hex/opacity), `responsive_overflow_detected`.
+- Ekstrahuje **metryki DOM/CSS** z inline stylów i bloków `<style>` (plus metryki z computed styles przeglądarki, gdy strona była renderowana przez Playwright — mają pierwszeństwo): `dominant_font_px`, `risk_font_px`, `font_ratio`, `risk_hidden_in_footer`, `requires_click_to_view_risk` (`<details>`), `low_contrast_detected` (luminancja koloru hex/opacity), `responsive_overflow_detected`.
 - Tworzy deterministyczną reprezentację wektorową 128-dim (feature hashing z normalizacją L2 + funkcja `cosine_similarity`), którą przy dostępnej Ollamie nadpisuje lokalnym embeddingiem z `/api/embeddings`.
 
 ### Trzy wyspecjalizowane moduły
@@ -144,7 +148,7 @@ backend/
 
 ## 7. Stan weryfikacji
 
-- **Testy automatyczne (`pytest`):** **43/43 PASSED** (`2026-11-21`, v1.2.0; w tym 15 testów `test_crawler_features.py`) — pokrycie dla 14 wektorów anty-SSRF (`test_ssrf.py`), wszystkich 3 modułów analitycznych + DOM/CSS + przypadków negatywnych (`test_modules.py`) oraz pełnej integracji REST, analizy na żądanie (walidacja, escapowanie, deduplikacja, anty-SSRF dla `/analyze/url`), etykiet referencyjnych, kalibracji FP/FN i streamingu WebSocket `/ws/alerts` (`test_api.py`).
+- **Testy automatyczne (`pytest`):** **43/43 PASSED** (`2026-11-21`, v1.2.0) — **49/49** z zainstalowanym Playwright/Chromium (`test_browser.py`: render SPA, computed styles, blokada żądań/WebSocketów/przekierowań do adresów wewnętrznych; bez Playwrighta testy są pomijane) — pokrycie dla 14 wektorów anty-SSRF (`test_ssrf.py`), wszystkich 3 modułów analitycznych + DOM/CSS + przypadków negatywnych (`test_modules.py`) oraz pełnej integracji REST, analizy na żądanie (walidacja, escapowanie, deduplikacja, anty-SSRF dla `/analyze/url`), etykiet referencyjnych, kalibracji FP/FN i streamingu WebSocket `/ws/alerts` (`test_api.py`).
 - **Audyt bezpieczeństwa (`pip-audit -r requirements-dev.txt`, przypięte wersje):** `No known vulnerabilities found` (**0 znanych podatności**).
 - Szczegóły licencji i zabezpieczeń: [security-licenses.md](./security-licenses.md).
 - Proces pracy z asystentami AI: [ai-workflow.md](./ai-workflow.md).

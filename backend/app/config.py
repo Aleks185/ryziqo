@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     crawler_max_redirects: int = 5
     crawler_rate_limit_seconds: float = 0.5
     crawler_use_playwright_fallback: bool = False
+    crawler_playwright_timeout_seconds: float = 20.0
+    # Pages whose visible text (without scripts/styles) is shorter are re-rendered with Playwright
+    crawler_playwright_min_text_chars: int = 400
     crawler_enable_scheduler: bool = True
     crawler_schedule_minutes: int = 15
     # Optional crontab expression ("*/30 * * * *"); overrides CRAWLER_SCHEDULE_MINUTES when set
