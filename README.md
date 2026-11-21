@@ -10,6 +10,16 @@ Prototyp MVP (HackNation 2026) do automatycznej identyfikacji, agregacji i anali
 - **Docker + Docker Compose** (rekomendowany start on-premise)
 - **RAM:** min. 4 GB (tryb z regułami/fallback), min. 8–16 GB przy lokalnym modelu LLM w Ollama
 - **Opcjonalnie (lokalne AI on-premise):** [Ollama](https://ollama.com/) na hoście (`ollama pull gemma3:4b` lub `gemma4`) albo w kontenerze (profil `ai`, poniżej) — zero płatnych zewnętrznych API
+- **GPU (zalecane dla lokalnego LLM):** karta NVIDIA z min. 6–8 GB VRAM (np. RTX 4060 8 GB mieści cały `gemma3:4b`, ~50–60 tokenów/s; na CPU kilka–kilkanaście). Dla Ollamy w kontenerze wymagany jest dostęp Dockera do GPU: Docker Desktop z backendem WSL2 (Windows) lub [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) (Linux). Test: `docker run --rm --gpus all ubuntu nvidia-smi -L` powinien wypisać kartę.
+  - Serwis `ollama` w `docker-compose.yml` rezerwuje GPU (`deploy.resources.reservations.devices`). **Na maszynie bez karty NVIDIA usuń ten blok**, inaczej kontener nie wystartuje (model będzie wtedy działał na CPU).
+  - Weryfikacja, że model działa na GPU:
+    ```powershell
+    docker logs investwatch-ollama 2>&1 | Select-String "inference compute|offloaded"
+    # oczekiwane: library=CUDA ... oraz "offloaded 35/35 layers to GPU"
+    docker exec investwatch-ollama ollama run gemma3:4b "test" --keepalive 2m --verbose   # "eval rate" ~50+ tokens/s
+    docker exec investwatch-ollama ollama ps   # kolumna PROCESSOR: 100% GPU
+    ```
+    Backend wyładowuje model po zapytaniu (`keep_alive`), więc puste `ollama ps` jest normalne — miarodajne są logi z ładowania.
 - **Do developmentu bez Dockera:** Python 3.11+ (backend), Node.js 20+ i Yarn 1.22 (frontend)
 
 ## Struktura repozytorium
