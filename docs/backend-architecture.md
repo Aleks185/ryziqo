@@ -48,12 +48,20 @@ backend/
 │   │   ├── browser.py                # Playwright/Chromium: render JS, metryki z computed styles, anty-SSRF przeglądarki
 │   │   └── social_parsers.py         # Autor, treść posta, data, hashtagi, wzmianki, linki (FB/IG/TikTok/YT/X)
 │   ├── ai/
-│   │   ├── preprocessor.py           # Czyszczenie HTML, NFKC, SHA-256, DOM/CSS, wektor 128-dim
-│   │   ├── ollama_client.py          # Klient natywnej Ollamy na hoście (JSON + embeddings)
+│   │   ├── preprocessor.py           # Czyszczenie HTML, NFKC, anty-obfuskacja, ukryty tekst/injection, sekcje, DOM/CSS, wektor 128-dim
+│   │   ├── ollama_client.py          # Klient natywnej Ollamy (JSON Schema w `format`, num_predict/num_ctx, embeddings, VLM)
+│   │   ├── schemas.py                # Schemat odpowiedzi LLM, katalog sygnałów per moduł, weryfikacja cytatów
+│   │   ├── prompting.py              # Piaskownica <untrusted_content>, rubryka, checklisty, few-shot (hard negatives)
+│   │   ├── context.py                # Budowa kontekstu promptu (sekcje dokumentu, RAG, linki)
+│   │   ├── fusion.py                 # Nieliniowa fuzja reguł i zweryfikowanych sygnałów LLM (FN boost, weto FP)
+│   │   ├── retrieval.py              # RAG few-shot z incydentów zweryfikowanych + wykrywanie klonów kampanii
+│   │   ├── vision_analyzer.py        # Opcjonalna analiza VLM zrzutów ekranu (banery, czytelność ryzyka, logotypy)
+│   │   ├── solicitation.py           # Moduł 2: sygnały nakłaniania do wpłat / zdalnego dostępu (scam)
+│   │   ├── monetary_offer.py         # Moduł 2: oferty pieniężne (kwoty, terminy, bonusy, presja czasu)
 │   │   ├── module1_finfluencers.py   # Moduł 1: Finfluencerzy i promocja transgraniczna
 │   │   ├── module2_risk_compliance.py# Moduł 2: 18 kryteriów MiFID II / rozp. 2017/565
 │   │   ├── module3_shadow_advisory.py# Moduł 3: Shadow Advisory (art. 76, 2, 3 u.o.i.f.)
-│   │   └── aggregator.py             # Agregacja wyników 1–3 do obiektów Incident
+│   │   └── aggregator.py             # Moduły równolegle, guard KNF, klony, VLM, tryb primary/all_significant
 │   └── routers/
 │       ├── incidents.py              # /incidents, /incidents/{id}, PATCH /status, PATCH /label, /stats
 │       ├── analyze.py                # POST /analyze/text, POST /analyze/url (analiza na żądanie)
@@ -61,11 +69,16 @@ backend/
 │       ├── watchlist.py              # /watchlist (CRUD) + POST /watchlist/run
 │       ├── reports.py                # GET /reports/{module_id}?format=json|csv
 │       └── ws.py                     # WebSocket /ws/alerts
+├── scripts/
+│   └── evaluate_detection.py         # Benchmark Precision/Recall/F1 na data/eval_golden_dataset.json (fallback / ollama / both)
 └── tests/
     ├── test_ssrf.py                  # 14 przypadków blokady anty-SSRF
     ├── test_modules.py               # Testy Modułów 1–3, DOM/CSS i embeddingów
     ├── test_api.py                   # Testy integracyjne REST, analizy na żądanie, etykiet, kalibracji i WebSocket
-    └── test_crawler_features.py      # Parsery social, proxy, trwała kolejka, watchlista, near-dup, raporty, risk_level
+    ├── test_crawler_features.py      # Parsery social, proxy, trwała kolejka, watchlista, near-dup, raporty, risk_level
+    ├── test_ai_detection.py          # Obfuskacja, anti-injection, weryfikacja cytatów, fuzja, RAG, klony, KNF fuzzy, VLM (mock Ollama)
+    ├── test_solicitation.py          # Sygnały nakłaniania do wpłat i oferty pieniężne (Moduł 2)
+    └── test_browser.py               # Playwright: render SPA, computed styles, anty-SSRF przeglądarki (pomijane bez Chromium)
 ```
 
 ---
@@ -102,6 +115,7 @@ backend/
   - **Metryki z computed styles:** w kontekście strony liczone są rozmiar czcionki ostrzeżenia vs. mediana ważona długością tekstu (Reguła 4), kontrast WCAG z rzeczywistym tłem i efektywną przezroczystością (< 4.5:1, Reguła 5), umieszczenie w stopce/sekcji prawnej (Reguła 6), treść w zamkniętym `<details>` (Reguła 7) i overflow przy `375x667` (Reguła 8). Uwzględniają zewnętrzne arkusze CSS i style nadane przez JS, więc mają pierwszeństwo przed statyczną analizą inline CSS.
   - **Znane ograniczenie:** walidacja DNS i połączenie wykonywane przez Playwright to dwa osobne rozwiązania nazwy (teoretyczne okno na DNS rebinding). Przy wdrożeniu produkcyjnym ruch wychodzący crawlera powinien iść przez proxy egress z blokadą sieci prywatnych.
 - **Parsery social media (`scraper/social_parsers.py`):** dla `facebook`, `instagram`, `tiktok`, `youtube`, `x` odczytują schema.org JSON-LD (`SocialMediaPosting`, `VideoObject`), OpenGraph / Twitter Card, uchwyt z ścieżki URL (`tiktok.com/@user`, `instagram.com/user`) i widoczne oznaczenie autora. Wynik (autor, treść posta, data publikacji, hashtagi, wzmianki, linki wychodzące) trafia do artefaktu JSON w Object Storage, a autor — do `promoter_name` w Module 1.
+- **Zrzuty ekranu i linki (`fetcher.py`, `browser.py`):** przy `OLLAMA_VISION_ENABLED=true` render Playwright zapisuje zrzuty desktop (`1280x800`) i mobile (`375x667`) w Object Storage (`Database.save_screenshots`) dla analizy VLM. Przy `CRAWLER_EXPAND_SHORT_LINKS=true` skracacze i link-in-bio (`bit.ly`, `linktr.ee` itp.) są rozwijane z walidacją anty-SSRF na każdym kroku — ustalane są wyłącznie domeny docelowe (sprawdzane w rejestrze/liście ostrzeżeń KNF), bez pobierania pełnej treści landing page'a.
 - **Lokalne źródła demonstracyjne (`data/mock_sites/*.html`):** ładowane osobną, odizolowaną ścieżką z ochroną przed path traversal, jawnie oznaczone jako syntetyczne (`mock://...`, `[MOCK DEMO]`).
 - **Kolejka i harmonogram (`queue_worker.py`):** trwała kolejka w tabeli `crawl_jobs` (parametry zadania w `request_json`, atomowe pobieranie `BEGIN IMMEDIATE`, zadania przerwane restartem wracają do kolejki) + `APScheduler` (`AsyncIOScheduler`) z wyzwalaczem interwałowym lub crontab (`CRAWLER_CRON`), `max_instances=1`, `coalesce=True`. Każdy cykl skanuje mock-strony demo (opcjonalnie) oraz wszystkie aktywne cele z tabeli `watch_targets` — to mechanizm okresowej aktualizacji raportu Modułu 1. Cele w trakcie przetwarzania są pomijane.
 
@@ -111,6 +125,9 @@ backend/
 
 ### Preprocessing (`ai/preprocessor.py`)
 - Usuwa elementy nietekstowe (`<script>`, `<style>`, `<noscript>`, `<svg>`), normalizuje tekst (Unicode NFKC + białe znaki), dzieli na zdania i liczy skrót `SHA-256` (`content_hash`) do deduplikacji.
+- **Anty-obfuskacja:** homoglify (cyrylica → łacina), znaki zero-width, rozstrzelone słowa (`z.y.s.k`, `g w a r a n t o w a n y`).
+- **Ukryty tekst i prompt injection:** węzły z `display:none`, `visibility:hidden`, `font-size:0`, `opacity:0` są raportowane osobno (nie trafiają do promptu jako treść). Sam ukryty tekst nie jest naruszeniem — sygnałem jest injection w ukrytym tekście (reguła `AI_PROMPT_INJECTION`, także w trybie fallback) lub niewidoczne ostrzeżenie o ryzyku.
+- **Sekcje dokumentu:** nagłówki/hero, fragment treści, klauzule ryzyka i stopka, linki/CTA/hashtagi — mieszczą się w budżecie `AI_PROMPT_CONTENT_CHARS` zamiast ślepego ucinania tekstu.
 - Ekstrahuje **metryki DOM/CSS** z inline stylów i bloków `<style>` (plus metryki z computed styles przeglądarki, gdy strona była renderowana przez Playwright — mają pierwszeństwo): `dominant_font_px`, `risk_font_px`, `font_ratio`, `risk_hidden_in_footer`, `requires_click_to_view_risk` (`<details>`), `low_contrast_detected` (luminancja koloru hex/opacity), `responsive_overflow_detected`.
 - Tworzy deterministyczną reprezentację wektorową 128-dim (feature hashing z normalizacją L2 + funkcja `cosine_similarity`), którą przy dostępnej Ollamie nadpisuje lokalnym embeddingiem z `/api/embeddings`.
 
@@ -125,18 +142,27 @@ backend/
    - Weryfikuje brak wpisu w lokalnym snapshocie KNF (`not_in_knf_snapshot`).
    - Wykrywa profil doradczy (`wealth management`, `family office`, `investment consulting`, `mentoring finansowy`) połączony z przesłankami indywidualnej rekomendacji z **art. 76 u.o.i.f.** oraz katalogiem instrumentów finansowych z **art. 2 i 3 u.o.i.f.** (akcje, obligacje, ETF, certyfikaty, opcje, kontrakty terminowe, CFD), jednocześnie nie flagując biur podatkowych (PIT-38) ani treści z jednoznacznym wyłączeniem doradztwa.
 
-### Integracja z Ollama i Fallback (`ai/ollama_client.py`, `ai/aggregator.py`)
-- Backend łączy się z Ollamą działającą natywnie na hoście (`OLLAMA_BASE_URL`, w Dockerze `http://host.docker.internal:11434`), automatycznie wykrywając zainstalowany model open-source (preferując `gemma4`/`gemma3`/`qwen2.5`/`llama3`) i wymuszając odpowiedź w `format: "json"`.
-- Gdy Ollama odpowiada, finalny `risk_score` (`0.00–1.00`) jest średnią ważoną wyniku reguł (65–70%) i oceny LLM (30–35%).
-- Gdy Ollama jest niedostępna, system automatycznie i bezawaryjnie przechodzi na tryb `demo_fallback` (silnik deterministyczny 18 reguł + DOM/CSS + seedowane rekordy w SQLite), jawnie oznaczając to w `mode`, `model_used` oraz `is_demo_fallback`.
-- `aggregator.py` łączy wyniki Modułów 1–3 w ujednolicony obiekt `Incident`. Deduplikacja w `queue_worker.py`: najpierw dokładnie po `(module_id, content_hash)`, potem semantycznie — ponowny skan tego samego URL z podobieństwem kosinusowym embeddingów `>= DEDUP_SIMILARITY_THRESHOLD` aktualizuje istniejący incydent (zmienione liczniki czy komentarze nie tworzą duplikatów).
+### Integracja z Ollama, fuzja i Fallback (`ai/ollama_client.py`, `ai/fusion.py`, `ai/aggregator.py`)
+
+Pełny opis zmian detekcji v2 (diagnoza, fazy, świadome odstępstwa): [ai-detection-improvement-plan.md](./ai-detection-improvement-plan.md). Instalacja i wybór modelu: [ollama-llm-setup.md](./ollama-llm-setup.md).
+
+- Backend łączy się z Ollamą działającą natywnie na hoście (`OLLAMA_BASE_URL`, w Dockerze `http://host.docker.internal:11434`) lub w kontenerze (profil `ai`), automatycznie wykrywając zainstalowany model open-source (preferując `gemma4`/`gemma3`/`qwen2.5`/`llama3`).
+- **Structured output:** schemat JSON odpowiedzi (`ai/schemas.py`: `context_type`, `reasoning`, `signals[]` z `exact_quote`, `llm_risk_score`) jest przekazywany w polu `format` API Ollama (fallback na `format: "json"` dla starszych wersji); `OLLAMA_NUM_PREDICT` / `OLLAMA_NUM_CTX` sterują budżetem.
+- **Bezpieczeństwo promptu (`ai/prompting.py`):** treść strony w piaskownicy `<untrusted_content>` z jawnym zakazem wykonywania zawartych poleceń, rubryka ocen, checklisty sygnałów per moduł i few-shot z *hard negatives*.
+- **Anti-Hallucination Guard:** sygnał LLM liczy się tylko, gdy jego `exact_quote` występuje w tekście źródłowym (`AI_STRICT_QUOTE_VERIFICATION`).
+- **Nieliniowa fuzja (`ai/fusion.py`):** `risk_score = max(wynik_reguł, mieszanka_liniowa, ai_verified)`, gdzie `ai_verified` jest ograniczony własną oceną modelu i siłą zweryfikowanych dowodów; zweryfikowane sygnały dodają reguły `AI_*`. **Weto FP** obniża wynik treści `educational` / `journalism_warning` (limit `0.35`), ale nie działa przy twardym CTA komercyjnym, zweryfikowanym sygnale `explicit` ani wykrytym prompt injection.
+- **RAG i klony (`ai/retrieval.py`):** do promptu dołączane są najbardziej podobne incydenty zweryfikowane przez analityków (`ground_truth_label` / `status`, z `analyst_note`); podobieństwo `>= AI_CLONE_SIMILARITY_THRESHOLD` do potwierdzonego incydentu z innej domeny dodaje regułę `CAMPAIGN_CLONE_MATCH` i podbija wynik.
+- **KNF (`knf_registry.py`):** fuzzy matching (Levenshtein na tokenach złożonych/domenach) wykrywa podszywanie się pod licencjonowane podmioty (`KNF_IMPERSONATION_SUSPECT`); trafienie w lokalnym snapshocie Listy Ostrzeżeń (`data/knf_warnings_snapshot.json`, **wyłącznie fikcyjne wpisy demo**) podbija ryzyko do `>= 0.90` (`KNF_WARNING_LIST_MATCH`).
+- **VLM (`ai/vision_analyzer.py`, `OLLAMA_VISION_ENABLED`):** model z obsługą obrazów ocenia zrzuty ekranu — obietnice zysku w grafikach, czytelność ostrzeżenia (kryteria 4–6, 8), wizerunki instytucji i osób publicznych (`AI_VLM_*`).
+- Gdy Ollama jest niedostępna, system automatycznie i bezawaryjnie przechodzi na tryb `demo_fallback` (silnik deterministyczny 18 reguł + DOM/CSS + anti-injection + KNF fuzzy/ostrzeżenia + seedowane rekordy w SQLite), jawnie oznaczając to w `mode`, `model_used` oraz `is_demo_fallback`.
+- `aggregator.py` uruchamia Moduły 1–3 równolegle i łączy wyniki w obiekty `Incident`: `AGGREGATOR_MULTI_MODULE_MODE=primary` (domyślnie, jeden incydent na stronę, wykrycia wtórne z prefiksem `[Wtórne]`) lub `all_significant` (incydent per moduł z naruszeniami). Deduplikacja w `queue_worker.py`: najpierw dokładnie po `(module_id, content_hash)`, potem semantycznie — ponowny skan tego samego URL z podobieństwem kosinusowym embeddingów `>= DEDUP_SIMILARITY_THRESHOLD` aktualizuje istniejący incydent (zmienione liczniki czy komentarze nie tworzą duplikatów).
 
 ---
 
 ## 6. Warstwa składowania i konteneryzacja
 
 - **SQLite (`database.py`):** tryb `WAL`, klucze obce włączone, 4 tabele (`incidents`, `content_snapshots` z pełnym embeddingiem, `crawl_jobs`, `watch_targets`), addytywne migracje kolumn przy starcie + indeksy po `module_id`, `risk_score`, `status`, `detected_at` i `(module_id, content_hash)`. Wszystkie zapytania używają wyłącznie parametrów bindowanych (`?`).
-- **Local Object Storage:** surowe pobrane strony (`<hash>.html`) oraz przetworzone artefakty JSON (`<hash>.json` z tekstem i wektorem) zapisywane w `OBJECT_STORE_DIR` i wiązane z rekordem poprzez `storage_key`.
+- **Local Object Storage:** surowe pobrane strony (`<hash>.html`), przetworzone artefakty JSON (`<hash>.json` z tekstem i wektorem) oraz opcjonalne zrzuty ekranu dla VLM zapisywane w `OBJECT_STORE_DIR` i wiązane z rekordem poprzez `storage_key`. Wektory incydentów zweryfikowanych przez analityków (`list_verified_incident_vectors`) zasilają RAG i wykrywanie klonów.
 - **Docker (`backend/Dockerfile`, `docker-compose.yml`):**
   - Lekki obraz `python:3.12-slim` z nieuprzywilejowanym użytkownikiem `appuser` i wbudowanym `HEALTHCHECK`.
   - Trwały wolumen `investwatch_data:/data` gwarantujący zachowanie bazy SQLite i Object Storage między restartami.
@@ -148,7 +174,8 @@ backend/
 
 ## 7. Stan weryfikacji
 
-- **Testy automatyczne (`pytest`):** **43/43 PASSED** (`2026-11-21`, v1.2.0) — **49/49** z zainstalowanym Playwright/Chromium (`test_browser.py`: render SPA, computed styles, blokada żądań/WebSocketów/przekierowań do adresów wewnętrznych; bez Playwrighta testy są pomijane) — pokrycie dla 14 wektorów anty-SSRF (`test_ssrf.py`), wszystkich 3 modułów analitycznych + DOM/CSS + przypadków negatywnych (`test_modules.py`) oraz pełnej integracji REST, analizy na żądanie (walidacja, escapowanie, deduplikacja, anty-SSRF dla `/analyze/url`), etykiet referencyjnych, kalibracji FP/FN i streamingu WebSocket `/ws/alerts` (`test_api.py`).
+- **Testy automatyczne (`pytest`):** **134/134 PASSED** (`2026-11-21`, v1.2.0 + detekcja v2, z zainstalowanym Playwright/Chromium; bez Playwrighta testy `test_browser.py` są pomijane). Pokrycie: 14 wektorów anty-SSRF (`test_ssrf.py`), 3 moduły analityczne + DOM/CSS + przypadki negatywne (`test_modules.py`, `test_solicitation.py`), detekcja v2 z mockiem `OllamaClient` — obfuskacja, anti-injection, weryfikacja cytatów, fuzja (weto FP, FN boost), RAG, klony, KNF fuzzy, VLM (`test_ai_detection.py`), render i anty-SSRF przeglądarki (`test_browser.py`) oraz pełna integracja REST, analizy na żądanie, etykiet, kalibracji FP/FN i WebSocket (`test_api.py`, `test_crawler_features.py`).
+- **Benchmark detekcji (`python -m scripts.evaluate_detection --mode fallback`, próg `0.65`, 52 przypadki z `data/eval_golden_dataset.json`):** Precision **0.958**, Recall **0.676**, F1 **0.793** (1 FP, 11 FN — w tym 6 parafraz adversarial wymagających LLM). Pomiar w trybie `--mode ollama` wymaga uruchomionej Ollamy — instrukcja w [ollama-llm-setup.md](./ollama-llm-setup.md).
 - **Audyt bezpieczeństwa (`pip-audit -r requirements-dev.txt`, przypięte wersje):** `No known vulnerabilities found` (**0 znanych podatności**).
 - Szczegóły licencji i zabezpieczeń: [security-licenses.md](./security-licenses.md).
 - Proces pracy z asystentami AI: [ai-workflow.md](./ai-workflow.md).

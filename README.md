@@ -117,11 +117,11 @@ Wyniki audytów i analiza wpływu: [docs/security-licenses.md](docs/security-lic
 - **Fallback bez Ollama:** jeżeli Ollama na hoście jest niedostępna, system automatycznie działa w trybie `demo_fallback` (silnik deterministyczny 18 reguł UKNF + analiza DOM/CSS + etykietowane dane startowe w SQLite).
 - **Lokalny snapshot KNF:** `data/knf_registry_snapshot.json` zawiera udokumentowany lokalny snapshot rejestrów KNF (data w polu `snapshot_date`) wraz z fikcyjnymi podmiotami `[DEMO]` dla lokalnych mock-stron — nie zastępuje bieżącej weryfikacji statusu prawnego w KNF.
 - **Wskaźnik `risk_score` (0.00–1.00):** służy analitykowi do priorytetyzacji i kalibracji progu FP/FN; nie stanowi wiążącego rozstrzygnięcia prawnego.
-- **Tryb DEMO panelu:** gdy backend jest nieosiągalny, panel działa w jawnie oznaczonym trybie DEMO (heurystyka regułowa w przeglądarce, nie AI, dane w `localStorage`). Analiza obrazów (OCR) nie jest obsługiwana.
+- **Tryb DEMO panelu:** gdy backend jest nieosiągalny, panel działa w jawnie oznaczonym trybie DEMO (heurystyka regułowa w przeglądarce, nie AI, dane w `localStorage`). Panel nie wysyła obrazów do analizy; backend opcjonalnie analizuje zrzuty ekranu stron modelem VLM (`OLLAMA_VISION_ENABLED=true`, wymaga Playwrighta i modelu z obsługą obrazów).
 - **Kontrakt API:** pełna specyfikacja endpointów i zdarzeń WebSocket w [CONTRACT.md](CONTRACT.md).
 
 ## Konwencje repozytorium
 
 - **Końcówki linii:** [`.gitattributes`](.gitattributes) wymusza `LF` w repozytorium i w kopii roboczej (także na Windowsie, niezależnie od `core.autocrlf`) — istotne dla `Dockerfile`, `nginx.conf` i skryptów. Pliki binarne (`.docx`, `.pdf`, obrazy, SQLite) nie są konwertowane.
 - **Sekrety:** tylko szablony `.env.example` (root i `frontend/`); właściwe pliki `.env` są ignorowane przez Git.
-- **Kontrakt:** zmiany API wyłącznie addytywne, uzgadniane w [CONTRACT.md](CONTRACT.md) (aktualnie `1.1.0`).
+- **Kontrakt:** zmiany API wyłącznie addytywne, uzgadniane w [CONTRACT.md](CONTRACT.md) (aktualnie `1.2.0`).

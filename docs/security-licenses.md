@@ -14,6 +14,7 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
 | `httpx` | Asynchroniczny klient HTTP (scraper + Ollama) | BSD-3-Clause |
 | `beautifulsoup4` | Parser HTML i ekstrakcja metryk DOM/CSS | MIT |
 | `apscheduler` | Harmonogram cyklicznych zadań (Cron/Interval) | MIT |
+| `playwright` (opcjonalnie, `INSTALL_PLAYWRIGHT=true`) + Chromium | Render stron JS, computed styles, zrzuty ekranu dla VLM | Apache-2.0 (Chromium: BSD-3-Clause i licencje komponentów) |
 | `sqlite3` (stdlib) | Relacyjna baza metadanych | PSF |
 | `pytest` | Testy jednostkowe i integracyjne | MIT |
 | `pip-audit` | Audyt podatności łańcucha dostaw (PyPA) | Apache-2.0 |
@@ -48,12 +49,14 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
 - **Brak telemetrii w panelu:** usunięto odziedziczony z prototypu Emergent tracker PostHog z nagrywaniem sesji (`ap.emergent.sh`), skrypt `assets.emergent.sh` oraz pakiety `@emergentbase/*`. Bundel produkcyjny nie zawiera odwołań do tych usług. Jedynym pozostałym zasobem zewnętrznym są fonty z Google Fonts (do zastąpienia lokalnym hostingiem przy wdrożeniu offline).
 - **Obraz frontendu bez kodu źródłowego i sekretów:** build bez source map (`GENERATE_SOURCEMAP=false`), `.env` wykluczony przez `.dockerignore`, w obrazie końcowym tylko statyczne pliki i Nginx.
 - **Analiza na żądanie (`/api/v1/analyze/*`):** wklejona treść jest walidowana (20–20 000 znaków) i escapowana przed przetworzeniem (znaczniki HTML traktowane jako tekst); `analyze/url` przechodzi tę samą walidację anty-SSRF i limity co kolejka crawlera; Nginx ogranicza rozmiar żądania do `1 MB`.
+- **Odporność silnika AI na manipulacje:** treść strony w piaskownicy `<untrusted_content>`, wykrywanie prompt injection w ukrytym tekście (`AI_PROMPT_INJECTION`, blokuje weto FP), weryfikacja cytatów LLM w tekście źródłowym oraz normalizacja homoglifów i znaków zero-width (`backend/app/ai/`).
+- **Anty-SSRF dla rozwijania linków:** opcjonalne rozwijanie skracaczy (`CRAWLER_EXPAND_SHORT_LINKS`) waliduje każdy krok przekierowania tą samą funkcją `validate_public_url`.
 - **Limity scrapera:** limit rozmiaru odpowiedzi (`2 MB`), timeouty, limit przekierowań (`5`), łagodne tempo żądań.
 
 ## 3. Wynik audytu `pip-audit`
 
 - **Data audytu:** `2026-11-21`
-- **Komenda:** `backend\.venv\Scripts\pip-audit.exe` (pip-audit `2.10.1`, Python `3.15.2`)
+- **Komenda:** `backend\.venv\Scripts\pip-audit.exe -r requirements-dev.txt -r requirements-playwright.txt` (pip-audit `2.10.1`, Python `3.15.2`) — ponowione po wdrożeniu detekcji v2 (commit `a891f9e`, bez nowych zależności Pythona)
 - **Wynik:** `No known vulnerabilities found` (kod wyjścia `0`, **0 znanych podatności** we wszystkich zainstalowanych pakietach).
 
 ## 4. Wynik audytu `yarn audit` (frontend)
