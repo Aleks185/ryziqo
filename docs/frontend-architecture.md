@@ -40,7 +40,7 @@ frontend/
     ├── App.js                    # routing (react-router 7) + AppProvider + Toaster
     ├── pages/
     │   ├── Dashboard.jsx         # "/"               — KPI, trend, tabela incydentów, live log
-    │   ├── Analyze.jsx           # "/analyze"        — analiza tekstu / URL / obrazu, przykłady demo
+    │   ├── Analyze.jsx           # "/analyze"        — analiza tekstu / URL, przykłady demo
     │   ├── IncidentDetail.jsx    # "/incidents/:id"  — uzasadnienie, cytaty dowodowe, status, druk A4
     │   ├── Calibration.jsx       # "/calibration"    — etykiety referencyjne, macierz TP/FP/TN/FN, próg
     │   └── LogPage.jsx           # "/log"            — pełny dziennik zdarzeń (REST/WS/demo)
@@ -77,28 +77,31 @@ Adres WebSocket jest wyliczany w `config.js` z `API_URL`: `http(s)://host/api/v1
 
 ## 4. Warstwa stanu i tryby pracy (`lib/store.js`)
 
-1. **Start:** `AppProvider` wywołuje `GET /health`, a następnie `GET /incidents?limit=500`.
-2. **Tryb `online`:** dane z backendu, otwarty WebSocket `/ws/alerts` z ponawianiem połączenia (backoff wykładniczy `2^n s`, maks. 5 prób, potem status `offline` bez dalszego zalewania konsoli błędami).
-3. **Tryb `demo`:** gdy backend nie odpowiada (lub strona HTTPS wskazuje na API HTTP — *mixed content*), panel przełącza się na **jawny analizator regułowy** (`demoEngine.js`: słowa-klucze dla Modułów 1–3, cytaty wycinane dosłownie z tekstu). Wyniki są oznaczane `is_demo` i etykietą „DEMO — heurystyka, nie AI”, a dane trzymane w `localStorage`. `DemoBanner` pokazuje przyczynę i adres API.
+1. **Start:** `AppProvider` wywołuje `GET /health`, a następnie `GET /incidents?limit=500` (zapamiętuje też `knf_snapshot_date`).
+2. **Tryb `online`:** dane z backendu, otwarty WebSocket `/ws/alerts` z ponawianiem połączenia (backoff wykładniczy `2^n s`, maks. 5 prób, potem status `offline` bez dalszego zalewania konsoli błędami). Karta incydentu dociąga pełny `IncidentDetail` (`GET /incidents/{id}` z `raw_text_preview`), bo lista go nie zawiera.
+3. **Tryb `demo`:** gdy backend nie odpowiada (lub strona HTTPS wskazuje na API HTTP — *mixed content*), panel przełącza się na **jawny analizator regułowy** w przeglądarce (`demoEngine.js`: słowa-klucze dla Modułów 1–3, cytaty wycinane dosłownie z tekstu). Tworzy on rekordy **w tym samym kształcie `Incident` co backend** (`is_demo_fallback: true`, `model_used: "demo-heuristic-v1 (przeglądarka)"`), trzymane w `localStorage` (`investwatch.demo.incidents.v2`). `DemoBanner` pokazuje przyczynę i adres API. Analiza URL jest w tym trybie niedostępna.
 4. **Alerty:** incydent z `risk_score ≥ ALERT_THRESHOLD` generuje jednorazowy toast (deduplikacja po `id`).
 5. **i18n:** PL (domyślnie) / EN, wybór zapamiętany w `localStorage` (`investwatch.lang`).
 
 ---
 
-## 5. Zgodność z `CONTRACT.md` — znane rozbieżności
+## 5. Zgodność z `CONTRACT.md` (v1.1.0)
 
-Frontend powstał na podstawie **wcześniejszej, roboczej wersji kontraktu** (Emergent). Zamrożony `CONTRACT.md` v1.0.0 i backend różnią się w kilku miejscach, przez co w trybie `online` panel nie wyświetli poprawnie danych z backendu. Do ujednolicenia po stronie frontendu (zgodnie z zasadą „frontend dostosuje się do kontraktu”):
+Frontend korzysta wyłącznie z modelu `Incident` i endpointów zdefiniowanych w [CONTRACT.md](../CONTRACT.md):
 
-| Obszar | Frontend oczekuje | `CONTRACT.md` / backend |
-|---|---|---|
-| Moduł | `primary_module` (`"M1"`/`"M2"`/`"M3"`), `module_scores` | `module_id` (`1`/`2`/`3`), `module_name` |
-| Podmiot | `entity` (obiekt, `entity.name`) | `entity_name`, `promoter_name`, `knf_registry_status` |
-| Treść i dowody | `content`, `quotes`, `findings`, `reasoning` | `content_excerpt`, `evidence_quotes`, `violated_rules[]` (`reason`, `legal_basis`) |
-| Etykieta referencyjna | `ground_truth`, `PATCH /incidents/{id}/label` | `ground_truth_label` — **brak endpointu do zmiany etykiety** |
-| Znaczniki czasu / źródło | `created_at`, `source_type`, `is_demo`, `analysis_engine` | `detected_at`, `updated_at`, `source_platform`, `is_demo_fallback`, `model_used` |
-| Analiza na żądanie | `POST /analyze/text`, `/analyze/url`, `/analyze/image` | **brak** — backend oferuje `POST /crawl/trigger` (kolejka) |
-| Zdarzenia WebSocket | `incident.created`, `incident.updated`, `crawler.progress`, `crawler.error`, `heartbeat` | `connected`, `crawler_status`, `high_risk_alert`, `analysis_complete`, `status_updated`, `error`, `pong` |
-| Statystyki | liczone po stronie klienta | `GET /stats` (w tym `calibration`) — nieużywane przez frontend |
+| Funkcja panelu | Endpoint / zdarzenie |
+|---|---|
+| Rejestr incydentów, pulpit, trend, filtr modułów (`module_id`) | `GET /api/v1/incidents` |
+| Karta incydentu (naruszone reguły, cytaty dowodowe, metryki DOM/CSS, status w rejestrze KNF) | `GET /api/v1/incidents/{id}` |
+| Analiza wklejonego tekstu / przykładów | `POST /api/v1/analyze/text` |
+| Analiza adresu URL (anty-SSRF po stronie backendu) | `POST /api/v1/analyze/url` |
+| Zmiana statusu sprawy | `PATCH /api/v1/incidents/{id}/status` |
+| Etykieta referencyjna do kalibracji | `PATCH /api/v1/incidents/{id}/label` |
+| Live Crawler Log i alerty | WebSocket `/ws/alerts`: `crawler_status`, `high_risk_alert` (→ pobranie incydentu i toast), `status_updated` (→ odświeżenie incydentu), `analysis_complete` (→ odświeżenie listy), `error` |
+
+- **Przykłady demonstracyjne** (`lib/samples.js`) wysyłane są z `source_url: "manual://sample/S1…S6"` i `ground_truth_label` — dzięki temu backend deduplikuje je po `content_hash`, a panel oznacza je etykietą „PRZYKŁAD”.
+- **Kalibracja** (macierz TP/FP/TN/FN i krzywa FP/FN) liczona jest w przeglądarce z `risk_score` i `ground_truth_label`, więc działa identycznie w obu trybach. `GET /api/v1/stats` nie jest obecnie używany.
+- **Analiza obrazów (OCR)** została usunięta z panelu — backend nie zawiera silnika OCR, a kontrakt jej nie definiuje.
 
 ---
 
@@ -112,7 +115,7 @@ Frontend powstał na podstawie **wcześniejszej, roboczej wersji kontraktu** (Em
   - `location /ws/` — proxy WebSocket (`Upgrade`/`Connection`), timeout `3600s` dla długotrwałych połączeń alertów.
   - `location /static/` — hashowane assety CRA z `Cache-Control: public, immutable` (1 rok).
   - `location /` — SPA fallback (`try_files ... /index.html`) z `Cache-Control: no-cache`, dzięki czemu bezpośrednie wejście na `/incidents/:id` działa.
-  - `client_max_body_size 10m` (upload obrazów), `gzip`, `server_tokens off`.
+  - `client_max_body_size 1m` (treść do analizy ma maks. 20 000 znaków), `gzip`, `server_tokens off`.
 
 ---
 
@@ -141,5 +144,5 @@ yarn start
 
 **Stan weryfikacji (`2026-11-21`):**
 - `docker compose up --build` — oba kontenery `healthy`; `GET /` i ścieżki SPA → `200`; `GET /api/v1/health` przez Nginx → `200`; `/ws/alerts` → `101 Switching Protocols`.
-- `yarn start` — `Compiled successfully!`.
+- `yarn start` — `Compiled successfully!`; `CI=true yarn build` — bez ostrzeżeń ESLint.
 - **Testy automatyczne frontendu:** brak (przygotowane są jedynie stałe `data-testid` w `src/constants/testIds/`).

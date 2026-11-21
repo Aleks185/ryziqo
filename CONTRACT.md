@@ -1,6 +1,6 @@
 # #InvestWatch — Zamrożony Kontrakt API i WebSocket (`CONTRACT.md`)
 
-**Wersja:** `1.0.0` (HackNation UKNF 2026)  
+**Wersja:** `1.1.0` (HackNation UKNF 2026) — rozszerzenie addytywne względem `1.0.0` (nowe endpointy, bez zmian istniejących pól i ścieżek; zob. [Historia zmian](#5-historia-zmian))  
 **Zasada współpracy:** Po zamrożeniu nie zmieniamy jednostronnie nazw pól, typów ani ścieżek. Ewentualne rozszerzenia wyłącznie jako opcjonalne pola po obustronnej zgodzie.
 
 ---
@@ -68,7 +68,7 @@ Każdy rekord zwracany przez API i agregator wyników Modułów 1–3 ma ujednol
 ### Słowniki wartości
 - `module_id`: `1` (Finfluencerzy i podmioty trzecie) | `2` (Zgodność i informacja o ryzyku — 18 reguł UKNF) | `3` (Shadow Advisory — art. 76 u.o.i.f.)
 - `knf_registry_status`: `"registered_pl"` | `"registered_eu_branch"` | `"registered_eu_crossborder"` | `"not_in_knf_snapshot"` | `"unknown"`
-- `source_platform`: `"web"` | `"facebook"` | `"instagram"` | `"tiktok"` | `"youtube"` | `"mock_demo"`
+- `source_platform`: `"web"` | `"facebook"` | `"instagram"` | `"tiktok"` | `"youtube"` | `"mock_demo"` | `"manual"` *(od 1.1.0 — treść wklejona przez analityka)*
 - `risk_score`: liczba zmiennoprzecinkowa **`0.00` – `1.00`** (wskaźnik modelu AI + reguł; nie stanowi wiążącego rozstrzygnięcia prawnego).
 - `risk_level`: `"low"` (`< 0.40`) | `"medium"` (`0.40 – 0.69`) | `"high"` (`>= 0.70`) — domyślna etykieta; **Panel Kalibracji w UI przelicza flagowanie dynamicznie wg suwaka `threshold`**.
 - `status`: `"new"` | `"in_review"` | `"confirmed"` | `"false_positive"` | `"dismissed"`
@@ -130,6 +130,11 @@ Aktualizuje status incydentu w SQLite i rozgłasza zdarzenie `status_updated` pr
 ```
 - Response: zaktualizowany obiekt `Incident`.
 
+### `PATCH /api/v1/incidents/{incident_id}/label` *(od 1.1.0)*
+Ustawia etykietę referencyjną analityka używaną w kalibracji progu (TP/FP/TN/FN) i rozgłasza `status_updated` (z `extra.ground_truth_label`).
+- Request body: `{ "ground_truth_label": true }` — dopuszczalne `true` | `false` | `null` (usunięcie etykiety).
+- Response: zaktualizowany obiekt `Incident`. `404`, gdy incydent nie istnieje.
+
 ### `GET /api/v1/stats`
 Zwraca zagregowane metryki do KPI i wykresów trendów (Recharts/Chart.js).
 - Query param: `threshold` (float, domyślnie `0.50`)
@@ -186,6 +191,39 @@ Dodaje zadanie scrapowania i analizy do kolejki zadań backendu.
 }
 ```
 
+### `POST /api/v1/analyze/text` *(od 1.1.0)*
+Synchroniczna analiza treści wklejonej przez analityka (reklama, post, opis wideo) tym samym pipeline'em co kolejka (Moduły 1–3, deduplikacja po `content_hash`, alerty WS).
+- Request body:
+```json
+{
+  "content": "XTradePro — handluj kontraktami CFD z dźwignią 1:500! ...",
+  "title": "Reklama CFD z Instagrama",
+  "source_url": "manual://sample/S2",
+  "module_ids": [1, 2, 3],
+  "ground_truth_label": null
+}
+```
+  - `content`: wymagane, `20`–`20000` znaków. Treść jest escapowana — znaczniki HTML traktowane są jako tekst.
+  - `title`, `source_url` (etykieta pochodzenia, **nie jest pobierana**; domyślnie `"manual://text"`), `ground_truth_label`: opcjonalne.
+  - `module_ids`: niepusta lista z `1` | `2` | `3` (domyślnie wszystkie).
+- Odpowiedź (`200`):
+```json
+{
+  "items": [ /* Incident[] z polem raw_text_preview */ ],
+  "mode": "demo_fallback"
+}
+```
+  - Ponowna analiza identycznej treści aktualizuje istniejący incydent (zachowuje `status`, `analyst_note`, `ground_truth_label`).
+  - Po zakończeniu serwer rozgłasza `analysis_complete` z `extra.incident_ids`.
+
+### `POST /api/v1/analyze/url` *(od 1.1.0)*
+Synchroniczne pobranie **jednego publicznego URL** (walidacja anty-SSRF na każdym przekierowaniu, limity rozmiaru i przekierowań) i jego analiza.
+- Request body: `{ "url": "https://example.com/promo", "module_ids": [1, 2, 3], "use_playwright": false }`
+- Odpowiedź (`200`): jak w `POST /api/v1/analyze/text`.
+- Błędy: `400` — adres odrzucony przez anty-SSRF (localhost, sieci prywatne, metadata, niedozwolony schemat); `502` — nie udało się pobrać strony (timeout, błąd HTTP, nieobsługiwany typ treści, przekroczony limit rozmiaru); `422` — niepoprawne dane wejściowe.
+
+> Analiza obrazów (OCR) nie jest częścią kontraktu — backend nie zawiera silnika OCR; panel nie oferuje tej funkcji.
+
 ### `GET /api/v1/crawl/jobs`
 Zwraca listę zadań kolejki, dostępnych plików mock-demo oraz najbliższy termin uruchomienia APScheduler.
 
@@ -214,3 +252,12 @@ Format komunikatów serwera:
   "message": "Wykryto wysokie ryzyko (0.89) w Module 2: Alpha CFD Broker S.A."
 }
 ```
+
+---
+
+## 5. Historia zmian
+
+| Wersja | Zmiany |
+|---|---|
+| `1.1.0` | Dodane endpointy `POST /api/v1/analyze/text`, `POST /api/v1/analyze/url`, `PATCH /api/v1/incidents/{incident_id}/label`; nowa wartość `source_platform: "manual"`; `analysis_complete` może zawierać `extra.incident_ids`. Bez zmian istniejących pól, typów i ścieżek. |
+| `1.0.0` | Zamrożenie kontraktu: model `Incident`, REST (`/health`, `/incidents`, `/status`, `/stats`, `/crawl/*`, `/knf-registry`, `/rules`), WebSocket `/ws/alerts`. |

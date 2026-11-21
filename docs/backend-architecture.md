@@ -50,13 +50,14 @@ backend/
 │   │   ├── module3_shadow_advisory.py# Moduł 3: Shadow Advisory (art. 76, 2, 3 u.o.i.f.)
 │   │   └── aggregator.py             # Agregacja wyników 1–3 do obiektów Incident
 │   └── routers/
-│       ├── incidents.py              # /incidents, /incidents/{id}, PATCH /status, /stats
+│       ├── incidents.py              # /incidents, /incidents/{id}, PATCH /status, PATCH /label, /stats
+│       ├── analyze.py                # POST /analyze/text, POST /analyze/url (analiza na żądanie)
 │       ├── crawl.py                  # POST /crawl/trigger, /crawl/jobs, /knf-registry, /rules, /mock-sites
 │       └── ws.py                     # WebSocket /ws/alerts
 └── tests/
     ├── test_ssrf.py                  # 14 przypadków blokady anty-SSRF
     ├── test_modules.py               # Testy Modułów 1–3, DOM/CSS i embeddingów
-    └── test_api.py                   # Testy integracyjne REST, kalibracji i WebSocket
+    └── test_api.py                   # Testy integracyjne REST, analizy na żądanie, etykiet, kalibracji i WebSocket
 ```
 
 ---
@@ -64,13 +65,17 @@ backend/
 ## 3. Warstwa API, cykl życia i WebSocket
 
 - **Cykl życia (`backend/app/main.py`):** w `lifespan` backend uruchamia niedestrukcyjną inicjalizację schematu SQLite (`CREATE TABLE IF NOT EXISTS`), zasila bazę 14 syntetycznymi rekordami startowymi (`data/demo_incidents_seed.json`) wyłącznie jeśli tabela `incidents` jest pusta, wczytuje snapshot KNF i 18 reguł, sprawdza stan Ollamy oraz uruchamia workera kolejki i `APScheduler`.
-- **REST API (`routers/incidents.py`, `routers/crawl.py`):**
+- **REST API (`routers/incidents.py`, `routers/analyze.py`, `routers/crawl.py`):**
   - `GET /api/v1/health` — status serwisu, dostępność Ollama, tryb (`live` / `demo_fallback`), data i zastrzeżenie snapshotu KNF, liczba incydentów i status harmonogramu.
   - `GET /api/v1/incidents` — paginacja i filtrowanie po `module_id`, `source_platform`, `status`, `min_risk_score`, `max_risk_score`, `date_from`, `date_to`, `search`.
   - `GET /api/v1/incidents/{id}` — pełne szczegóły incydentu wraz z `raw_text_preview` pobranym z lokalnego Object Storage.
   - `PATCH /api/v1/incidents/{id}/status` — zmiana statusu (`new`, `in_review`, `confirmed`, `false_positive`, `dismissed`) i `analyst_note`, zapis w SQLite + natychmiastowy event `status_updated` na `/ws/alerts`.
+  - `PATCH /api/v1/incidents/{id}/label` *(v1.1.0)* — etykieta referencyjna analityka `ground_truth_label` (`true` / `false` / `null`) do kalibracji; event `status_updated` z `extra.ground_truth_label`.
   - `GET /api/v1/stats?threshold=0.50` — KPI, podziały (moduł, źródło, status), szeregi czasowe `trend_by_day` (pod Recharts/Chart.js), top naruszane reguły oraz wyliczona macierz pomyłek `TP / FP / TN / FN` (`precision`, `recall`, `f1_score`) dla rekordów z `ground_truth_label`.
   - `POST /api/v1/crawl/trigger` (`202 Accepted`) — kolejkowanie zadań w trybach `mock_all`, `mock_single` oraz `public_url` (z natychmiastową walidacją anty-SSRF przed dodaniem do kolejki).
+  - `POST /api/v1/analyze/text` *(v1.1.0)* — synchroniczna analiza wklejonej treści (20–20 000 znaków). Tekst jest escapowany i opakowywany w minimalny HTML (`build_manual_text_page`), `source_platform: "manual"`; nic nie jest pobierane z sieci.
+  - `POST /api/v1/analyze/url` *(v1.1.0)* — synchroniczne pobranie jednego publicznego URL przez `PageFetcher` (anty-SSRF na każdym przekierowaniu, limity rozmiaru/przekierowań) i analiza; `400` dla adresów zablokowanych, `502` dla błędów pobierania.
+  - Kolejka i analiza na żądanie współdzielą `CrawlQueueWorker.analyze_page()` — ten sam preprocessing, zapis do Object Storage, Moduły 1–3, deduplikację po `content_hash` (zachowuje status i etykietę analityka) oraz alerty `high_risk_alert`.
   - `GET /api/v1/crawl/jobs`, `GET /api/v1/knf-registry`, `GET /api/v1/rules`, `GET /mock-sites/{filename}`.
 - **WebSocket (`ws_manager.py`, `routers/ws.py`):** kanał `/ws/alerts` obsługuje `ping`/`pong` i emituje ustrukturyzowane komunikaty `connected`, `crawler_status` (`queued`, `fetching`, `preprocessing`, `analyzing`), `high_risk_alert` (gdy `risk_score >= HIGH_RISK_ALERT_THRESHOLD`, domyślnie `0.65`), `analysis_complete`, `status_updated` oraz `error`. Rozłączenie klienta usuwa gniazdo z puli bez przerywania bieżącego crawla.
 
@@ -129,7 +134,7 @@ backend/
 
 ## 7. Stan weryfikacji
 
-- **Testy automatyczne (`pytest`):** **22/22 PASSED** — pokrycie dla 14 wektorów anty-SSRF (`test_ssrf.py`), wszystkich 3 modułów analitycznych + DOM/CSS + przypadków negatywnych (`test_modules.py`) oraz pełnej integracji REST, kalibracji FP/FN i streamingu WebSocket `/ws/alerts` (`test_api.py`).
+- **Testy automatyczne (`pytest`):** **28/28 PASSED** (`2026-11-21`) — pokrycie dla 14 wektorów anty-SSRF (`test_ssrf.py`), wszystkich 3 modułów analitycznych + DOM/CSS + przypadków negatywnych (`test_modules.py`) oraz pełnej integracji REST, analizy na żądanie (walidacja, escapowanie, deduplikacja, anty-SSRF dla `/analyze/url`), etykiet referencyjnych, kalibracji FP/FN i streamingu WebSocket `/ws/alerts` (`test_api.py`).
 - **Audyt bezpieczeństwa (`pip-audit`):** `No known vulnerabilities found` (**0 znanych podatności**).
 - Szczegóły licencji i zabezpieczeń: [security-licenses.md](./security-licenses.md).
 - Proces pracy z asystentami AI: [ai-workflow.md](./ai-workflow.md).

@@ -1,20 +1,29 @@
-import { uid } from "./config";
+import { riskLevel, uid } from "./config";
+import { RULE_LABELS } from "./i18n";
 
-const STORE_KEY = "investwatch.demo.incidents.v1";
-export const DEMO_ENGINE = "demo-heuristic-v1";
+// v2: rekordy w kształcie Incident z CONTRACT.md (v1 miał roboczy format Emergent).
+const STORE_KEY = "investwatch.demo.incidents.v2";
+export const DEMO_ENGINE = "demo-heuristic-v1 (przeglądarka)";
+
+const MODULE_NAMES = {
+  1: "Finfluencerzy i podmioty trzecie",
+  2: "Weryfikacja zgodności i informacji o ryzyku",
+  3: "Shadow Advisory",
+};
+const DEMO_LEGAL_BASIS = "Heurystyka DEMO (słowa-klucze) — wskazówka, nie kwalifikacja prawna";
 
 // Transparent keyword rules. NOT AI.
 const RULES = [
-  { id: "m1_affiliate", module: "M1", w: 0.35, re: /kod(em|u)?\s+(polecając\w*|rabatow\w*|referencyjn\w*)|link\s+w\s+(bio|opisie)/gi },
-  { id: "m1_guaranteed", module: "M1", w: 0.5, re: /gwarantowan\w*\s+zysk\w*|pewn\w*\s+zysk\w*|zero\s+ryzyka|bez\s+ryzyka/gi },
-  { id: "m1_unrealistic", module: "M1", w: 0.45, re: /\d{1,4}\s?%\s+(miesięcznie|tygodniowo|dziennie|w\s+tydzień|w\s+miesiąc)/gi },
-  { id: "m1_testimonial", module: "M1", w: 0.15, re: /zarabiam|zarobiłe?a?m|pasywn\w*\s+dochod\w*/gi },
-  { id: "m2_downplay", module: "M2", w: 0.55, re: /zero\s+ryzyka|bez\s+ryzyka|nie\s+możesz\s+stracić|ryzyko\s+jest\s+minimalne/gi },
-  { id: "m2_fineprint", module: "M2", w: 0.15, re: /szczegóły\s+w\s+regulaminie|drobnym\s+drukiem/gi },
-  { id: "m3_call", module: "M3", w: 0.35, re: /\b(kupuj|kup\s+teraz|sprzedaj|wchodź(cie)?|otwórz\s+pozycję)\b/gi },
-  { id: "m3_signals", module: "M3", w: 0.3, re: /sygnał\w*|grup\w*\s+VIP|kanał\w*\s+premium|telegram\w*|discord\w*/gi },
-  { id: "m3_levels", module: "M3", w: 0.3, re: /take\s+profit|stop\s+loss|cen\w*\s+wejścia/gi },
-  { id: "m3_management", module: "M3", w: 0.45, re: /zarządzam\s+kapitałem|przekaż\s+mi|kopiuj\s+moje\s+transakcje|copy\s?trading/gi },
+  { id: "m1_affiliate", module: 1, w: 0.35, re: /kod(em|u)?\s+(polecając\w*|rabatow\w*|referencyjn\w*)|link\s+w\s+(bio|opisie)/gi },
+  { id: "m1_guaranteed", module: 1, w: 0.5, re: /gwarantowan\w*\s+zysk\w*|pewn\w*\s+zysk\w*|zero\s+ryzyka|bez\s+ryzyka/gi },
+  { id: "m1_unrealistic", module: 1, w: 0.45, re: /\d{1,4}\s?%\s+(miesięcznie|tygodniowo|dziennie|w\s+tydzień|w\s+miesiąc)/gi },
+  { id: "m1_testimonial", module: 1, w: 0.15, re: /zarabiam|zarobiłe?a?m|pasywn\w*\s+dochod\w*/gi },
+  { id: "m2_downplay", module: 2, w: 0.55, re: /zero\s+ryzyka|bez\s+ryzyka|nie\s+możesz\s+stracić|ryzyko\s+jest\s+minimalne/gi },
+  { id: "m2_fineprint", module: 2, w: 0.15, re: /szczegóły\s+w\s+regulaminie|drobnym\s+drukiem/gi },
+  { id: "m3_call", module: 3, w: 0.35, re: /\b(kupuj|kup\s+teraz|sprzedaj|wchodź(cie)?|otwórz\s+pozycję)\b/gi },
+  { id: "m3_signals", module: 3, w: 0.3, re: /sygnał\w*|grup\w*\s+VIP|kanał\w*\s+premium|telegram\w*|discord\w*/gi },
+  { id: "m3_levels", module: 3, w: 0.3, re: /take\s+profit|stop\s+loss|cen\w*\s+wejścia/gi },
+  { id: "m3_management", module: 3, w: 0.45, re: /zarządzam\s+kapitałem|przekaż\s+mi|kopiuj\s+moje\s+transakcje|copy\s?trading/gi },
 ];
 const LEVERAGED = /\b(CFD|forex|kontrakt\w*\s+różnic\w*|dźwigni\w*|lewar\w*|kryptowalut\w*|opcj\w*\s+binarn\w*)/gi;
 const DISCLAIMER = /\d{2}\s?%\s+rachunków|traci\s+pieniądze|ryzyk\w*\s+(szybkiej\s+)?utraty|możesz\s+stracić/i;
@@ -33,83 +42,96 @@ const sentenceSpan = (text, start, end) => {
 
 const combine = (ws) => Math.min(0.98, 1 - ws.reduce((p, w) => p * (1 - w), 1));
 const round2 = (n) => Math.round(n * 100) / 100;
+const severity = (w) => (w >= 0.45 ? "high" : w >= 0.3 ? "medium" : "low");
 
-export function analyzeLocal(content, modules) {
+function analyzeLocal(content, moduleIds) {
   const findings = [];
   const quotes = [];
-  const addQuote = (module, ruleId, idx, len) => {
+  const addQuote = (module, idx, len) => {
     const [start, end] = sentenceSpan(content, idx, idx + len);
     let q = quotes.find((x) => x.start === start && x.end === end);
     if (!q) {
-      q = { text: content.slice(start, end), start, end, modules: [], rules: [] };
+      q = { text: content.slice(start, end), start, modules: [] };
       quotes.push(q);
     }
     if (!q.modules.includes(module)) q.modules.push(module);
-    if (!q.rules.includes(ruleId)) q.rules.push(ruleId);
+  };
+  const add = (module, ruleId, weight, match) => {
+    findings.push({ module, rule_id: ruleId, weight, match });
   };
 
-  RULES.filter((r) => modules.includes(r.module)).forEach((r) => {
+  RULES.filter((r) => moduleIds.includes(r.module)).forEach((r) => {
     const matches = [...content.matchAll(r.re)];
     if (!matches.length) return;
-    findings.push({ module: r.module, rule_id: r.id, weight: r.w });
-    matches.slice(0, 2).forEach((m) => addQuote(r.module, r.id, m.index, m[0].length));
+    add(r.module, r.id, r.w, matches[0][0]);
+    matches.slice(0, 2).forEach((m) => addQuote(r.module, m.index, m[0].length));
   });
 
   const leveraged = [...content.matchAll(LEVERAGED)];
-  if (modules.includes("M2") && leveraged.length && !DISCLAIMER.test(content)) {
-    findings.push({ module: "M2", rule_id: "m2_no_warning", weight: 0.55 });
-    addQuote("M2", "m2_no_warning", leveraged[0].index, leveraged[0][0].length);
+  if (moduleIds.includes(2) && leveraged.length && !DISCLAIMER.test(content)) {
+    add(2, "m2_no_warning", 0.55, leveraged[0][0]);
+    addQuote(2, leveraged[0].index, leveraged[0][0].length);
   }
-  if (modules.includes("M1") && findings.some((f) => f.rule_id === "m1_affiliate") && !SPONSOR_MARK.test(content)) {
-    findings.push({ module: "M1", rule_id: "m1_unmarked", weight: 0.2 });
+  if (moduleIds.includes(1) && findings.some((f) => f.rule_id === "m1_affiliate") && !SPONSOR_MARK.test(content)) {
+    add(1, "m1_unmarked", 0.2, null);
   }
 
-  const module_scores = {};
-  modules.forEach((m) => {
-    module_scores[m] = round2(combine(findings.filter((f) => f.module === m).map((f) => f.weight)));
-  });
-  const ranked = Object.entries(module_scores).sort((a, b) => b[1] - a[1]);
-  const risk_score = ranked.length ? ranked[0][1] : 0;
-  const entityMatch = content.match(ENTITY);
+  const scores = moduleIds.map((m) => [m, round2(combine(findings.filter((f) => f.module === m).map((f) => f.weight)))]);
+  // Jak backend: zawsze zwracamy moduł o najwyższym wyniku (przy remisie — pierwszy wybrany).
+  const [moduleId, riskScore] = scores.reduce((best, cur) => (cur[1] > best[1] ? cur : best), scores[0]);
 
   return {
-    module_scores,
-    risk_score,
-    primary_module: risk_score > 0 ? ranked[0][0] : null,
-    findings,
-    quotes: quotes.sort((a, b) => a.start - b.start),
-    reasoning: null,
-    entity: {
-      name: entityMatch ? entityMatch[0] : null,
-      registry_status: "not_checked",
-      registry_source: null,
-      checked_at: null,
-    },
-    analysis_engine: DEMO_ENGINE,
+    moduleId,
+    riskScore,
+    findings: findings.filter((f) => f.module === moduleId),
+    quotes: quotes.filter((q) => q.modules.includes(moduleId)).sort((a, b) => a.start - b.start),
+    entity: content.match(ENTITY)?.[0] || null,
   };
 }
 
 export async function sha256(text) {
   if (!window.crypto?.subtle) return null;
   const buf = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
 }
 
-export async function buildDemoIncident({ content, modules, source_type = "text", source_url = null, sample_id = null, ground_truth = null }) {
-  const result = analyzeLocal(content, modules);
+/** Lokalny incydent DEMO w kształcie Incident z CONTRACT.md (+ raw_text_preview jak IncidentDetail). */
+export async function buildDemoIncident({ content, module_ids, title = null, source_url = null, ground_truth_label = null }) {
+  const r = analyzeLocal(content, module_ids);
+  const now = new Date().toISOString();
+  const url = source_url || "manual://text";
   return {
-    id: uid("inc"),
-    created_at: new Date().toISOString(),
-    source_type,
-    source_url,
-    content,
-    modules,
+    id: uid("inc_demo"),
+    module_id: r.moduleId,
+    module_name: MODULE_NAMES[r.moduleId],
+    entity_name: r.entity || "nie zidentyfikowano",
+    promoter_name: null,
+    knf_registry_status: "unknown",
+    source_platform: "manual",
+    source_url: url,
+    title: title || content.slice(0, 80),
+    content_excerpt: content.length > 340 ? `${content.slice(0, 340)}...` : content,
+    evidence_quotes: r.quotes.map((q) => q.text),
+    violated_rules: r.findings.map((f) => ({
+      rule_id: f.rule_id,
+      rule_name: RULE_LABELS.pl[f.rule_id] || f.rule_id,
+      legal_basis: DEMO_LEGAL_BASIS,
+      severity: severity(f.weight),
+      reason: f.match ? `Wykryto wzorzec „${f.match}” (waga +${f.weight.toFixed(2)}).` : `Sygnał pośredni (waga +${f.weight.toFixed(2)}).`,
+    })),
+    dom_metrics: null,
+    risk_score: r.riskScore,
+    risk_level: riskLevel(r.riskScore),
     status: "new",
-    ground_truth,
-    sample_id,
-    content_hash: await sha256(content),
-    is_demo: true,
-    ...result,
+    analyst_note: null,
+    ground_truth_label,
+    model_used: DEMO_ENGINE,
+    is_demo_fallback: true,
+    content_hash: await sha256(`${url}::${content.toLowerCase()}`),
+    storage_key: null,
+    detected_at: now,
+    updated_at: now,
+    raw_text_preview: content,
   };
 }
 
@@ -120,4 +142,10 @@ export const loadLocal = () => {
     return [];
   }
 };
-export const saveLocal = (items) => localStorage.setItem(STORE_KEY, JSON.stringify(items));
+export const saveLocal = (items) => {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(items));
+  } catch {
+    // brak dostępu do localStorage (tryb prywatny / zablokowane dane witryny)
+  }
+};

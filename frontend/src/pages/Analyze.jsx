@@ -1,17 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FileImage, FileText, Link2, Loader2 } from "lucide-react";
-import { MODULES } from "@/lib/config";
+import { FileText, Link2, Loader2 } from "lucide-react";
+import { MODULES, SAMPLE_URL_PREFIX } from "@/lib/config";
 import { SAMPLES } from "@/lib/samples";
 import { useApp } from "@/lib/store";
-import { DemoTag, Panel, RiskScore } from "@/components/Badges";
+import { DemoTag, ModuleTag, Panel, RiskScore } from "@/components/Badges";
 
 const TABS = [
   ["text", "tab_text", FileText],
   ["url", "tab_url", Link2],
-  ["image", "tab_image", FileImage],
 ];
-const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const inputCls = "w-full border border-[#CBD5E1] rounded-sm px-3 py-2 text-sm bg-white focus-ring";
 
 const Notice = ({ children, testId }) => (
@@ -44,23 +42,17 @@ export default function Analyze() {
   const [content, setContent] = useState("");
   const [sample, setSample] = useState(null);
   const [url, setUrl] = useState("");
-  const [file, setFile] = useState(null);
   const [modules, setModules] = useState([...MODULES]);
   const [state, setState] = useState({ phase: "idle" });
   const online = mode === "online";
-  const blocked = !online && kind !== "text";
+  const blocked = !online && kind === "url";
 
   const loadSample = (s) => {
     setKind("text");
     setContent(s.content);
     setSample(s);
   };
-  const toggle = (m) => setModules((ms) => (ms.includes(m) ? ms.filter((x) => x !== m) : [...ms, m]));
-  const pickFile = (f) => {
-    if (f && !IMAGE_TYPES.includes(f.type)) return setState({ phase: "error", message: t("image_bad") });
-    setFile(f || null);
-    return setState({ phase: "idle" });
-  };
+  const toggle = (m) => setModules((ms) => (ms.includes(m) ? ms.filter((x) => x !== m) : [...ms, m].sort()));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -68,9 +60,18 @@ export default function Analyze() {
     if (kind === "text" && content.trim().length < 20) return setState({ phase: "error", message: t("need_content") });
     setState({ phase: "loading" });
     try {
-      const fromSample = sample && sample.content === content;
-      const inc = await analyze({ kind, content, url, file, modules, sample_id: fromSample ? sample.id : null, ground_truth: fromSample ? sample.ground_truth : null });
-      return setState({ phase: "done", inc });
+      const fromSample = kind === "text" && sample && sample.content === content;
+      const items = await analyze({
+        kind,
+        content,
+        url,
+        module_ids: modules,
+        title: fromSample ? sample.title.pl : null,
+        source_url: fromSample ? `${SAMPLE_URL_PREFIX}${sample.id}` : null,
+        ground_truth_label: fromSample ? sample.ground_truth : null,
+      });
+      const sorted = [...items].sort((a, b) => b.risk_score - a.risk_score);
+      return setState({ phase: "done", items: sorted });
     } catch (err) {
       return setState({ phase: "error", message: `${t("analyze_error")}: ${err.message}` });
     }
@@ -96,7 +97,7 @@ export default function Analyze() {
             <div className="space-y-4">
               <SamplePicker onLoad={loadSample} />
               <p className="text-[11px] text-slate-500">{t("sample_note")}</p>
-              <textarea data-testid="analyze-text-input" value={content} onChange={(e) => setContent(e.target.value)} rows={9} placeholder={t("text_placeholder")} className={`${inputCls} leading-relaxed`} />
+              <textarea data-testid="analyze-text-input" value={content} onChange={(e) => setContent(e.target.value)} rows={9} maxLength={20000} placeholder={t("text_placeholder")} className={`${inputCls} leading-relaxed`} />
             </div>
           )}
           {kind === "url" && (
@@ -105,29 +106,18 @@ export default function Analyze() {
               {!online && <Notice testId="analyze-url-demo-notice">{t("url_demo")}</Notice>}
             </div>
           )}
-          {kind === "image" && (
-            <div className="space-y-3">
-              <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-[#CBD5E1] rounded-sm py-10 text-sm text-slate-600 ${online ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}`}>
-                <FileImage className="h-6 w-6" aria-hidden />
-                <span className="font-semibold">{file ? file.name : t("image_pick")}</span>
-                <span className="text-xs text-slate-500">{t("image_hint")}</span>
-                <input data-testid="analyze-image-input" type="file" accept={IMAGE_TYPES.join(",")} className="sr-only" disabled={!online} onChange={(e) => pickFile(e.target.files?.[0])} />
-              </label>
-              {!online && <Notice testId="analyze-image-demo-notice">{t("image_demo")}</Notice>}
-            </div>
-          )}
         </Panel>
         <Panel title={t("modules_label")}>
           <div className="grid sm:grid-cols-3 gap-3">
             {MODULES.map((m) => (
               <label key={m} className={`flex items-start gap-2 border rounded-sm p-3 text-sm cursor-pointer transition-colors ${modules.includes(m) ? "border-[#0B192C] bg-[#F8FAFC]" : "border-[#CBD5E1]"}`}>
                 <input type="checkbox" data-testid={`module-checkbox-${m}`} checked={modules.includes(m)} onChange={() => toggle(m)} className="mt-0.5 accent-[#0B192C]" />
-                <span>{t(m)}</span>
+                <span>{t(`M${m}`)}</span>
               </label>
             ))}
           </div>
         </Panel>
-        <button type="submit" data-testid="analyze-submit-button" disabled={state.phase === "loading" || blocked || (kind === "url" && !url) || (kind === "image" && !file)}
+        <button type="submit" data-testid="analyze-submit-button" disabled={state.phase === "loading" || blocked || (kind === "url" && !url)}
           className="inline-flex items-center gap-2 bg-[#0B192C] text-white px-6 py-2.5 text-sm font-semibold rounded-sm hover:bg-[#1E3E62] transition-colors focus-ring disabled:opacity-50 disabled:cursor-not-allowed">
           {state.phase === "loading" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {state.phase === "loading" ? t("analyzing") : t("analyze_btn")}
@@ -146,17 +136,24 @@ const ResultPanel = ({ state }) => {
       {state.phase === "loading" && <Panel testId="analyze-loading"><div className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" />{t("analyzing")}</div></Panel>}
       {state.phase === "error" && <div data-testid="analyze-error" className="border border-[#FCA5A5] bg-[#FEF2F2] text-[#991B1B] text-sm px-4 py-3 rounded-sm">{state.message}</div>}
       {state.phase === "done" && (
-        <Panel testId="analyze-result" title={t("analyze_done")}>
-          <div className="flex items-center gap-4">
-            <RiskScore score={state.inc.risk_score} size="lg" testId="analyze-result-score" />
-            <div className="text-sm text-slate-600 space-y-1">
-              <div>{t("quotes")}: <span className="font-mono font-semibold">{state.inc.quotes?.length || 0}</span></div>
-              {state.inc.is_demo && <DemoTag />}
-            </div>
-          </div>
-          <Link to={`/incidents/${state.inc.id}`} data-testid="analyze-result-detail-link" className="mt-4 inline-block text-sm font-semibold underline text-[#0B192C] focus-ring">
-            {t("go_detail")} →
-          </Link>
+        <Panel testId="analyze-result" title={state.items.length > 1 ? t("analyze_done_many") : t("analyze_done")}>
+          <ul className="space-y-5">
+            {state.items.map((inc) => (
+              <li key={inc.id}>
+                <div className="flex items-center gap-4">
+                  <RiskScore score={inc.risk_score} size="lg" testId="analyze-result-score" />
+                  <div className="text-sm text-slate-600 space-y-1">
+                    <ModuleTag module={inc.module_id} />
+                    <div>{t("quotes")}: <span className="font-mono font-semibold">{inc.evidence_quotes?.length || 0}</span></div>
+                    {inc.is_demo_fallback && <DemoTag />}
+                  </div>
+                </div>
+                <Link to={`/incidents/${inc.id}`} data-testid="analyze-result-detail-link" className="mt-3 inline-block text-sm font-semibold underline text-[#0B192C] focus-ring">
+                  {t("go_detail")} →
+                </Link>
+              </li>
+            ))}
+          </ul>
         </Panel>
       )}
     </aside>

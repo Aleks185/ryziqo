@@ -34,6 +34,7 @@ Po uruchomieniu:
 - **API:** `http://localhost:8000/api/v1/health`
 - **Swagger / OpenAPI:** `http://localhost:8000/docs`
 - **WebSocket alertów:** `ws://localhost:8000/ws/alerts`
+- **Analiza na żądanie:** `POST /api/v1/analyze/text` i `POST /api/v1/analyze/url` (szczegóły w [CONTRACT.md](CONTRACT.md))
 - **Podgląd lokalnych mock-stron demo:** `http://localhost:8000/mock-sites/broker_promo_hidden_risk.html`
 
 ## Quick Start (lokalnie bez Dockera)
@@ -91,5 +92,5 @@ Wyniki audytów i analiza wpływu: [docs/security-licenses.md](docs/security-lic
 - **Fallback bez Ollama:** jeżeli Ollama na hoście jest niedostępna, system automatycznie działa w trybie `demo_fallback` (silnik deterministyczny 18 reguł UKNF + analiza DOM/CSS + etykietowane dane startowe w SQLite).
 - **Lokalny snapshot KNF:** `data/knf_registry_snapshot.json` zawiera udokumentowany lokalny snapshot rejestrów KNF (data w polu `snapshot_date`) wraz z fikcyjnymi podmiotami `[DEMO]` dla lokalnych mock-stron — nie zastępuje bieżącej weryfikacji statusu prawnego w KNF.
 - **Wskaźnik `risk_score` (0.00–1.00):** służy analitykowi do priorytetyzacji i kalibracji progu FP/FN; nie stanowi wiążącego rozstrzygnięcia prawnego.
-- **Frontend a kontrakt:** panel powstał na roboczej wersji kontraktu i wymaga dostosowania do zamrożonego `CONTRACT.md` (lista rozbieżności: [docs/frontend-architecture.md](docs/frontend-architecture.md#5-zgodność-z-contractmd--znane-rozbieżności)). Do tego czasu przy braku zgodnego backendu działa jawnie oznaczony tryb DEMO (heurystyka regułowa w przeglądarce, nie AI).
+- **Tryb DEMO panelu:** gdy backend jest nieosiągalny, panel działa w jawnie oznaczonym trybie DEMO (heurystyka regułowa w przeglądarce, nie AI, dane w `localStorage`). Analiza obrazów (OCR) nie jest obsługiwana.
 - **Kontrakt API:** pełna specyfikacja endpointów i zdarzeń WebSocket w [CONTRACT.md](CONTRACT.md).

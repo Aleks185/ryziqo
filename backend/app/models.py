@@ -79,6 +79,38 @@ class StatusUpdateRequest(BaseModel):
     analyst_note: str | None = Field(default=None, max_length=1000)
 
 
+class LabelUpdateRequest(BaseModel):
+    """Etykieta referencyjna analityka (true = naruszenie, false = brak, null = usuń etykietę)."""
+
+    ground_truth_label: bool | None
+
+
+ModuleIds = list[Literal[1, 2, 3]]
+
+
+class AnalyzeTextRequest(BaseModel):
+    content: str = Field(min_length=20, max_length=20_000)
+    title: str | None = Field(default=None, max_length=240)
+    source_url: str | None = Field(
+        default=None,
+        max_length=500,
+        description="Opcjonalna etykieta pochodzenia treści (np. manual://sample/S1). Nie jest pobierana.",
+    )
+    module_ids: ModuleIds = Field(default_factory=lambda: [1, 2, 3], min_length=1)
+    ground_truth_label: bool | None = None
+
+
+class AnalyzeUrlRequest(BaseModel):
+    url: str = Field(min_length=8, max_length=2048)
+    module_ids: ModuleIds = Field(default_factory=lambda: [1, 2, 3], min_length=1)
+    use_playwright: bool = False
+
+
+class AnalyzeResponse(BaseModel):
+    items: list[IncidentDetail]
+    mode: str
+
+
 class CalibrationMetrics(BaseModel):
     threshold: float = Field(ge=0.0, le=1.0)
     labeled_total: int

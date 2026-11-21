@@ -12,9 +12,11 @@ export const ALERT_THRESHOLD = Number(process.env.REACT_APP_ALERT_THRESHOLD || 0
 export const isMixedContent = () =>
   window.location.protocol === "https:" && API_URL.startsWith("http:");
 
-export const MODULES = ["M1", "M2", "M3"];
-export const STATUSES = ["new", "in_review", "confirmed", "dismissed"];
-export const MODULE_COLORS = { M1: "#2563EB", M2: "#D97706", M3: "#DC2626" };
+// Słowniki zgodne z CONTRACT.md (module_id: 1 | 2 | 3, status incydentu).
+export const MODULES = [1, 2, 3];
+export const STATUSES = ["new", "in_review", "confirmed", "false_positive", "dismissed"];
+export const MODULE_COLORS = { 1: "#2563EB", 2: "#D97706", 3: "#DC2626" };
+export const SAMPLE_URL_PREFIX = "manual://sample/";
 
 export const uid = (p = "id") =>
   `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;

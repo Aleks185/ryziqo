@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Slider } from "@/components/ui/slider";
+import { ALERT_THRESHOLD } from "@/lib/config";
 import { useApp } from "@/lib/store";
 import { Panel } from "@/components/Badges";
 
@@ -8,9 +9,9 @@ export const confusion = (records, th) => {
   const m = { tp: 0, fp: 0, fn: 0, tn: 0 };
   records.forEach((r) => {
     const pred = r.risk_score >= th;
-    if (pred && r.ground_truth) m.tp += 1;
+    if (pred && r.ground_truth_label) m.tp += 1;
     else if (pred) m.fp += 1;
-    else if (r.ground_truth) m.fn += 1;
+    else if (r.ground_truth_label) m.fn += 1;
     else m.tn += 1;
   });
   const precision = m.tp + m.fp ? m.tp / (m.tp + m.fp) : null;
@@ -47,9 +48,9 @@ const Matrix = ({ m }) => {
 
 export default function Calibration() {
   const { incidents, analyzeSamples, t } = useApp();
-  const [th, setTh] = useState(0.7);
+  const [th, setTh] = useState(ALERT_THRESHOLD);
   const [busy, setBusy] = useState(false);
-  const labeled = incidents.filter((i) => typeof i.ground_truth === "boolean");
+  const labeled = incidents.filter((i) => typeof i.ground_truth_label === "boolean");
   const m = confusion(labeled, th);
   const curve = useMemo(
     () => Array.from({ length: 21 }, (_, i) => {

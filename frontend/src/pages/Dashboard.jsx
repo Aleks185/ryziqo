@@ -26,7 +26,7 @@ const ModuleFilter = ({ value, onChange }) => {
           onClick={() => onChange(m)}
           className={`px-3 py-2 text-sm border-r last:border-r-0 border-[#CBD5E1] focus-ring transition-colors ${value === m ? "bg-[#0B192C] text-white font-semibold" : "text-slate-700 hover:bg-slate-100"}`}
         >
-          {m === "all" ? t("m_all") : t(m)}
+          {m === "all" ? t("m_all") : t(`M${m}`)}
         </button>
       ))}
     </div>
@@ -36,7 +36,7 @@ const ModuleFilter = ({ value, onChange }) => {
 export default function Dashboard() {
   const { incidents, t } = useApp();
   const [filter, setFilter] = useState("all");
-  const list = filter === "all" ? incidents : incidents.filter((i) => (i.module_scores?.[filter] || 0) > 0);
+  const list = filter === "all" ? incidents : incidents.filter((i) => i.module_id === filter);
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -48,7 +48,7 @@ export default function Dashboard() {
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi testId="kpi-total" label={t("kpi_total")} value={list.length} accent="#0B192C" />
-        <Kpi testId="kpi-high" label={t("kpi_high")} value={list.filter((i) => i.risk_score >= ALERT_THRESHOLD).length} accent="#DC2626" />
+        <Kpi testId="kpi-high" label={`${t("kpi_high")} (≥ ${ALERT_THRESHOLD.toFixed(2)})`} value={list.filter((i) => i.risk_score >= ALERT_THRESHOLD).length} accent="#DC2626" />
         <Kpi testId="kpi-open" label={t("kpi_open")} value={list.filter((i) => ["new", "in_review"].includes(i.status)).length} accent="#D97706" />
         <Kpi testId="kpi-confirmed" label={t("kpi_confirmed")} value={list.filter((i) => i.status === "confirmed").length} accent="#065F46" />
       </div>

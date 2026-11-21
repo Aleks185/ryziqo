@@ -124,3 +124,81 @@ def test_websocket_receives_crawl_and_high_risk_alerts(tmp_path: Path) -> None:
             assert "crawler_status" in seen_types
             assert "high_risk_alert" in seen_types
             assert "analysis_complete" in seen_types
+
+
+CFD_AD_WITHOUT_WARNING = (
+    "XTradePro — handluj kontraktami CFD na złoto i ropę z dźwignią 1:500! "
+    "Zero ryzyka, gwarantowany zysk 40% miesięcznie. Otwórz konto w 5 minut i zacznij zarabiać już dziś."
+)
+
+
+def test_analyze_text_returns_contract_incident_and_dedupes(tmp_path: Path) -> None:
+    with _build_test_client(tmp_path) as client:
+        body = {
+            "content": CFD_AD_WITHOUT_WARNING,
+            "title": "Test CFD",
+            "source_url": "manual://sample/T1",
+            "module_ids": [1, 2, 3],
+            "ground_truth_label": True,
+        }
+        resp = client.post("/api/v1/analyze/text", json=body)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["mode"] in ("live", "demo_fallback")
+        assert len(data["items"]) >= 1
+        inc = data["items"][0]
+        assert inc["module_id"] in (1, 2, 3)
+        assert inc["source_platform"] == "manual"
+        assert inc["source_url"] == "manual://sample/T1"
+        assert inc["ground_truth_label"] is True
+        assert 0.0 <= inc["risk_score"] <= 1.0
+        assert inc["raw_text_preview"]
+
+        # Analyst decision survives re-analysis of identical content (dedup by content_hash)
+        client.patch(f"/api/v1/incidents/{inc['id']}/status", json={"status": "in_review"})
+        again = client.post("/api/v1/analyze/text", json=body).json()["items"][0]
+        assert again["id"] == inc["id"]
+        assert again["status"] == "in_review"
+
+
+def test_analyze_text_escapes_markup_and_validates_input(tmp_path: Path) -> None:
+    with _build_test_client(tmp_path) as client:
+        too_short = client.post("/api/v1/analyze/text", json={"content": "za krótko"})
+        assert too_short.status_code == 422
+
+        bad_module = client.post(
+            "/api/v1/analyze/text", json={"content": CFD_AD_WITHOUT_WARNING, "module_ids": [4]}
+        )
+        assert bad_module.status_code == 422
+
+        payload = "<script>alert(1)</script> " + CFD_AD_WITHOUT_WARNING
+        resp = client.post("/api/v1/analyze/text", json={"content": payload})
+        assert resp.status_code == 200
+        preview = resp.json()["items"][0]["raw_text_preview"]
+        assert "<script>" in preview  # pasted markup kept as literal text, not parsed as HTML
+
+
+def test_analyze_url_rejects_ssrf_targets(tmp_path: Path) -> None:
+    with _build_test_client(tmp_path) as client:
+        for url in (
+            "http://127.0.0.1:8000/api/v1/health",
+            "http://169.254.169.254/latest/meta-data/",
+            "file:///etc/passwd",
+        ):
+            resp = client.post("/api/v1/analyze/url", json={"url": url})
+            assert resp.status_code == 400, url
+
+
+def test_label_patch_updates_calibration(tmp_path: Path) -> None:
+    with _build_test_client(tmp_path) as client:
+        inc_id = client.get("/api/v1/incidents").json()["items"][0]["id"]
+
+        resp = client.patch(f"/api/v1/incidents/{inc_id}/label", json={"ground_truth_label": False})
+        assert resp.status_code == 200
+        assert resp.json()["ground_truth_label"] is False
+
+        cleared = client.patch(f"/api/v1/incidents/{inc_id}/label", json={"ground_truth_label": None})
+        assert cleared.json()["ground_truth_label"] is None
+
+        missing = client.patch("/api/v1/incidents/nope/label", json={"ground_truth_label": True})
+        assert missing.status_code == 404

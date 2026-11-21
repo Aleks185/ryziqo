@@ -15,7 +15,7 @@ export const TrendChart = ({ incidents }) => {
   const data = lastDays(14).map((day) => {
     const row = { day: day.slice(5) };
     MODULES.forEach((m) => {
-      row[m] = incidents.filter((i) => i.primary_module === m && i.created_at?.slice(0, 10) === day).length;
+      row[`M${m}`] = incidents.filter((i) => i.module_id === m && i.detected_at?.slice(0, 10) === day).length;
     });
     return row;
   });
@@ -35,7 +35,7 @@ export const TrendChart = ({ incidents }) => {
               <Tooltip cursor={{ fill: "#F1F5F9" }} contentStyle={{ fontSize: 12, borderRadius: 2, borderColor: "#CBD5E1" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} formatter={(v) => t(`${v}_short`)} />
               {MODULES.map((m) => (
-                <Bar key={m} dataKey={m} name={m} stackId="a" fill={MODULE_COLORS[m]} isAnimationActive={false} />
+                <Bar key={m} dataKey={`M${m}`} name={`M${m}`} stackId="a" fill={MODULE_COLORS[m]} isAnimationActive={false} />
               ))}
             </BarChart>
           </ResponsiveContainer>

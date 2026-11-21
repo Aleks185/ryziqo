@@ -22,7 +22,7 @@ export const ModuleTag = ({ module }) => {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
       <span className="h-2 w-2 rounded-full" style={{ background: MODULE_COLORS[module] }} />
-      {t(`${module}_short`)}
+      {t(`M${module}_short`)}
     </span>
   );
 };
@@ -31,6 +31,7 @@ const STATUS_STYLES = {
   new: "bg-[#EFF6FF] text-[#1E40AF] border-[#93C5FD]",
   in_review: "bg-[#FFFBEB] text-[#92400E] border-[#FCD34D]",
   confirmed: "bg-[#FEF2F2] text-[#991B1B] border-[#FCA5A5]",
+  false_positive: "bg-[#ECFDF5] text-[#065F46] border-[#6EE7B7]",
   dismissed: "bg-slate-100 text-slate-600 border-slate-300",
 };
 

@@ -47,6 +47,7 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
 - **Nagłówki bezpieczeństwa (Nginx):** `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `server_tokens off`.
 - **Brak telemetrii w panelu:** usunięto odziedziczony z prototypu Emergent tracker PostHog z nagrywaniem sesji (`ap.emergent.sh`), skrypt `assets.emergent.sh` oraz pakiety `@emergentbase/*`. Bundel produkcyjny nie zawiera odwołań do tych usług. Jedynym pozostałym zasobem zewnętrznym są fonty z Google Fonts (do zastąpienia lokalnym hostingiem przy wdrożeniu offline).
 - **Obraz frontendu bez kodu źródłowego i sekretów:** build bez source map (`GENERATE_SOURCEMAP=false`), `.env` wykluczony przez `.dockerignore`, w obrazie końcowym tylko statyczne pliki i Nginx.
+- **Analiza na żądanie (`/api/v1/analyze/*`):** wklejona treść jest walidowana (20–20 000 znaków) i escapowana przed przetworzeniem (znaczniki HTML traktowane jako tekst); `analyze/url` przechodzi tę samą walidację anty-SSRF i limity co kolejka crawlera; Nginx ogranicza rozmiar żądania do `1 MB`.
 - **Limity scrapera:** limit rozmiaru odpowiedzi (`2 MB`), timeouty, limit przekierowań (`5`), łagodne tempo żądań.
 
 ## 3. Wynik audytu `pip-audit`
