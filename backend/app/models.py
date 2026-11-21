@@ -82,7 +82,6 @@ class StatusUpdateRequest(BaseModel):
     analyst_note: str | None = Field(default=None, max_length=1000)
 
 
-<<<<<<< Updated upstream
 class LabelUpdateRequest(BaseModel):
     """Etykieta referencyjna analityka (true = naruszenie, false = brak, null = usuń etykietę)."""
 
@@ -146,8 +145,6 @@ class AnalyzeResponse(BaseModel):
     mode: str
 
 
-=======
->>>>>>> Stashed changes
 class CalibrationMetrics(BaseModel):
     threshold: float = Field(ge=0.0, le=1.0)
     labeled_total: int

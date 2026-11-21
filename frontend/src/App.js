@@ -10,10 +10,7 @@ import IncidentDetail from "@/pages/IncidentDetail";
 import Calibration from "@/pages/Calibration";
 import LogPage from "@/pages/LogPage";
 
-<<<<<<< Updated upstream
 import { Reports, ReportDetails, Campaigns, Diagnostics } from "@/pages/Intelligence";
-=======
->>>>>>> Stashed changes
 import Citizen from "@/pages/Citizen";
 
 function App() {

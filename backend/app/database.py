@@ -570,6 +570,21 @@ class Database:
             row = conn.execute("SELECT * FROM incidents WHERE id = ?", (incident_id,)).fetchone()
         return self._row_to_incident(row) if row else None
 
+    def update_incident_label(
+        self, incident_id: str, ground_truth_label: bool | None
+    ) -> Incident | None:
+        gt_val = None if ground_truth_label is None else (1 if ground_truth_label else 0)
+        now = utc_now_iso()
+        with self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE incidents SET ground_truth_label = ?, updated_at = ? WHERE id = ?",
+                (gt_val, now, incident_id),
+            )
+            if cur.rowcount == 0:
+                return None
+            row = conn.execute("SELECT * FROM incidents WHERE id = ?", (incident_id,)).fetchone()
+        return self._row_to_incident(row) if row else None
+
     def count_incidents(self) -> int:
         with self._connect() as conn:
             return int(conn.execute("SELECT COUNT(*) FROM incidents").fetchone()[0])

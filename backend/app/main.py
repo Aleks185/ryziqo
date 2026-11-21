@@ -18,11 +18,7 @@ from app.database import Database
 from app.knf_registry import KNFRegistrySnapshot, pick_snapshot_path
 from app.models import HealthResponse
 from app.queue_worker import CrawlQueueWorker
-<<<<<<< Updated upstream
 from app.routers import analyze, crawl, discovery, incidents, reports, watchlist, ws
-=======
-from app.routers import crawl, incidents, ws
->>>>>>> Stashed changes
 from app.scraper.fetcher import PageFetcher
 from app.watchlist_seed import load_watchlist_seed
 from app.ws_manager import AlertWebSocketManager
@@ -116,11 +112,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
             "System monitoringu treści inwestycyjnych (Moduły 1–3: Finfluencerzy, "
             "18 kryteriów ryzyka MiFID II / 2017/565, Shadow Advisory art. 76 u.o.i.f.)."
         ),
-<<<<<<< Updated upstream
         version="1.3.0",
-=======
-        version="1.0.0",
->>>>>>> Stashed changes
         lifespan=lifespan,
     )
 
@@ -134,15 +126,12 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
 
     app.include_router(incidents.router)
     app.include_router(crawl.router)
-<<<<<<< Updated upstream
     app.include_router(analyze.router)
     app.include_router(intelligence.router)
     app.include_router(casework.router)
     app.include_router(watchlist.router)
     app.include_router(discovery.router)
     app.include_router(reports.router)
-=======
->>>>>>> Stashed changes
     app.include_router(ws.router)
 
     @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])

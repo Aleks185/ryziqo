@@ -1,10 +1,6 @@
 # #InvestWatch — Zamrożony Kontrakt API i WebSocket (`CONTRACT.md`)
 
-<<<<<<< Updated upstream
 **Wersja:** `1.2.0` (HackNation UKNF 2026) — rozszerzenia addytywne względem `1.0.0` (nowe endpointy, bez zmian istniejących pól i ścieżek; zob. [Historia zmian](#5-historia-zmian))  
-=======
-**Wersja:** `1.0.0` (HackNation UKNF 2026)  
->>>>>>> Stashed changes
 **Zasada współpracy:** Po zamrożeniu nie zmieniamy jednostronnie nazw pól, typów ani ścieżek. Ewentualne rozszerzenia wyłącznie jako opcjonalne pola po obustronnej zgodzie.
 
 ---
@@ -72,11 +68,7 @@ Każdy rekord zwracany przez API i agregator wyników Modułów 1–3 ma ujednol
 ### Słowniki wartości
 - `module_id`: `1` (Finfluencerzy i podmioty trzecie) | `2` (Zgodność i informacja o ryzyku — 18 reguł UKNF) | `3` (Shadow Advisory — art. 76 u.o.i.f.)
 - `knf_registry_status`: `"registered_pl"` | `"registered_eu_branch"` | `"registered_eu_crossborder"` | `"not_in_knf_snapshot"` | `"unknown"`
-<<<<<<< Updated upstream
 - `source_platform`: `"web"` | `"facebook"` | `"instagram"` | `"tiktok"` | `"youtube"` | `"mock_demo"` | `"manual"` *(od 1.1.0 — treść wklejona przez analityka)* | `"x"` *(od 1.2.0)*
-=======
-- `source_platform`: `"web"` | `"facebook"` | `"instagram"` | `"tiktok"` | `"youtube"` | `"mock_demo"`
->>>>>>> Stashed changes
 - `risk_score`: liczba zmiennoprzecinkowa **`0.00` – `1.00`** (wskaźnik modelu AI + reguł; nie stanowi wiążącego rozstrzygnięcia prawnego).
 - `risk_level`: `"low"` (`< 0.40`) | `"medium"` (`0.40 – 0.69`) | `"high"` (`>= 0.70`) — domyślna etykieta; **Panel Kalibracji w UI przelicza flagowanie dynamicznie wg suwaka `threshold`**.
 - `violated_rules[].rule_id`: identyfikatory kryteriów UKNF `"1"`–`"18"` (w tym `"12a"`, `"12b"`) oraz reguły modułów (`M1_*`, `M3_*`). Rozszerzenie addytywne (bez zmiany schematu): sygnały semantyczne LLM potwierdzone cytatem (`AI_*`, np. `AI_M3_SUCCESS_FEE`, `AI_PROMPT_INJECTION`), sygnały VLM (`AI_VLM_*`), `CAMPAIGN_CLONE_MATCH`, `KNF_WARNING_LIST_MATCH`, `KNF_IMPERSONATION_SUSPECT`. Klient powinien traktować nieznane `rule_id` jako zwykłe naruszenie.
@@ -141,6 +133,11 @@ Aktualizuje status incydentu w SQLite i rozgłasza zdarzenie `status_updated` pr
 ```
 - Response: zaktualizowany obiekt `Incident`.
 
+### `PATCH /api/v1/incidents/{incident_id}/label` *(od 1.1.0)*
+Ustawia etykietę referencyjną analityka używaną w kalibracji progu (TP/FP/TN/FN) i rozgłasza `status_updated` (z `extra.ground_truth_label`).
+- Request body: `{ "ground_truth_label": true }` — dopuszczalne `true` | `false` | `null` (usunięcie etykiety).
+- Response: zaktualizowany obiekt `Incident`. `404`, gdy incydent nie istnieje.
+
 ### `GET /api/v1/stats`
 Zwraca zagregowane metryki do KPI i wykresów trendów (Recharts/Chart.js).
 - Query param: `threshold` (float, domyślnie `0.50`)
@@ -200,7 +197,6 @@ Dodaje zadanie scrapowania i analizy do kolejki zadań backendu.
 }
 ```
 
-<<<<<<< Updated upstream
 ### `POST /api/v1/analyze/text` *(od 1.1.0)*
 Synchroniczna analiza treści wklejonej przez analityka (reklama, post, opis wideo) tym samym pipeline'em co kolejka (Moduły 1–3, deduplikacja po `content_hash`, alerty WS).
 - Request body:
@@ -243,8 +239,6 @@ Obok `items` i `mode` odpowiedź zawiera `report` z polami `source_type`, `statu
 - `DELETE /api/v1/analyze/jobs/{job_id}` anuluje zadanie. Rozłączenie odbiorcy SSE pozwala ponownie podłączyć się do działającego zadania. Zadania są lokalne dla pojedynczego procesu API.
 
 
-=======
->>>>>>> Stashed changes
 ### `GET /api/v1/crawl/jobs`
 Zwraca listę zadań kolejki, dostępnych plików mock-demo oraz najbliższy termin uruchomienia APScheduler.
 
@@ -298,7 +292,6 @@ Format komunikatów serwera:
   "message": "Wykryto wysokie ryzyko (0.89) w Module 2: Alpha CFD Broker S.A."
 }
 ```
-<<<<<<< Updated upstream
 
 ---
 
@@ -329,5 +322,3 @@ Te ścieżki służą widokom rejestru i teczki. Istniejące ścieżki /api/v1 n
 | POST /api/system/simulate-attack | Dodaje demonstracyjny rekord (201). Po zatwierdzeniu transakcji rozsyła przez /ws/alerts zdarzenie NEW_REPORT z campaignId, reportId, timestamp i message. |
 
 Źródła mają wartości CITIZEN_FORM, CRAWLER, ANALYST_PANEL lub EXTERNAL_API. Dla bezpośredniego POST domyślnym źródłem jest ANALYST_PANEL. Bez podanego IP formularz korzysta z adresu żądania po walidacji proxy. Dla połączenia lokalnego używa demonstracyjnego 192.0.2.1. Pole raw_technical_data.ip_source rozróżnia payload, request i demo_default. Adres żądania identyfikuje połączenie zgłaszającego i sam w sobie nie potwierdza lokalizacji reklamodawcy.
-=======
->>>>>>> Stashed changes

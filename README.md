@@ -9,7 +9,6 @@ Prototyp MVP (HackNation 2026) do automatycznej identyfikacji, agregacji i anali
 
 - **Docker + Docker Compose** (rekomendowany start on-premise)
 - **RAM:** min. 4 GB (tryb z regułami/fallback), min. 8–16 GB przy lokalnym modelu LLM w Ollama
-<<<<<<< Updated upstream
 - **Opcjonalnie (lokalne AI on-premise):** [Ollama](https://ollama.com/) na hoście (`ollama pull gemma3:4b` lub `gemma4`) albo w kontenerze (profil `ai`, poniżej) — zero płatnych zewnętrznych API
 - **Do developmentu bez Dockera:** Python 3.11+ (backend), Node.js 20+ i Yarn 1.22 (frontend)
 
@@ -22,10 +21,6 @@ data/            Reguły UKNF, snapshot rejestrów KNF, mock-strony demo, dane s
 docs/            Dokumentacja architektury, bezpieczeństwa i procesu pracy z AI
 CONTRACT.md      Zamrożony kontrakt REST + WebSocket między backendem a frontendem
 ```
-=======
-- **Opcjonalnie (lokalne AI on-premise):** [Ollama](https://ollama.com/) uruchomiona na hoście (`ollama pull gemma3:4b` lub `gemma4`) — zero płatnych zewnętrznych API
-- **Do developmentu bez Dockera:** Python 3.11+
->>>>>>> Stashed changes
 
 ## Quick Start (Docker Compose)
 
@@ -49,18 +44,18 @@ docker compose --profile discovery up --build
 Strony renderowane JavaScriptem: `INSTALL_PLAYWRIGHT=true` i `CRAWLER_USE_PLAYWRIGHT_FALLBACK=true` w `.env`, potem `docker compose build`.
 
 Po uruchomieniu:
+- **Panel analityka (frontend):** `http://localhost:3000` (Nginx przekazuje `/api/` i `/ws/` do backendu)
 - **API:** `http://localhost:8000/api/v1/health`
 - **Swagger / OpenAPI:** `http://localhost:8000/docs`
 - **WebSocket alertów:** `ws://localhost:8000/ws/alerts`
-<<<<<<< Updated upstream
 - **Analiza na żądanie:** `POST /api/v1/analyze/text` i `POST /api/v1/analyze/url` (szczegóły w [CONTRACT.md](CONTRACT.md))
 - **Discovery (SearXNG):** `POST /api/v1/discovery/run`, `GET /api/v1/discovery/recent`; **odświeżenie rejestru KNF:** `POST /api/v1/knf-registry/refresh?dry_run=true`
 - **Okresowo skanowane źródła:** `/api/v1/watchlist` (startowa lista: `POST /api/v1/watchlist/seed`); **raporty modułów (JSON/CSV):** `/api/v1/reports/{1|2|3}?format=csv`
-=======
->>>>>>> Stashed changes
 - **Podgląd lokalnych mock-stron demo:** `http://localhost:8000/mock-sites/broker_promo_hidden_risk.html`
 
 ## Quick Start (lokalnie bez Dockera)
+
+**Backend** (port `8000`):
 
 ```bash
 cd backend
@@ -68,6 +63,15 @@ python -m venv .venv
 .venv\Scripts\activate      # Linux/macOS: source .venv/bin/activate
 pip install -r requirements-dev.txt
 uvicorn app.main:app --reload --port 8000
+```
+
+**Frontend** (port `3000`, hot-reload, łączy się z `http://localhost:8000/api/v1`):
+
+```bash
+cd frontend
+cp .env.example .env
+yarn install
+yarn start
 ```
 
 ## Konfiguracja serwisów (`.env`)
@@ -81,7 +85,6 @@ Wszystkie parametry znajdują się w [.env.example](.env.example). Sekrety są i
 | `DATABASE_PATH` | `../data/investwatch.db` (Docker: `/data/investwatch.db`) | Ścieżka trwałej bazy SQLite |
 | `OBJECT_STORE_DIR` | `../data/object_store` (Docker: `/data/object_store`) | Lokalny object storage surowych HTML i JSON |
 | `CRAWLER_SCHEDULE_MINUTES` | `15` | Interwał harmonogramu APScheduler |
-<<<<<<< Updated upstream
 | `CRAWLER_CRON` | puste | Wyrażenie crontab (UTC) zastępujące interwał, np. `*/30 * * * *` |
 | `CRAWLER_PROXIES` | puste | Lista proxy rotowanych per żądanie (`http://...`, `socks5://...`) |
 | `DEDUP_SIMILARITY_THRESHOLD` | `0.92` | Próg podobieństwa embeddingów przy ponownym skanie tego samego URL |
@@ -108,15 +111,11 @@ Wszystkie parametry znajdują się w [.env.example](.env.example). Sekrety są i
 | `KNF_SYNC_USER_AGENT` | nagłówek Chrome | User-Agent synchronizacji rejestru KNF; knf.gov.pl odrzuca nagłówki botów. Crawler treści nadal przedstawia się jako bot |
 
 Zmienne frontendu (`REACT_APP_INVESTWATCH_API_URL`, `REACT_APP_ALERT_THRESHOLD`) opisuje [frontend/.env.example](frontend/.env.example). Są wklejane do bundla w czasie builda — nie umieszczaj w nich sekretów.
-=======
-| `HIGH_RISK_ALERT_THRESHOLD` | `0.65` | Próg emisji alertów `high_risk_alert` na `/ws/alerts` |
->>>>>>> Stashed changes
 
 ## Testy i audyt bezpieczeństwa (Cybersec)
 
 ```bash
 cd backend
-<<<<<<< Updated upstream
 pytest -q                    # testy Playwright wymagają: pip install -r requirements-playwright.txt && playwright install chromium
 pip-audit -r requirements-dev.txt -r requirements-playwright.txt
 python -m scripts.evaluate_detection --mode both   # Precision/Recall/F1 na data/eval_golden_dataset.json (reguły vs Ollama)
@@ -124,11 +123,9 @@ python -m scripts.evaluate_detection --mode both   # Precision/Recall/F1 na data
 
 cd ../frontend
 yarn audit
-=======
-pytest -q
-pip-audit -r requirements.txt
->>>>>>> Stashed changes
 ```
+
+Wyniki audytów i analiza wpływu: [docs/security-licenses.md](docs/security-licenses.md).
 
 ## Tryb demo i znane ograniczenia
 
@@ -136,10 +133,7 @@ pip-audit -r requirements.txt
 - **Chodzenie po linkach:** zadanie `public_url` i cel watchlisty przyjmują `follow_depth` (0–2, domyślnie 0) i `follow_max_pages` (≤30); odwiedzane są tylko podstrony tej samej domeny, najpierw regulaminy, ostrzeżenia o ryzyku i oferta.
 - **Lokalny snapshot KNF:** `data/knf_registry_snapshot.json` zawiera udokumentowany lokalny snapshot rejestrów KNF (data w polu `snapshot_date`) wraz z fikcyjnymi podmiotami `[DEMO]` dla lokalnych mock-stron — nie zastępuje bieżącej weryfikacji statusu prawnego w KNF.
 - **Wskaźnik `risk_score` (0.00–1.00):** służy analitykowi do priorytetyzacji i kalibracji progu FP/FN; nie stanowi wiążącego rozstrzygnięcia prawnego.
-<<<<<<< Updated upstream
 - **Tryb DEMO panelu:** gdy backend jest nieosiągalny, panel działa w jawnie oznaczonym trybie DEMO (heurystyka regułowa w przeglądarce, nie AI, dane w `localStorage`). Panel nie wysyła obrazów do analizy; backend opcjonalnie analizuje zrzuty ekranu stron modelem VLM (`OLLAMA_VISION_ENABLED=true`, wymaga Playwrighta i modelu z obsługą obrazów).
-=======
->>>>>>> Stashed changes
 - **Kontrakt API:** pełna specyfikacja endpointów i zdarzeń WebSocket w [CONTRACT.md](CONTRACT.md).
 
 ## Konwencje repozytorium

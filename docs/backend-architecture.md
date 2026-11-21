@@ -63,7 +63,8 @@ backend/
 │   │   ├── module3_shadow_advisory.py# Moduł 3: Shadow Advisory (art. 76, 2, 3 u.o.i.f.)
 │   │   └── aggregator.py             # Moduły równolegle, guard KNF, klony, VLM, tryb primary/all_significant
 │   └── routers/
-│       ├── incidents.py              # /incidents, /incidents/{id}, PATCH /status, /stats
+│       ├── incidents.py              # /incidents, /incidents/{id}, PATCH /status, PATCH /label, /stats
+│       ├── analyze.py                # POST /analyze/text, POST /analyze/url (analiza na żądanie)
 │       ├── crawl.py                  # POST /crawl/trigger, /crawl/jobs, /knf-registry, /rules, /mock-sites
 │       ├── watchlist.py              # /watchlist (CRUD) + POST /watchlist/run
 │       ├── reports.py                # GET /reports/{module_id}?format=json|csv
@@ -73,15 +74,11 @@ backend/
 └── tests/
     ├── test_ssrf.py                  # 14 przypadków blokady anty-SSRF
     ├── test_modules.py               # Testy Modułów 1–3, DOM/CSS i embeddingów
-<<<<<<< Updated upstream
     ├── test_api.py                   # Testy integracyjne REST, analizy na żądanie, etykiet, kalibracji i WebSocket
     ├── test_crawler_features.py      # Parsery social, proxy, trwała kolejka, watchlista, near-dup, raporty, risk_level
     ├── test_ai_detection.py          # Obfuskacja, anti-injection, weryfikacja cytatów, fuzja, RAG, klony, KNF fuzzy, VLM (mock Ollama)
     ├── test_solicitation.py          # Sygnały nakłaniania do wpłat i oferty pieniężne (Moduł 2)
     └── test_browser.py               # Playwright: render SPA, computed styles, anty-SSRF przeglądarki (pomijane bez Chromium)
-=======
-    └── test_api.py                   # Testy integracyjne REST, kalibracji i WebSocket
->>>>>>> Stashed changes
 ```
 
 ---
@@ -89,13 +86,17 @@ backend/
 ## 3. Warstwa API, cykl życia i WebSocket
 
 - **Cykl życia (`backend/app/main.py`):** w `lifespan` backend uruchamia niedestrukcyjną inicjalizację schematu SQLite (`CREATE TABLE IF NOT EXISTS`), zasila bazę 14 syntetycznymi rekordami startowymi (`data/demo_incidents_seed.json`) wyłącznie jeśli tabela `incidents` jest pusta, wczytuje snapshot KNF i 18 reguł, sprawdza stan Ollamy oraz uruchamia workera kolejki i `APScheduler`.
-- **REST API (`routers/incidents.py`, `routers/crawl.py`):**
+- **REST API (`routers/incidents.py`, `routers/analyze.py`, `routers/crawl.py`):**
   - `GET /api/v1/health` — status serwisu, dostępność Ollama, tryb (`live` / `demo_fallback`), data i zastrzeżenie snapshotu KNF, liczba incydentów i status harmonogramu.
   - `GET /api/v1/incidents` — paginacja i filtrowanie po `module_id`, `source_platform`, `status`, `min_risk_score`, `max_risk_score`, `date_from`, `date_to`, `search`.
   - `GET /api/v1/incidents/{id}` — pełne szczegóły incydentu wraz z `raw_text_preview` pobranym z lokalnego Object Storage.
   - `PATCH /api/v1/incidents/{id}/status` — zmiana statusu (`new`, `in_review`, `confirmed`, `false_positive`, `dismissed`) i `analyst_note`, zapis w SQLite + natychmiastowy event `status_updated` na `/ws/alerts`.
+  - `PATCH /api/v1/incidents/{id}/label` *(v1.1.0)* — etykieta referencyjna analityka `ground_truth_label` (`true` / `false` / `null`) do kalibracji; event `status_updated` z `extra.ground_truth_label`.
   - `GET /api/v1/stats?threshold=0.50` — KPI, podziały (moduł, źródło, status), szeregi czasowe `trend_by_day` (pod Recharts/Chart.js), top naruszane reguły oraz wyliczona macierz pomyłek `TP / FP / TN / FN` (`precision`, `recall`, `f1_score`) dla rekordów z `ground_truth_label`.
   - `POST /api/v1/crawl/trigger` (`202 Accepted`) — kolejkowanie zadań w trybach `mock_all`, `mock_single` oraz `public_url` (z natychmiastową walidacją anty-SSRF przed dodaniem do kolejki).
+  - `POST /api/v1/analyze/text` *(v1.1.0)* — synchroniczna analiza wklejonej treści (20–20 000 znaków). Tekst jest escapowany i opakowywany w minimalny HTML (`build_manual_text_page`), `source_platform: "manual"`; nic nie jest pobierane z sieci.
+  - `POST /api/v1/analyze/url` *(v1.1.0)* — synchroniczne pobranie jednego publicznego URL przez `PageFetcher` (anty-SSRF na każdym przekierowaniu, limity rozmiaru/przekierowań) i analiza; `400` dla adresów zablokowanych, `502` dla błędów pobierania.
+  - Kolejka i analiza na żądanie współdzielą `CrawlQueueWorker.analyze_page()` — ten sam preprocessing, zapis do Object Storage, Moduły 1–3, deduplikację po `content_hash` (zachowuje status i etykietę analityka) oraz alerty `high_risk_alert`.
   - `GET /api/v1/crawl/jobs`, `GET /api/v1/knf-registry`, `GET /api/v1/rules`, `GET /mock-sites/{filename}`.
   - *(v1.2.0)* `GET /api/v1/incidents?risk_level=high`, watchlista `GET/POST /api/v1/watchlist`, `PATCH/DELETE /api/v1/watchlist/{id}`, `POST /api/v1/watchlist/run`, raporty `GET /api/v1/reports/{module_id}?format=json|csv` (CSV z ochroną przed formula injection).
 - **WebSocket (`ws_manager.py`, `routers/ws.py`):** kanał `/ws/alerts` obsługuje `ping`/`pong` i emituje ustrukturyzowane komunikaty `connected`, `crawler_status` (`queued`, `fetching`, `preprocessing`, `analyzing`), `high_risk_alert` (gdy `risk_score >= HIGH_RISK_ALERT_THRESHOLD`, domyślnie `0.65`), `analysis_complete`, `status_updated` oraz `error`. Rozłączenie klienta usuwa gniazdo z puli bez przerywania bieżącego crawla.
@@ -166,24 +167,17 @@ Pełny opis zmian detekcji v2 (diagnoza, fazy, świadome odstępstwa): [ai-detec
   - Lekki obraz `python:3.12-slim` z nieuprzywilejowanym użytkownikiem `appuser` i wbudowanym `HEALTHCHECK`.
   - Trwały wolumen `investwatch_data:/data` gwarantujący zachowanie bazy SQLite i Object Storage między restartami.
   - Wpis `extra_hosts: ["host.docker.internal:host-gateway"]` zapewniający łączność z natywną Ollamą również pod Linuksem.
-<<<<<<< Updated upstream
   - Profil `ai` (`docker compose --profile ai up`): serwis `ollama` (przypięty obraz `ollama/ollama:${OLLAMA_IMAGE_TAG}`, wolumen `ollama_models`) i jednorazowy `ollama-pull` pobierający `OLLAMA_MODEL` i `OLLAMA_EMBED_MODEL` — cały stos z lokalnym LLM jedną komendą.
   - Serwis `frontend` (Nginx) wystawia panel na porcie `3000` i przekazuje `/api/` oraz `/ws/` do `backend:8000` w sieci Compose; startuje po uzyskaniu przez backend statusu `healthy`. Szczegóły: [frontend-architecture.md](./frontend-architecture.md).
-=======
->>>>>>> Stashed changes
 
 ---
 
 ## 7. Stan weryfikacji
 
-<<<<<<< Updated upstream
 - **Testy automatyczne (`pytest`):** **134/134 PASSED** (`2026-11-21`, v1.2.0 + detekcja v2, z zainstalowanym Playwright/Chromium; bez Playwrighta testy `test_browser.py` są pomijane). Pokrycie: 14 wektorów anty-SSRF (`test_ssrf.py`), 3 moduły analityczne + DOM/CSS + przypadki negatywne (`test_modules.py`, `test_solicitation.py`), detekcja v2 z mockiem `OllamaClient` — obfuskacja, anti-injection, weryfikacja cytatów, fuzja (weto FP, FN boost), RAG, klony, KNF fuzzy, VLM (`test_ai_detection.py`), render i anty-SSRF przeglądarki (`test_browser.py`) oraz pełna integracja REST, analizy na żądanie, etykiet, kalibracji FP/FN i WebSocket (`test_api.py`, `test_crawler_features.py`).
 - **Benchmark detekcji (`python -m scripts.evaluate_detection --mode fallback`, próg `0.65`, 52 przypadki z `data/eval_golden_dataset.json`):** Precision **0.958**, Recall **0.676**, F1 **0.793** (1 FP, 11 FN — w tym 6 parafraz adversarial wymagających LLM). Pomiar w trybie `--mode ollama` wymaga uruchomionej Ollamy — instrukcja w [ollama-llm-setup.md](./ollama-llm-setup.md).
 - **Audyt bezpieczeństwa (`pip-audit -r requirements-dev.txt`, przypięte wersje):** `No known vulnerabilities found` (**0 znanych podatności**).
-=======
-- **Testy automatyczne (`pytest`):** **22/22 PASSED** — pokrycie dla 14 wektorów anty-SSRF (`test_ssrf.py`), wszystkich 3 modułów analitycznych + DOM/CSS + przypadków negatywnych (`test_modules.py`) oraz pełnej integracji REST, kalibracji FP/FN i streamingu WebSocket `/ws/alerts` (`test_api.py`).
-- **Audyt bezpieczeństwa (`pip-audit`):** `No known vulnerabilities found` (**0 znanych podatności**).
->>>>>>> Stashed changes
 - Szczegóły licencji i zabezpieczeń: [security-licenses.md](./security-licenses.md).
 - Proces pracy z asystentami AI: [ai-workflow.md](./ai-workflow.md).
 - Checklista niezależnego audytu: [backend-audit-checklist.md](./backend-audit-checklist.md).
+- Architektura panelu analitycznego: [frontend-architecture.md](./frontend-architecture.md).

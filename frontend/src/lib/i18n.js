@@ -1,6 +1,5 @@
 const DICT = {
   pl: {
-<<<<<<< Updated upstream
     intel_reports: "Baza zgłoszeń",
     intel_campaigns: "Kampanie",
     intel_diag: "Diagnostyka systemu",
@@ -24,11 +23,6 @@ const DICT = {
     image_size: "Wybierz obraz o rozmiarze do 10 MB.",
     image_unavailable: "Analiza obrazu wymaga połączenia z modelem wizyjnym. Spróbuj ponownie później.",
     image_unreadable: "Nie udało się odczytać reklamy. Wybierz wyraźniejszy zrzut ekranu.",
-=======
-    local_check: "Ocena demonstracyjna na podstawie wpisanego tekstu",
-    image_bad: "Wybierz plik PNG, JPEG lub WebP.",
-    image_text: "Wklej tekst widoczny na zrzucie. Ocena obejmie wpisany tekst.",
->>>>>>> Stashed changes
     analyst: "Panel Analityka",
     citizen: "Zgłoszenie Obywatelskie",
     public_title: "Sprawdź podejrzaną reklamę inwestycyjną zanim wpłacisz pieniądze",
@@ -208,7 +202,6 @@ const DICT = {
     action_error: "Nie udało się zapisać zmiany w backendzie",
   },
   en: {
-<<<<<<< Updated upstream
     intel_reports: "Report registry",
     intel_campaigns: "Campaigns",
     intel_diag: "System diagnostics",
@@ -232,11 +225,6 @@ const DICT = {
     image_size: "Choose an image up to 10 MB.",
     image_unavailable: "Screenshot analysis requires a connection to the vision model. Try again later.",
     image_unreadable: "The ad could not be read. Choose a clearer screenshot.",
-=======
-    local_check: "Demonstration check based on the text entered",
-    image_bad: "Choose a PNG, JPEG or WebP file.",
-    image_text: "Enter the text visible in the screenshot. The check covers the text you enter.",
->>>>>>> Stashed changes
     analyst: "Analyst panel",
     citizen: "Citizen report",
     public_title: "Check a suspicious investment advert before sending money",
