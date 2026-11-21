@@ -45,6 +45,7 @@ Strony renderowane JavaScriptem: `INSTALL_PLAYWRIGHT=true` i `CRAWLER_USE_PLAYWR
 
 Po uruchomieniu:
 - **Panel analityka (frontend):** `http://localhost:3000` (Nginx przekazuje `/api/` i `/ws/` do backendu)
+- **Formularz obywatela:** `http://localhost:3000/public` (tekst, URL lub zrzut ekranu; wybór zgody na udostępnienie zgłoszenia)
 - **API:** `http://localhost:8000/api/v1/health`
 - **Swagger / OpenAPI:** `http://localhost:8000/docs`
 - **WebSocket alertów:** `ws://localhost:8000/ws/alerts`
@@ -135,11 +136,11 @@ Wyniki audytów i analiza wpływu: [docs/security-licenses.md](docs/security-lic
 - **Chodzenie po linkach:** zadanie `public_url` i cel watchlisty przyjmują `follow_depth` (0–2, domyślnie 0) i `follow_max_pages` (≤30); odwiedzane są tylko podstrony tej samej domeny, najpierw regulaminy, ostrzeżenia o ryzyku i oferta.
 - **Lokalny snapshot KNF:** `data/knf_registry_snapshot.json` zawiera udokumentowany lokalny snapshot rejestrów KNF (data w polu `snapshot_date`) wraz z fikcyjnymi podmiotami `[DEMO]` dla lokalnych mock-stron — nie zastępuje bieżącej weryfikacji statusu prawnego w KNF.
 - **Wskaźnik `risk_score` (0.00–1.00):** służy analitykowi do priorytetyzacji i kalibracji progu FP/FN; nie stanowi wiążącego rozstrzygnięcia prawnego.
-- **Tryb DEMO panelu:** gdy backend jest nieosiągalny, panel działa w jawnie oznaczonym trybie DEMO (heurystyka regułowa w przeglądarce, nie AI, dane w `localStorage`). Panel nie wysyła obrazów do analizy; backend opcjonalnie analizuje zrzuty ekranu stron modelem VLM (`OLLAMA_VISION_ENABLED=true`, wymaga Playwrighta i modelu z obsługą obrazów).
+- **Tryb DEMO panelu:** gdy backend jest nieosiągalny, panel działa w jawnie oznaczonym trybie DEMO (heurystyka regułowa w przeglądarce, nie AI, dane w `localStorage`). Analiza URL i zrzutów ekranu wymaga backendu: zrzut odczytuje model VLM (`OLLAMA_VISION_ENABLED=true`), a gdy jest niedostępny — lokalny OCR (RapidOCR, `INSTALL_OCR=true`). Opis widoków panelu: [docs/frontend-architecture.md](docs/frontend-architecture.md).
 - **Kontrakt API:** pełna specyfikacja endpointów i zdarzeń WebSocket w [CONTRACT.md](CONTRACT.md).
 
 ## Konwencje repozytorium
 
 - **Końcówki linii:** [`.gitattributes`](.gitattributes) wymusza `LF` w repozytorium i w kopii roboczej (także na Windowsie, niezależnie od `core.autocrlf`) — istotne dla `Dockerfile`, `nginx.conf` i skryptów. Pliki binarne (`.docx`, `.pdf`, obrazy, SQLite) nie są konwertowane.
 - **Sekrety:** tylko szablony `.env.example` (root i `frontend/`); właściwe pliki `.env` są ignorowane przez Git.
-- **Kontrakt:** zmiany API wyłącznie addytywne, uzgadniane w [CONTRACT.md](CONTRACT.md) (aktualnie `1.2.0`).
+- **Kontrakt:** zmiany API wyłącznie addytywne, uzgadniane w [CONTRACT.md](CONTRACT.md) (aktualnie `1.4.0`).

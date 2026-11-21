@@ -252,6 +252,19 @@ Obok `items` i `mode` odpowiedź zawiera `report` z polami `source_type`, `statu
 - `DELETE /api/v1/analyze/jobs/{job_id}` anuluje zadanie. Rozłączenie odbiorcy SSE pozwala ponownie podłączyć się do działającego zadania. Zadania są lokalne dla pojedynczego procesu API.
 
 
+### Baza zgłoszeń, kampanie i diagnostyka (`/api/v1/intelligence/*`)
+
+Każda analiza (z wyjątkiem `share_mode: "none"`) zapisuje wpis w bazie zgłoszeń (`threat_reports`). Wpisy z identycznym odciskiem (hash treści, pHash obrazu, domena / URL) dostają wspólny `campaign_id`. `risk_score` wpisu jest w skali **0–100** (jak w `report`), incydenty nadal używają 0–1. Opis mechanizmu: [docs/kampanie-fejkow.md](docs/kampanie-fejkow.md).
+
+- `GET /api/v1/intelligence/reports` — parametry: `q` (do 240 znaków; szuka w domenie, fragmencie treści, IP serwera, podmiotach i URL), `verdict`, `campaign`, `incident` (wpisy powiązane z incydentem), `limit` (1–200, domyślnie 50), `offset`. Odpowiedź: `{"total", "items": [{"id", "created_at", "source_channel", "reporter_display_name", "source_type", "target_url", "canonical_domain", "platform", "target_server_ip", "campaign_id", "detected_entities", "risk_score", "verdict_status", "excerpt", "origin", "incident_ids"}]}` (od najnowszych).
+- `GET /api/v1/intelligence/reports/{report_id}` — pełny wpis, m.in. `redirect_chain`, `hosting_asn`, `hosting_country`, `content_hash`, `image_phash`, `analyst_notes`, `ai_report_json` (`summary`, `findings[].reasons`, `findings[].evidence`, `limitations`). Identyfikatory zgłaszającego (IP, skrót IP, User-Agent, HMAC klucza) nie są zwracane. `404` dla nieznanego wpisu.
+- `PATCH /api/v1/intelligence/reports/{report_id}` — `{"verdict_status"?, "analyst_notes"? (≤ 4000 znaków)}`; zwraca zaktualizowany wpis. `422` bez zmian, `404` dla nieznanego wpisu.
+- `GET /api/v1/intelligence/campaigns` — grupy co najmniej 2 wpisów: `[{"campaign_id", "members", "risk_score", "domain", "server_ip", "last_seen"}]`.
+- `PATCH /api/v1/intelligence/campaigns/{campaign_id}` — `{"verdict_status"}` dla wszystkich wpisów grupy; zwraca `{"updated": <liczba>}`. `422` bez statusu, `404` dla nieznanej kampanii.
+- `GET /api/v1/intelligence/diagnostics` — `{"total", "confirmed", "campaigns", "cache_hits", "fast_hits", "saved_seconds", "active", "waiting", "capacity", "model", "available"}` (liczniki bazy zgłoszeń, stan kolejki analiz i modelu Ollama).
+
+Słowniki: `verdict_status` ∈ `new` | `confirmed_fake` | `requires_review` | `false_positive` (niezależny od `Incident.status`); `origin` / `report.result_origin` ∈ `fast_path` (dopasowanie do potwierdzonego fake'a, bez LLM) | `cache` | `ollama` | `rules` | `history`.
+
 ### `GET /api/v1/intelligence/graph` *(od 1.4.0)*
 Mapa powiązań incydentów (`min_score` 0–1, domyślnie `0.5`; `limit` do 500): `{"nodes": [{"id", "type", "label", "weight", ...}], "edges": [{"source", "target", "type"}], "truncated"}`. Typy węzłów: `incident`, `promoter`, `entity`, `domain`, `link_domain`, `referral_code`, `campaign`, `warning_list`; krawędzie: `published_on`, `promotes`, `advertises`, `links_to`, `uses_code`, `in_campaign`, `on_warning_list`, `clone_of`. Węzły pomocnicze połączone tylko z jednym incydentem (domeny, linki, kody) są pomijane. Wpisy bazy zgłoszeń mają od 1.4.0 pole `reporter_display_name` (pseudonim przy zgłoszeniu podpisanym).
 
