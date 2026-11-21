@@ -25,7 +25,12 @@
   - Czy obsługuje `ping` → `pong`?
   - Czy przy `POST /api/v1/crawl/trigger` emituje sekwencję: `crawler_status` (`queued` → `fetching` → `preprocessing` → `analyzing`), `high_risk_alert` (gdy `risk_score >= HIGH_RISK_ALERT_THRESHOLD`) oraz `analysis_complete`?
   - Czy komunikaty mają spójne pola z `CONTRACT.md` (`type`, `timestamp`, `job_id`, `stage`, `source`, `module_id`, `incident_id`, `risk_score`, `message`)?
-- [ ] **A7. CORS:** czy `CORSMiddleware` dopuszcza adresy dev frontendu (`localhost:5173`, `localhost:3000`, `localhost:8080`) konfigurowane przez `.env`?
+- [ ] **A7. Analiza na żądanie i etykiety (CONTRACT.md v1.1.0):**
+  - Czy `POST /api/v1/analyze/text` waliduje `content` (20–20 000 znaków) i `module_ids` (`1`–`3`, niepuste) — `422` dla błędnych danych — oraz zwraca `{items: IncidentDetail[], mode}`?
+  - Czy wklejony HTML jest escapowany (traktowany jako tekst), a ponowna analiza identycznej treści aktualizuje istniejący incydent bez resetu `status` i `ground_truth_label`?
+  - Czy `POST /api/v1/analyze/url` zwraca `400` dla adresów blokowanych przez anty-SSRF i `502` dla błędów pobierania?
+  - Czy `PATCH /api/v1/incidents/{id}/label` przyjmuje `true` / `false` / `null`, zwraca `404` dla nieistniejącego ID i emituje `status_updated`?
+- [ ] **A8. CORS:** czy `CORSMiddleware` dopuszcza adresy dev frontendu (`localhost:5173`, `localhost:3000`, `localhost:8080`) konfigurowane przez `.env`?
 
 ---
 
@@ -56,6 +61,7 @@
   - Czy blokuje schematy inne niż `http`/`https` (`file://`, `ftp://`, `gopher://`)?
   - Czy blokuje `localhost`, `127.0.0.1`, `::1`, `::ffff:127.0.0.1`, sieci prywatne (`10/8`, `172.16/12`, `192.168/16`, `fc00::/7`), link-local / cloud metadata (`169.254.169.254`, `fe80::/10`, `metadata.google.internal`) oraz `host.docker.internal`?
   - Czy waliduje adres IP **po rozwiązaniu DNS** oraz na **każdym przekierowaniu HTTP** (`follow_redirects=False` + ręczna pętla)?
+  - Czy ta sama walidacja obejmuje oba wejścia: `POST /api/v1/crawl/trigger` (`public_url`) **i** `POST /api/v1/analyze/url`?
   - Sprawdź edge-case: czy istnieje ryzyko DNS rebindingu lub obejścia przez nietypowy zapis IP (np. `0.0.0.0`, `http://2130706433/`, `http://0177.0.0.1/`)? Jeśli tak — zgłoś jako `HIGH`/`MEDIUM`.
 - [ ] **C2. Path Traversal:**
   - Czy `fetch_mock_page`, `GET /mock-sites/{filename}` oraz `read_raw_text_preview(storage_key)` są w pełni odporne na `../`, ścieżki absolutne i znaki specjalne?
@@ -118,6 +124,9 @@ Uruchom i wklej wyniki:
    - `GET /api/v1/stats?threshold=0.3` vs `?threshold=0.8` → widoczna różnica w `flagged_count` i `calibration`
    - `POST /api/v1/crawl/trigger` z `{"mode":"public_url","target_url":"http://127.0.0.1:8000/api/v1/health"}` → `400 Bad Request` (blokada SSRF)
    - `POST /api/v1/crawl/trigger` z `{"mode":"mock_all"}` → `202 Accepted` → zdarzenia na `/ws/alerts` → `GET /api/v1/crawl/jobs` pokazuje `status: "completed"`
+   - `POST /api/v1/analyze/text` z treścią ≥ 20 znaków → `200 OK`, `items[0]` zgodny z modelem `Incident` (+ `raw_text_preview`)
+   - `POST /api/v1/analyze/url` z `{"url":"http://169.254.169.254/"}` → `400 Bad Request` (blokada SSRF)
+   - `PATCH /api/v1/incidents/{id}/label` z `{"ground_truth_label": false}` → `200 OK`; nieistniejące ID → `404`
 5. **Przegląd `README.md`:**
    - Czy jest zwięzły, konkretny, zawiera Quick Start, wymagania sprzętowe i konfigurację serwisów — bez zbędnego „AI Slop”?
 

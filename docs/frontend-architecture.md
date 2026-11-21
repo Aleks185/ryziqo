@@ -145,4 +145,14 @@ yarn start
 **Stan weryfikacji (`2026-11-21`):**
 - `docker compose up --build` — oba kontenery `healthy`; `GET /` i ścieżki SPA → `200`; `GET /api/v1/health` przez Nginx → `200`; `/ws/alerts` → `101 Switching Protocols`.
 - `yarn start` — `Compiled successfully!`; `CI=true yarn build` — bez ostrzeżeń ESLint.
+- Przez Nginx: `POST /api/v1/analyze/text` → incydent zgodny z kontraktem; `POST /api/v1/analyze/url` → `400` dla adresu wewnętrznego (`http://backend:8000/...`), `200` dla publicznej strony; `PATCH /label` zapisuje etykietę.
+- **Ręczny test E2E w przeglądarce (zaakceptowany przez zespół):**
+  1. Start: `BACKEND ONLINE · WS połączony`, brak paska DEMO, czysta konsola.
+  2. Pulpit: KPI i rejestr incydentów, filtr modułów M1/M2/M3, próg alertu w etykiecie KPI.
+  3. Karta incydentu: naruszone reguły z podstawą prawną, cytaty i podświetlenia w tekście źródłowym, panel DOM/CSS (Moduł 2), status KNF; zmiana statusu i etykiety przetrwa odświeżenie strony; wydruk A4.
+  4. Nowa analiza: przykład tekstowy (wynik + toast przy wysokim ryzyku, brak duplikatu przy ponownej analizie), walidacja braku modułu, URL `http://127.0.0.1/` → komunikat anty-SSRF, URL publiczny → wynik.
+  5. Kalibracja: analiza 6 przykładów z etykietami, przeliczanie macierzy i wykresu FP/FN suwakiem.
+  6. Live Crawler Log: zdarzenia `crawler_status:*`, `high_risk_alert`, `analysis_complete`, `status_updated`.
+  7. Tryb DEMO po `docker compose stop backend` i powrót do online po „Ponów połączenie”.
+  8. Przełączanie PL/EN bez surowych kluczy tłumaczeń.
 - **Testy automatyczne frontendu:** brak (przygotowane są jedynie stałe `data-testid` w `src/constants/testIds/`).
