@@ -1,70 +1,68 @@
-# Getting Started with Create React App
+# Ryziqo — frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Panel analityka UKNF i publiczny formularz obywatela (`/public`) dla systemu Ryziqo. React 19 (Create React App 5 + craco), Tailwind, shadcn/ui, Recharts, d3-force. W Dockerze serwowany przez Nginx, który przekazuje `/api/` i `/ws/` do backendu.
 
-## Available Scripts
+Pełny opis architektury: [docs/frontend-architecture.md](../docs/frontend-architecture.md). Kontrakt API: [CONTRACT.md](../CONTRACT.md).
 
-In the project directory, you can run:
+## Wymagania
 
-### `npm start`
+- Node.js 20+
+- Yarn 1.22 (`corepack enable` albo `npm i -g yarn`)
+- Backend na `http://localhost:8000` (bez backendu panel działa w jawnie oznaczonym trybie DEMO)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Uruchomienie lokalne
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```bash
+cp .env.example .env
+yarn install
+yarn start        # http://localhost:3000, hot-reload
+```
 
-### `npm test`
+Całość w Dockerze (z katalogu głównego repozytorium): `docker compose up --build`.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Skrypty
 
-### `npm run build`
+| Polecenie | Opis |
+|---|---|
+| `yarn start` | Dev server (craco) na porcie `3000` |
+| `yarn build` | Build produkcyjny do `build/`; `CI=true yarn build` traktuje ostrzeżenia ESLint jako błędy |
+| `yarn test` | Jest (CRA) — obecnie brak testów |
+| `yarn audit` | Audyt zależności (wyniki: [docs/security-licenses.md](../docs/security-licenses.md)) |
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Zmienne środowiskowe
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Wklejane do bundla w czasie **builda** — po zmianie zrestartuj `yarn start` / przebuduj obraz. Nie umieszczaj w nich sekretów.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+| Zmienna | Domyślnie | Opis |
+|---|---|---|
+| `REACT_APP_INVESTWATCH_API_URL` | `http://localhost:8000/api/v1` | Adres API; w Dockerze `/api/v1` (proxy Nginx) |
+| `REACT_APP_ALERT_THRESHOLD` | `0.7` | Próg `risk_score` dla toastów i KPI „wysokie ryzyko” |
+| `ENABLE_HEALTH_CHECK` | `false` | Endpointy zdrowia dev servera |
 
-### `npm run eject`
+## Widoki
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+| Ścieżka | Opis |
+|---|---|
+| `/` | Pulpit: KPI, trend, live log, przegląd zagrożeń, rejestr incydentów z eksportem CSV/JSON |
+| `/public` | Formularz obywatela: tekst / URL / zrzut ekranu, wybór zgody na udostępnienie |
+| `/analyze` | Nowa analiza z postępem na żywo (SSE) i anulowaniem |
+| `/incidents/:id` | Karta incydentu: reguły, cytaty, wersje strony, klony, paczka dowodowa ZIP, druk A4 |
+| `/reports`, `/reports/:id` | Baza zgłoszeń i ocena analityka |
+| `/campaigns` | Kampanie (grupy powiązanych zgłoszeń) |
+| `/graph` | Mapa powiązań |
+| `/diagnostics` | Stan modelu Ollama i kolejki analiz |
+| `/calibration` | Kalibracja progu (macierz TP/FP/TN/FN) |
+| `/log` | Pełny dziennik zdarzeń |
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Struktura
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```text
+src/
+├── App.js          routing
+├── pages/          widoki (tabela wyżej)
+├── components/     Header/Sidebar, DemoBanner, IncidentTable, TrendChart, LiveLog, Badges; ui/ = shadcn/ui
+├── lib/            config, api (REST + SSE), store (stan globalny), demoEngine, i18n, samples, exportRegister
+└── constants/testIds/
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Konwencje (i18n, `data-testid`, dodawanie widoku lub wywołania API): [docs/frontend-architecture.md §10](../docs/frontend-architecture.md#10-konwencje-i-rozwój).

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Activity, ClipboardList, FileSearch, Gauge, LayoutDashboard, Menu, Network, ScanSearch, Share2, ShieldAlert } from "lucide-react";
-import { Link, NavLink, useLocation, useMatch } from "react-router-dom";
+import { Activity, ClipboardList, FileSearch, Gauge, LayoutDashboard, Menu, Network, ScanSearch, Share2, ShieldAlert, Trophy } from "lucide-react";
+import { Link, NavLink, matchPath, useLocation } from "react-router-dom";
 import { Logo } from "./Logo";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { useApp } from "@/lib/store";
@@ -10,11 +10,17 @@ const LINKS = [
   ["/analyze", "nav_analyze", "nav-analyze", FileSearch],
   ["/reports", "intel_reports", "nav-reports", ClipboardList],
   ["/campaigns", "intel_campaigns", "nav-campaigns", Network],
+  ["/leaderboard", ["Drabinka (Leaderboard)", "Leaderboard"], "nav-leaderboard", Trophy],
   ["/graph", "nav_graph", "nav-graph", Share2],
   ["/diagnostics", "intel_diag", "nav-diagnostics", Activity],
   ["/calibration", "nav_calibration", "nav-calibration", Gauge],
   ["/log", "nav_log", "nav-log", ScanSearch],
 ];
+
+function usePublicView() {
+  const { pathname } = useLocation();
+  return Boolean(matchPath("/public", pathname) || matchPath("/leaderboard", pathname));
+}
 
 function ConnectionPill() {
   const { mode, wsStatus, t } = useApp();
@@ -49,7 +55,7 @@ function NavigationContent({ onNavigate }) {
               }
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {t(label)}
+              {Array.isArray(label) ? label[lang === "en" ? 1 : 0] : t(label)}
             </NavLink>
           </li>
         ))}
@@ -99,7 +105,7 @@ function HeaderControls({ publicView }) {
 }
 
 export function Sidebar() {
-  const publicView = useMatch("/public");
+  const publicView = usePublicView();
   if (publicView) return null;
 
   return (
@@ -156,7 +162,7 @@ function MobileNavigation() {
 }
 
 export function Header() {
-  const publicView = Boolean(useMatch("/public"));
+  const publicView = usePublicView();
 
   return (
     <header className="no-print sticky top-0 z-40 flex flex-wrap items-center justify-end border-b border-[#2E5077] bg-[#0A1E33] text-white">

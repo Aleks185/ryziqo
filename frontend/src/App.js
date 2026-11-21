@@ -12,6 +12,7 @@ import LogPage from "@/pages/LogPage";
 
 import { Reports, ReportDetails, Campaigns, Diagnostics } from "@/pages/Intelligence";
 import Citizen from "@/pages/Citizen";
+import Leaderboard from "@/pages/Leaderboard";
 import Graph from "@/pages/Graph";
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/public" element={<Citizen />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/analyze" element={<Analyze />} />
                 <Route path="/incidents/:id" element={<IncidentDetail />} />
                 <Route path="/reports" element={<Reports />} />
