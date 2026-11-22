@@ -185,12 +185,28 @@ export default function Analyze() {
   );
 }
 
+const LLM_STAGES = ["loading_model", "analyzing"];
+
+// Mounted only while the LLM stages are active, so it counts from their start
+// and keeps ticking across the loading_model -> analyzing transition.
+const LlmTimer = () => {
+  const { t } = useApp();
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const start = Date.now();
+    const id = setInterval(() => setSeconds((Date.now() - start) / 1000), 100);
+    return () => clearInterval(id);
+  }, []);
+  return <p data-testid="analyze-llm-timer" className="text-sm text-slate-600 mt-2 tabular-nums">{t("llm_time")}: {seconds.toFixed(1)} s</p>;
+};
+
 const ResultPanel = ({ state }) => {
   const { t } = useApp();
   if (state.phase === "idle") return null;
   return (
     <aside className="lg:pt-16" aria-live="polite">
-      {state.phase === "loading" && <Panel testId="analyze-loading"><div className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" />{t("stage_" + (state.stage || "pending"))}</div></Panel>}
+      {state.phase === "loading" && <Panel testId="analyze-loading"><div className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" />{t("stage_" + (state.stage || "pending"))}</div>
+        {LLM_STAGES.includes(state.stage) && <LlmTimer />}</Panel>}
       {state.phase === "error" && <div data-testid="analyze-error" className="border border-[#FCA5A5] bg-[#FEF2F2] text-[#991B1B] text-sm px-4 py-3 rounded-sm">{state.message}</div>}
       {state.phase === "done" && (
         <Panel testId="analyze-result" title={state.items.length > 1 ? t("analyze_done_many") : t("analyze_done")}>
