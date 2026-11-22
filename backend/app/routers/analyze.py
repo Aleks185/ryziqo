@@ -330,7 +330,7 @@ async def fetch_url(request, body):
     except SSRFError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except (httpx.TimeoutException, TimeoutError) as exc:
-        raise HTTPException(504, "Upłynął czas pobierania strony.") from exc
+        raise HTTPException(504, f"Upłynął czas pobierania strony: {exc}" if str(exc) else "Upłynął czas pobierania strony.") from exc
     except httpx.HTTPStatusError as exc:
         raise HTTPException(502, f"Strona zwróciła HTTP {exc.response.status_code}.") from exc
     except (httpx.HTTPError, ValueError) as exc:

@@ -42,7 +42,12 @@ QUEUE_POLL_SECONDS = 2.0
 ROBOTS_SKIP_MESSAGE = "robots.txt disallow"
 
 # Failures of a single followed subpage that must not fail the whole job
-SUBPAGE_ERRORS = (RobotsDisallowedError, SSRFError, httpx.HTTPError, ValueError)
+SUBPAGE_ERRORS = (RobotsDisallowedError, SSRFError, httpx.HTTPError, ValueError, TimeoutError)
+
+
+def describe_error(exc: BaseException) -> str:
+    """Non-empty message for job logs (e.g. str(TimeoutError()) is an empty string)."""
+    return str(exc).strip() or exc.__class__.__name__
 
 
 def _target_key(req: CrawlTriggerRequest) -> str:
@@ -267,7 +272,8 @@ class CrawlQueueWorker:
                 raise
             except Exception as exc:
                 logger.exception("Błąd przetwarzania zadania %s: %s", job_id, exc)
-                self.db.update_crawl_job(job_id, status="failed", error_message=str(exc), finished=True)
+                reason = describe_error(exc)
+                self.db.update_crawl_job(job_id, status="failed", error_message=reason, finished=True)
                 await self.ws_manager.broadcast(
                     WebSocketAlertEvent(
                         type="error",
@@ -275,7 +281,7 @@ class CrawlQueueWorker:
                         job_id=job_id,
                         stage="error",
                         source=target_key,
-                        message=f"Błąd zadania {job_id}: {exc}",
+                        message=f"Błąd zadania {job_id}: {reason}",
                     )
                 )
             finally:
