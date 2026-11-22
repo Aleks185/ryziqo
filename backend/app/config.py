@@ -51,8 +51,10 @@ class Settings(BaseSettings):
     ollama_timeout_seconds: float = 60.0
     # Response token limit (reasoning + signals + exact quotes) and model context window
     ollama_num_thread: int = 10
-    ollama_num_predict: int = 1024
-    ollama_num_ctx: int = 4096
+    ollama_num_predict: int = 300
+    ollama_num_ctx: int = 2048
+    # How long Ollama keeps the model in memory after a request (avoids reloading between analyses)
+    ollama_keep_alive: str = "60m"
     # Vision (VLM) analysis of Playwright screenshots; requires a model with the "vision" capability
     ollama_vision_enabled: bool = False
     ollama_vision_model: str = ""

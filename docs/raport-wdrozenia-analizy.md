@@ -6,7 +6,7 @@ FastAPI działa w pojedynczym procesie Uvicorn w Docker Compose. SQLite przechow
 
 Ollama 0.40.16 używa modelu Gemma 3 4B (tag `gemma3:4b`, identyfikator `68ceab7e468a`, kwantyzacja Q4_K_M). API modelu potwierdziło obsługę generowania tekstu i wizji. Zainstalowany wcześniej `nomic-embed-text` dostarcza wektory. Sprzęt to Intel Core i5-13450HX (10 rdzeni fizycznych, 16 wątków), około 15,7 GiB RAM i NVIDIA RTX 3050 Laptop z 6 GiB VRAM.
 
-Ustawienia procesu Ollamy w Windows i opcjonalnego profilu Compose to `OLLAMA_NUM_PARALLEL=1`, `OLLAMA_MAX_LOADED_MODELS=1` i `OLLAMA_MAX_QUEUE=8`. Generowanie używa kontekstu 4096, limitu odpowiedzi 1024, 10 wątków CPU i `keep_alive=1m`. Klient serializuje wywołania modelu, w tym embeddingi, i wyładowuje poprzedni model przy zmianie. Serwer Ollamy nasłuchuje lokalnie.
+Ustawienia procesu Ollamy w Windows i opcjonalnego profilu Compose to `OLLAMA_NUM_PARALLEL=1`, `OLLAMA_MAX_LOADED_MODELS=1` i `OLLAMA_MAX_QUEUE=8`, a także `OLLAMA_FLASH_ATTENTION=1` i `OLLAMA_KV_CACHE_TYPE=q8_0`. Generowanie używa kontekstu 2048, limitu odpowiedzi 300, temperatury 0.1, 10 wątków CPU i `keep_alive=60m`. Klient serializuje wywołania modelu, w tym embeddingi, i wyładowuje poprzedni model przy zmianie. Serwer Ollamy nasłuchuje lokalnie.
 
 ## Wyniki odbioru
 
