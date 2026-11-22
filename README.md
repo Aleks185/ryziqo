@@ -28,6 +28,10 @@ Oprócz panelu analityka jest publiczny formularz, w którym obywatel może spra
 | [docs/raport-etap-2.md](docs/raport-etap-2.md) | Odbiór etapu 2: baza zgłoszeń, kampanie, diagnostyka |
 | [docs/frontend/](docs/frontend/) | Dokumenty historyczne z prototypowania frontendu (PRD, plan, wytyczne graficzne) |
 
+## Znane ograniczenia
+
+- etoro.com i trading212.com odpowiadają `403` (Cloudflare challenge) na jawny User-Agent crawlera. Crawler nie obchodzi zabezpieczeń antybotowych, więc te domeny są wyłączone ze startowej watchlisty (`exclude_domains` w `data/watchlist_seed.json`). Materiały promujące te firmy na stronach trzecich wykrywa discovery (moduł 1).
+
 ## Struktura repozytorium
 
 ```text
