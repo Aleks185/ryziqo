@@ -60,16 +60,61 @@ function ReportRows({rows}) {
       <td className="px-5 py-2.5">{l(...states[r.verdict_status])}</td>
     </tr>)}</tbody></table></div>;
 }
+const channels = {public_form:["Formularz obywatela","Citizen form"], analyst_panel:["Panel analityka","Analyst panel"], api:["API","API"]};
+const sourceTypes = {text:["Tekst","Text"], url:["Adres URL","URL"], screenshot:["Zrzut ekranu","Screenshot"]};
+const sorts = {newest:["Najnowsze","Newest"], oldest:["Najstarsze","Oldest"], risk_desc:["Najwyższe ryzyko","Highest risk"], risk_asc:["Najniższe ryzyko","Lowest risk"]};
+const emptyFilters = {q:"",verdict:"",channel:"",source_type:"",platform:"",origin:"",country:"",min_risk:"",max_risk:"",date_from:"",date_to:"",has_campaign:"",sort:"newest"};
+const facetLabel=(l,dict,value)=>dict?.[value] ? l(...dict[value]) : value;
+
+function FilterSelect({label,value,onChange,options,dict}){
+  const l=useLabels();
+  return <label className="text-xs font-semibold text-slate-600 space-y-1 block">{label}
+    <select className={field} value={value} onChange={e=>onChange(e.target.value)}>
+      <option value="">{l("Wszystkie","All")}</option>
+      {options.map(o=><option key={o.value} value={o.value}>{facetLabel(l,dict,o.value)}{o.count!=null ? " ("+o.count+")" : ""}</option>)}
+    </select></label>;
+}
 export function Reports(){
   const l=useLabels(); const [params]=useSearchParams();
-  const [q,search]=useState(""),[verdict,filter]=useState(""),[offset,page]=useState(0);
-  const query=new URLSearchParams({q,offset,limit:50});
-  if(verdict)query.set("verdict",verdict);
+  const [f,setF]=useState(emptyFilters),[offset,page]=useState(0),[open,setOpen]=useState(false);
+  const facets=useData("reports/facets").value || {};
+  const set=key=>value=>{setF(s=>({...s,[key]:value}));page(0);};
+  const query=new URLSearchParams({offset,limit:50});
+  Object.entries(f).forEach(([k,v])=>{ if(v!=="")query.set(k,v); });
   if(params.get("campaign"))query.set("campaign",params.get("campaign"));
   const data=useData("reports?"+query);
+  const active=Object.entries(f).filter(([k,v])=>k!=="q" && k!=="sort" && v!=="").length;
+  const toOptions=dict=>Object.keys(dict).map(value=>({value}));
+  const risk=key=><input type="number" min={0} max={100} className={field} value={f[key]} onChange={e=>set(key)(e.target.value==="" ? "" : String(Math.min(100,Math.max(0,Math.round(+e.target.value)||0))))}/>;
   return <div className="space-y-6"><h1 className={title}>{l("Baza zgłoszeń","Report registry")}</h1>
-    <Panel><div className="space-y-3"><input aria-label={l("Szukaj zgłoszenia","Search reports")} className={field} value={q} placeholder={l("Domena, treść, IP serwera lub podmiot","Domain, text, server IP or entity")} onChange={e=>{search(e.target.value);page(0);}}/>
-    <VerdictSelect all value={verdict} onChange={v=>{filter(v);page(0);}}/></div></Panel>
+    <Panel><div className="space-y-3">
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input aria-label={l("Szukaj zgłoszenia","Search reports")} className={field} value={f.q} placeholder={l("Domena, treść, IP serwera lub podmiot","Domain, text, server IP or entity")} onChange={e=>set("q")(e.target.value)}/>
+        <select aria-label={l("Sortowanie","Sort")} className={field+" sm:w-56"} value={f.sort} onChange={e=>set("sort")(e.target.value)}>
+          {Object.entries(sorts).map(([k,v])=><option key={k} value={k}>{l(...v)}</option>)}</select>
+        <button type="button" className="compact-action whitespace-nowrap" aria-expanded={open} onClick={()=>setOpen(o=>!o)}>
+          {l("Filtry","Filters")}{active ? " ("+active+")" : ""} {open ? "▲" : "▼"}</button>
+      </div>
+      {open && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <label className="text-xs font-semibold text-slate-600 space-y-1 block">Status<VerdictSelect all value={f.verdict} onChange={set("verdict")}/></label>
+        <FilterSelect label={l("Kanał zgłoszenia","Source channel")} value={f.channel} onChange={set("channel")} options={facets.source_channel || toOptions(channels)} dict={channels}/>
+        <FilterSelect label={l("Rodzaj materiału","Material type")} value={f.source_type} onChange={set("source_type")} options={facets.source_type || toOptions(sourceTypes)} dict={sourceTypes}/>
+        <FilterSelect label={l("Platforma","Platform")} value={f.platform} onChange={set("platform")} options={facets.platform || []}/>
+        <FilterSelect label={l("Źródło wyniku","Result origin")} value={f.origin} onChange={set("origin")} options={facets.origin || toOptions(origins)} dict={origins}/>
+        <FilterSelect label={l("Kraj hostingu","Hosting country")} value={f.country} onChange={set("country")} options={facets.hosting_country || []}/>
+        <label className="text-xs font-semibold text-slate-600 space-y-1 block">{l("Kampania","Campaign")}
+          <select className={field} value={f.has_campaign} onChange={e=>set("has_campaign")(e.target.value)}>
+            <option value="">{l("Wszystkie","All")}</option><option value="true">{l("Należy do kampanii","Part of a campaign")}</option>
+            <option value="false">{l("Pojedyncze zgłoszenie","Single report")}</option></select></label>
+        <div className="text-xs font-semibold text-slate-600 space-y-1">{l("Ryzyko (0–100)","Risk (0–100)")}
+          <div className="flex gap-2 items-center"><span className="sr-only">min</span>{risk("min_risk")}<span>–</span>{risk("max_risk")}</div></div>
+        <label className="text-xs font-semibold text-slate-600 space-y-1 block">{l("Data od","Date from")}
+          <input type="date" className={field} value={f.date_from} onChange={e=>set("date_from")(e.target.value)}/></label>
+        <label className="text-xs font-semibold text-slate-600 space-y-1 block">{l("Data do","Date to")}
+          <input type="date" className={field} value={f.date_to} onChange={e=>set("date_to")(e.target.value)}/></label>
+        <div className="flex items-end"><button type="button" className="compact-action" disabled={!active && !f.q && f.sort==="newest"} onClick={()=>{setF(emptyFilters);page(0);}}>{l("Wyczyść filtry","Clear filters")}</button></div>
+      </div>}
+    </div></Panel>
     <Panel title={l("Zgłoszenia","Reports")+(data.value ? " ("+data.value.total+")":"")}>{data.value ? <><ReportRows rows={data.value.items}/>
       {data.value.total>50 && <div className="flex gap-2"><button className="compact-action" disabled={!offset} onClick={()=>page(offset-50)}>←</button><button className="compact-action" disabled={offset+50>=data.value.total} onClick={()=>page(offset+50)}>→</button></div>}</> : <Feedback data={data}/>}</Panel></div>;
 }

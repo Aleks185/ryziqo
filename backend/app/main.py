@@ -136,7 +136,12 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
     @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
     async def health(request: Request) -> HealthResponse:
         ollama_client: OllamaClient = request.app.state.ollama
-        await ollama_client.check_health()
+        # An unreachable Ollama host must not make the liveness probe itself time out (the Docker
+        # healthcheck allows 3 s, the same as the Ollama timeout): cap the probe and report fallback.
+        try:
+            await asyncio.wait_for(ollama_client.check_health(), timeout=1.5)
+        except asyncio.TimeoutError:
+            ollama_client.is_available = False
         db_client: Database = request.app.state.db
         reg: KNFRegistrySnapshot = request.app.state.registry
         w: CrawlQueueWorker = request.app.state.worker
