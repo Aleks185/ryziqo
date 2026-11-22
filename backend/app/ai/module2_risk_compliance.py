@@ -15,7 +15,7 @@ from app.knf_registry import KNFRegistrySnapshot
 from app.models import ViolatedRule
 
 PROFIT_CLAIM_RE = re.compile(
-    r"(zarabiaj|zyskaj(?!\s+(?:ulgę|odliczenie|korzyść)\s+podatkow\w*)|pomnażaj|ponadprzeciętn\w*\s+zysk|zwrot\w*\s+[0-9]+%|"
+    r"(zarabiaj|zyskaj(?![^.!?]{0,60}\b(?:podatk\w*|podatkow\w*|ulg\w*|zwolnieni\w*|odliczeni\w*))|pomnażaj|ponadprzeciętn\w*\s+zysk|zwrot\w*\s+[0-9]+%|"
     r"\+[0-9]+%|do\s+[0-9]+%\s+rocznie|bez\s+prowizji|szybki\s+zysk)",
     re.IGNORECASE,
 )
@@ -39,6 +39,8 @@ COMPARISON_RE = re.compile(
     re.IGNORECASE,
 )
 COMPARISON_SOURCE_RE = re.compile(r"(źródło:|metodologi|na\s+podstawie\s+danych\s+z\s+dnia)", re.IGNORECASE)
+# "Najlepsza platforma Forex i CFD  Czytaj" is a blog teaser in a link list, not a comparison claim
+ARTICLE_TEASER_RE = re.compile(r"[^.!?]{0,60}?\bczytaj\b", re.IGNORECASE)
 HIST_PERF_RE = re.compile(
     r"(wypracował\s*\+?[0-9]+%|zarobił\s*\+?[0-9]+%|\+[0-9]+%\s+w\s+ostatni|wyniki\s+historyczne)",
     re.IGNORECASE,
@@ -69,6 +71,11 @@ KNF_SAFETY_ABUSE_RE = re.compile(
     r"zatwierdzon\w*\s+przez\s+KNF|aprobata\s+KNF|bezpieczeństwo.*nadzor\w*\s+KNF)",
     re.IGNORECASE,
 )
+
+
+def _has_comparison_claim(text: str) -> bool:
+    return any(not ARTICLE_TEASER_RE.match(text, m.end()) for m in COMPARISON_RE.finditer(text))
+
 
 def _make_rule(rules_by_id: dict[str, dict], rule_id: str, severity: str, reason: str) -> ViolatedRule:
     meta = rules_by_id.get(rule_id, {})
@@ -201,7 +208,7 @@ async def analyze_module2(
         )
 
     # Rule 11: Product comparisons without source
-    if COMPARISON_RE.search(text) and not COMPARISON_SOURCE_RE.search(text):
+    if _has_comparison_claim(text) and not COMPARISON_SOURCE_RE.search(text):
         add_violation(
             "11",
             "medium",

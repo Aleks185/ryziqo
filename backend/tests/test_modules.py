@@ -179,3 +179,16 @@ async def test_module1_ignores_referral_codes_on_the_firms_own_site() -> None:
 
     third_party = await analyze_module1(preprocess_html(html, "https://bonusy-forex.pl/xtb", "web"), registry, ollama)
     assert any(r.rule_id == "M1_UNDISCLOSED_AD" for r in third_party.violated_rules)
+
+
+def test_m2_broker_homepage_tax_benefit_and_blog_teasers_are_not_violations() -> None:
+    from app.ai.module2_risk_compliance import PROFIT_CLAIM_RE, _has_comparison_claim
+
+    # Real xtb.com/pl fragments (2026-11-22): a tax benefit of IKE/IKZE and blog article titles
+    assert not PROFIT_CLAIM_RE.search(
+        "Wybierz IKE i IKZE i zyskaj możliwość zwolnienia z 19-procentowego podatku od zysków kapitałowych"
+    )
+    assert not _has_comparison_claim("Najlepsza platforma Forex i CFD Czytaj Najlepszy Broker Forex i CFD - jak wybrać? Czytaj")
+    # Real claims are still caught
+    assert PROFIT_CLAIM_RE.search("Zyskaj 20% w miesiąc!")
+    assert _has_comparison_claim("To najlepsza platforma na rynku, niższe opłaty niż konkurencja.")
