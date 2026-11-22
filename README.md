@@ -77,5 +77,5 @@ Wyniki audytów: [docs/security-licenses.md](docs/security-licenses.md).
 ## Ograniczenia
 
 - API nie ma uwierzytelniania.
-- `risk_score` (0–1) służy do priorytetyzacji i kalibracji progu, nie jest rozstrzygnięciem prawnym.
+- `risk_score` (w raporcie analizy i bazie zgłoszeń: 0–100 %; w incydentach API nadal 0–1, UI pokazuje jako %) służy do priorytetyzacji i kalibracji progu, nie jest rozstrzygnięciem prawnym.
 - etoro.com i trading212.com odpowiadają `403` (Cloudflare) na User-Agent crawlera; crawler nie obchodzi zabezpieczeń antybotowych, więc domeny są poza startową watchlistą.
