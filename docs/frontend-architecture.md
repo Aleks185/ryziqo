@@ -49,7 +49,6 @@ frontend/
 ├── package.json / yarn.lock      # Yarn 1.22, CRA 5 (react-scripts) + craco
 ├── craco.config.js               # alias "@" -> src, ESLint react-hooks, kompatybilność z webpack-dev-server 5
 ├── tailwind.config.js, postcss.config.js, components.json (shadcn/ui)
-├── plugins/health-check/         # opcjonalne endpointy zdrowia dev servera (ENABLE_HEALTH_CHECK=true)
 ├── public/index.html
 └── src/
     ├── App.js                    # routing (react-router 7), AppProvider, Sidebar/Header, DemoBanner, Toaster
@@ -95,7 +94,6 @@ CRA wkleja zmienne do bundla **w czasie builda** — zmiana wymaga przebudowania
 |---|---|---|---|
 | `REACT_APP_INVESTWATCH_API_URL` | `http://localhost:8000/api/v1` | `/api/v1` | Bazowy adres REST. Może być pełnym URL albo ścieżką relatywną. |
 | `REACT_APP_ALERT_THRESHOLD` | `0.7` | `${HIGH_RISK_ALERT_THRESHOLD:-0.65}` | Próg `risk_score`, od którego panel pokazuje alert (toast) i liczy KPI „wysokie ryzyko”. W Dockerze spójny z progiem backendu. |
-| `ENABLE_HEALTH_CHECK` | `false` | — | Endpointy zdrowia dev servera (tylko `yarn start`). |
 | `FRONTEND_PORT` (root `.env`) | — | `3000` | Port hosta, na którym Nginx wystawia panel. |
 
 Adres WebSocket jest wyliczany w `config.js` z `API_URL`: `http(s)://host/api/v1` → `ws(s)://host/ws/alerts`. Ścieżka relatywna jest najpierw rozwiązywana względem `window.location.origin`.

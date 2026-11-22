@@ -39,7 +39,7 @@ Stan na 2026-11-22. Testy backendu: `222 passed`, `yarn audit` 0, `pip-audit` 0.
 - [x] React 19 + Tailwind + shadcn/Radix, komponenty oparte na propsach
 - [x] Wykres trendu (Recharts), WebSocket z alertami na żywo, zmiana statusu rekordu
 - [x] Panel kalibracji: próg zmienia TP/FP/FN, precyzję i pełność
-- [x] Brak `console.log` w `frontend/src/` (jedyne wywołania są w pluginie health-check, który działa tylko na serwerze deweloperskim)
+- [x] Brak `console.log` w `frontend/` (usunięty także dev-owy plugin health-check)
 - [x] Build produkcyjny (`CI=true yarn build`) bez ostrzeżeń; data snapshotu rejestru KNF na dashboardzie
 - [x] Zgłoszenie obywatelskie i analiza ze zrzutu ekranu (PNG/JPG/WebP do 10 MB, odczyt przez model wizyjny; wymaga Ollamy z modelem multimodalnym)
 
@@ -54,7 +54,7 @@ Stan na 2026-11-22. Testy backendu: `222 passed`, `yarn audit` 0, `pip-audit` 0.
 
 ### Wymagania formalne (blokują oddanie projektu)
 - [ ] **Prezentacja w PDF**: w repo jej nie ma
-- [ ] **Szczegółowy opis i tytuł projektu** do formularza zgłoszenia
+- [x] **Szczegółowy opis i tytuł projektu** do formularza: `docs/zgloszenie-hackathon.md`
 - [ ] (opcjonalnie) **Film do 3 minut**
 
 ### Automatyczny crawling internetu
@@ -82,7 +82,7 @@ Stan na 2026-11-22. Testy backendu: `222 passed`, `yarn audit` 0, `pip-audit` 0.
 - [ ] Do potwierdzenia ręcznie: eToro (Europe) Ltd. i Saxo Bank A/S nie występują na pobranych listach notyfikacji (Saxo ma w snapshocie ręczne aliasy, w tym `saxobank.com`); Trading 212 figuruje jako „Trading 212 Ltd” i „Trading 212 EU GmbH”, a w snapshocie jest „Trading 212 Markets Ltd.” — wpisy ręczne zostawione bez zmian
 - [x] Podszywanie: wzorce `pkobp-makler.com`, `saxobank-pro.pl`, `trading-212-bonus.pl` wykrywane (rozszerzone `SUSPICIOUS_AFFIXES`), 0 fałszywych alarmów na 42 popularnych domenach
 - [ ] (warto rozważyć) Kolejka na zewnętrznym narzędziu (Redis z RQ/Celery/Arq) i MinIO jako object storage, pod kryterium architektury i skalowalności
-- [ ] (warto rozważyć) Skan **Snyk** wprost wymieniony w specu: `snyk test` z wynikiem w `docs/security-licenses.md` albo workflow w GitHub Actions (w repo nie ma `.github/`)
+- [x] Audyt zależności w CI (`.github/workflows/security.yml`: pip-audit, yarn audit); Snyk opcjonalnie po dodaniu `SNYK_TOKEN`
 
 ### Wyróżniki ponad specyfikację (priorytet wg ROI)
 Uporządkowane od najwyższego stosunku efektu na demo / wartości dla UKNF do nakładu pracy:

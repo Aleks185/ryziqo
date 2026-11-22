@@ -37,7 +37,6 @@ Wklejane do bundla w czasie **builda** — po zmianie zrestartuj `yarn start` / 
 |---|---|---|
 | `REACT_APP_INVESTWATCH_API_URL` | `http://localhost:8000/api/v1` | Adres API; w Dockerze `/api/v1` (proxy Nginx) |
 | `REACT_APP_ALERT_THRESHOLD` | `0.7` | Próg `risk_score` dla toastów i KPI „wysokie ryzyko” |
-| `ENABLE_HEALTH_CHECK` | `false` | Endpointy zdrowia dev servera |
 
 ## Widoki
 
