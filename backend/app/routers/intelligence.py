@@ -97,23 +97,57 @@ def leaderboard(request: Request):
         return [dict(row) for row in rows]
 
 
+FACET_COLUMNS=("source_channel","source_type","platform","origin","hosting_country")
+SORTS={"newest":"created_at DESC,rowid DESC","oldest":"created_at ASC,rowid ASC",
+       "risk_desc":"coalesce(risk_score,-1) DESC,created_at DESC","risk_asc":"coalesce(risk_score,101) ASC,created_at DESC"}
+
+
+@router.get("/reports/facets")
+def report_facets(request:Request):
+    """Distinct values (with counts) of the categorical columns, for the registry filter selects."""
+    with request.app.state.intel.connection() as c:
+        return {col:[{"value":r[0],"count":r[1]} for r in c.execute(
+            f"SELECT {col},count(*) FROM threat_reports WHERE coalesce({col},'')<>'' GROUP BY {col} ORDER BY count(*) DESC,{col}")]
+            for col in FACET_COLUMNS}
+
+
 @router.get("/reports")
 def reports(request:Request,q:str=Query("",max_length=240),verdict:Verdict|None=None,campaign:str|None=None,
-            incident:str|None=None,limit:int=Query(50,ge=1,le=200),offset:int=Query(0,ge=0)):
+            incident:str|None=None,channel:str|None=Query(None,max_length=40),source_type:str|None=Query(None,max_length=40),
+            platform:str|None=Query(None,max_length=80),origin:str|None=Query(None,max_length=40),
+            country:str|None=Query(None,max_length=8),min_risk:int|None=Query(None,ge=0,le=100),
+            max_risk:int|None=Query(None,ge=0,le=100),date_from:str|None=Query(None,pattern=r"^\d{4}-\d{2}-\d{2}$"),
+            date_to:str|None=Query(None,pattern=r"^\d{4}-\d{2}-\d{2}$"),has_campaign:bool|None=None,
+            sort:Literal["newest","oldest","risk_desc","risk_asc"]="newest",
+            limit:int=Query(50,ge=1,le=200),offset:int=Query(0,ge=0)):
     conditions=[]; args=[]
     if q.strip():
         conditions.append("("+ " OR ".join("instr(lower(coalesce("+f+",'')),lower(?))>0" for f in
                           ["canonical_domain","excerpt","target_server_ip","detected_entities","target_url"])+")")
         args.extend([q.strip()]*5)
-    for key,value in (("verdict_status",verdict),("campaign_id",campaign)):
+    for key,value in (("verdict_status",verdict),("campaign_id",campaign),("source_channel",channel),
+                      ("source_type",source_type),("platform",platform),("origin",origin),("hosting_country",country)):
         if value:
             conditions.append(key+"=?");args.append(value)
+    if min_risk is not None:
+        conditions.append("risk_score>=?");args.append(min_risk)
+    if max_risk is not None:
+        conditions.append("risk_score<=?");args.append(max_risk)
+    # created_at is an ISO-8601 UTC timestamp, so comparing its date prefix is enough
+    if date_from:
+        conditions.append("substr(created_at,1,10)>=?");args.append(date_from)
+    if date_to:
+        conditions.append("substr(created_at,1,10)<=?");args.append(date_to)
+    if has_campaign is not None:
+        # a report alone in its group is not a campaign
+        conditions.append(("" if has_campaign else "NOT ")+"EXISTS (SELECT 1 FROM threat_reports o WHERE o.campaign_id="
+                          "threat_reports.campaign_id AND o.id<>threat_reports.id)")
     if incident:
         conditions.append("EXISTS (SELECT 1 FROM json_each(incident_ids) WHERE value=?)");args.append(incident)
     where=" WHERE "+" AND ".join(conditions) if conditions else ""
     with request.app.state.intel.connection() as c:
         total=c.execute("SELECT count(*) FROM threat_reports"+where,args).fetchone()[0]
-        rows=c.execute("SELECT "+LIST_FIELDS+" FROM threat_reports"+where+" ORDER BY created_at DESC,rowid DESC LIMIT ? OFFSET ?",[*args,limit,offset])
+        rows=c.execute("SELECT "+LIST_FIELDS+" FROM threat_reports"+where+" ORDER BY "+SORTS[sort]+" LIMIT ? OFFSET ?",[*args,limit,offset])
         return {"total":total,"items":[public_row(row) for row in rows]}
 
 

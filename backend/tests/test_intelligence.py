@@ -87,3 +87,28 @@ def test_startup_drops_removed_case_register(tmp_path):
             tables={r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             assert not {"case_reports","campaign_notes"} & tables
             assert not c.execute("SELECT 1 FROM intel_config WHERE key='case_backfill'").fetchone()
+
+
+def test_report_registry_filters_and_facets(tmp_path):
+    with _build_test_client(tmp_path) as client:
+        api="/api/v1/intelligence/reports"
+        client.post("/api/v1/analyze/text",json={"content":"Wpłać 950 PLN i odbierz gwarantowane 9000 PLN w 7 dni!","module_ids":[2],"source_channel":"public_form"})
+        client.post("/api/v1/analyze/text",json={"content":"Zwykły tekst edukacyjny o oszczędzaniu na emeryturę.","module_ids":[2],"source_channel":"analyst_panel"})
+        everything=client.get(api,params={"limit":200}).json()
+        facets=client.get(api+"/facets").json()
+        channels={f["value"]:f["count"] for f in facets["source_channel"]}
+        assert channels["public_form"]>=1 and channels["analyst_panel"]>=1
+        public=client.get(api,params={"channel":"public_form","limit":200}).json()
+        assert public["total"]==channels["public_form"] and all(r["source_channel"]=="public_form" for r in public["items"])
+        assert all(r["source_type"]=="text" for r in client.get(api,params={"source_type":"text"}).json()["items"])
+        risky=client.get(api,params={"min_risk":50,"limit":200}).json()["items"]
+        assert all(r["risk_score"]>=50 for r in risky)
+        ordered=[r["risk_score"] for r in client.get(api,params={"sort":"risk_desc","limit":200}).json()["items"]]
+        assert ordered==sorted(ordered,reverse=True)
+        today=everything["items"][0]["created_at"][:10]
+        assert client.get(api,params={"date_from":today,"date_to":today}).json()["total"]>=2
+        assert client.get(api,params={"date_to":"2000-01-01"}).json()["total"]==0
+        assert client.get(api,params={"date_from":"zle"}).status_code==422
+        single=client.get(api,params={"has_campaign":"false","limit":200}).json()
+        grouped=client.get(api,params={"has_campaign":"true","limit":200}).json()
+        assert single["total"]+grouped["total"]==everything["total"]
