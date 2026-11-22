@@ -250,8 +250,9 @@ def reporter(request):
 
 
 class Intelligence:
-    def __init__(self, db):
+    def __init__(self, db, osint_timeout=3.5):
         self.db = db
+        self.osint_timeout = osint_timeout
         with db._connect() as c:
             c.executescript("""
             CREATE TABLE IF NOT EXISTS campaign_reviews(
@@ -281,10 +282,12 @@ class Intelligence:
             # image), links a screenshot with a pasted copy; module_ids: modules the verdict covers;
             # campaign_locked: the analyst detached the report, automatic merging must not undo it.
             for column,kind in (("reporter_display_name","TEXT"),("reporter_key_hash","TEXT"),("text_content_hash","TEXT"),
-                                ("infrastructure","TEXT"),("module_ids","TEXT"),("campaign_locked","INTEGER NOT NULL DEFAULT 0")):
+                                ("infrastructure","TEXT"),("module_ids","TEXT"),("campaign_locked","INTEGER NOT NULL DEFAULT 0"),
+                                ("hosting_org","TEXT"),("registrar","TEXT"),("nameservers","TEXT"),("osint_at","TEXT")):
                 if column not in existing:
                     c.execute(f"ALTER TABLE threat_reports ADD COLUMN {column} {kind}")
             c.executescript("""
+            CREATE TABLE IF NOT EXISTS campaign_graph(campaign_id TEXT PRIMARY KEY, graph TEXT NOT NULL, updated_at TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS threat_text_hash ON threat_reports(text_content_hash);
             CREATE INDEX IF NOT EXISTS threat_phash ON threat_reports(image_phash) WHERE image_phash IS NOT NULL;
             """)
@@ -505,6 +508,40 @@ class Intelligence:
             count=c.execute("UPDATE threat_reports SET campaign_id=?,campaign_locked=1 WHERE id=?",(group,report_id)).rowcount
         return group if count else None
 
+    def enrich_report(self,report_id,force=False,cache=None):
+        """Fill the infrastructure metadata of one report from OSINT sources (missing fields only unless `force`)."""
+        from app.osint import enrich_url_infrastructure, is_valid_http_url
+        with self.connection() as c:
+            row=c.execute("SELECT * FROM threat_reports WHERE id=?",(report_id,)).fetchone()
+        if not row: return None
+        chain=json.loads(row["redirect_chain"] or "[]")
+        url=row["target_url"] or (chain[0] if chain else "")
+        if not is_valid_http_url(url): return {"skipped":"no_url"}
+        cache=cache if cache is not None else {}
+        info=cache.get(url) or cache.setdefault(url,enrich_url_infrastructure(url,self.osint_timeout))
+        updates={}
+        for field in ("target_server_ip","hosting_asn","hosting_country","hosting_org","registrar","domain_created_at","domain_age_days"):
+            if info.get(field) is not None and (force or row[field] in (None,"")):
+                updates[field]=info[field]
+        if info.get("nameservers") and (force or not row["nameservers"]):
+            updates["nameservers"]=json.dumps(info["nameservers"])
+        if len(info["redirect_chain"])>len(chain):
+            updates["redirect_chain"]=json.dumps(info["redirect_chain"],ensure_ascii=False)
+        updates["osint_at"]=utc_now_iso()
+        with self.connection() as c:
+            c.execute("UPDATE threat_reports SET "+",".join(k+"=?" for k in updates)+" WHERE id=?",[*updates.values(),report_id])
+        return info
+
+    def get_graph(self,campaign_id):
+        with self.connection() as c:
+            row=c.execute("SELECT graph FROM campaign_graph WHERE campaign_id=?",(campaign_id,)).fetchone()
+        return json.loads(row[0]) if row else {"nodes":[],"edges":[],"positions":{},"hidden":[],"overrides":{}}
+
+    def set_graph(self,campaign_id,graph):
+        with self.connection() as c:
+            c.execute("INSERT INTO campaign_graph VALUES (?,?,?) ON CONFLICT(campaign_id) DO UPDATE SET graph=excluded.graph,updated_at=excluded.updated_at",
+                      (campaign_id,json.dumps(graph,ensure_ascii=False),utc_now_iso()))
+
     def save(self,meta,body,response,origin,duration,match=None):
         report=response.report
         report.report_id=uuid.uuid4().hex
@@ -534,6 +571,4 @@ class Intelligence:
                 if old!=group: c.execute("UPDATE threat_reports SET campaign_id=? WHERE campaign_id=? AND campaign_locked=0",(group,old))
             data["campaign_id"]=group
             c.execute(f"INSERT INTO threat_reports ({','.join(data)}) VALUES ({','.join('?' for _ in data)})",tuple(data.values()))
-        from app.campaign_osint import schedule_report
-        schedule_report(self, report.report_id, (meta.get("redirect_chain") or [meta.get("target_url")])[0])
         return response

@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     hosting_country_db: str = ""
     # RFC 3161 Time Stamping Authority for evidence packs (e.g. https://freetsa.org/tsr); empty = off
     evidence_tsa_url: str = ""
+    # OSINT enrichment of reported URLs (redirect chain, IP / ASN via ip-api.com, RDAP: NASK for .pl)
+    osint_auto_enrich: bool = True
+    osint_timeout_seconds: float = 3.5
 
     app_env: str = "development"
     app_host: str = "0.0.0.0"

@@ -40,6 +40,7 @@ def _settings(tmp_path: Path, **overrides: object) -> Settings:
         "watchlist_seed_on_start": False,
         "crawler_per_host_delay_seconds": 0,
         "crawler_rate_limit_seconds": 0,
+        "discovery_enabled": False,  # niezależnie od lokalnego .env (testy zakładają wartość domyślną)
     }
     base.update(overrides)
     return Settings(**base)  # type: ignore[arg-type]

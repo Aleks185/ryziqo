@@ -98,6 +98,9 @@ def finish(request, items, kind, key, cache=True, extra_limitations=()):
     return response
 
 
+_background: set = set()
+
+
 async def dispatch(request, body):
     intel = request.app.state.intel
     queue = request.app.state.analysis_queue
@@ -165,7 +168,13 @@ async def dispatch(request, body):
             return response
         if not meta["excerpt"] and response.items:
             meta["excerpt"] = response.items[0].content_excerpt
-        return await asyncio.to_thread(intel.save, meta, body, response, origin, time.monotonic()-start)
+        saved = await asyncio.to_thread(intel.save, meta, body, response, origin, time.monotonic()-start)
+        if meta.get("target_url") and request.app.state.settings.osint_auto_enrich:
+            # fire-and-forget: OSINT sources are slow / flaky and must never delay or fail the analysis
+            task = asyncio.create_task(asyncio.to_thread(intel.enrich_report, saved.report.report_id))
+            _background.add(task)
+            task.add_done_callback(_background.discard)
+        return saved
     return queue.submit(operation)
 
 

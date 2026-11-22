@@ -1,10 +1,9 @@
-import CampaignDesk from "./CampaignDesk";
-import { demoCampaign, demoId } from "./campaignNetwork";
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { backend } from "@/lib/api";
 import { useApp } from "@/lib/store";
 import { Panel, RiskScore } from "@/components/Badges";
+import { DEMO_CAMPAIGN_ID } from "@/lib/campaignGraph";
 
 const field = "w-full border border-[#CBD5E1] rounded-sm px-3 py-2 text-sm bg-white focus-ring";
 const title = "text-2xl sm:text-3xl font-bold tracking-tight text-[#0B192C]";
@@ -127,7 +126,7 @@ export function Campaigns(){
   const groups=data.mode==="demo" ? [] : data.value;
   const rows=groups?.filter(c=>!filter || (c.classification || "pending")===filter);
   return <div className="space-y-6"><h1 className={title}>{l("Kampanie","Campaigns")}</h1>
-    {hiddenDemo ? <button className="compact-action" onClick={()=>{localStorage.removeItem("ryziqo.demo.dissolved");setHiddenDemo(false);}}>Przywróć kampanię DEMO</button> : <Link className="compact-action" to={"/campaigns/"+demoId}>Kampania demonstracyjna · VectraTrade Polska</Link>}
+    {hiddenDemo ? <button className="compact-action" onClick={()=>{localStorage.removeItem("ryziqo.demo.dissolved");setHiddenDemo(false);}}>Przywróć kampanię DEMO</button> : <Link className="compact-action" to={"/campaigns/"+DEMO_CAMPAIGN_ID}>Kampania demonstracyjna · VectraTrade Polska</Link>}
     <label>{l("Ocena powiązania","Relationship assessment")}<select className={field} value={filter} onChange={e=>setFilter(e.target.value)}>
       <option value="">{l("Wszystkie","All")}</option><option value="pending">{l(...pending)}</option>
       {Object.entries(decisions).map(([key,label])=><option key={key} value={key}>{l(...label)}</option>)}</select></label>
@@ -135,11 +134,6 @@ export function Campaigns(){
       <p>{l(...(decisions[c.classification] || pending))} · {l("Zgłoszenia","Reports")}: {c.members}</p>
       <Link className="compact-action mt-2" to={"/campaigns/"+c.campaign_id}>{l("Otwórz kampanię","Open campaign")}</Link>
     </Panel>) : <Panel>{l("Brak kampanii.","No campaigns.")}</Panel>}</div>;
-}
-export function CampaignDetails(){
-  const {id}=useParams(),data=useData(id===demoId ? null : "campaigns/"+id);
-  if(id===demoId || data.mode==="demo")return <CampaignDesk key={demoId} campaign={demoCampaign} demo/>;
-  return data.value ? <CampaignDesk key={id} campaign={data.value}/> : <Feedback data={data}/>;
 }
 export function Diagnostics(){
   const l=useLabels(),data=useData("diagnostics",3000),d=data.value;
