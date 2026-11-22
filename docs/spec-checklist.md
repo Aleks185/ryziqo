@@ -1,7 +1,7 @@
 # Checklista zgodności ze specyfikacją UKNF (Ryziqo)
 
 Źródła: `Opis Wyzwania HackNation UKNF 19.11.pdf` + 4 załączniki DOCX (kryteria ryzyka, tematy 1–3).
-Stan na 2026-11-21 (wieczór). Testy backendu: `194 passed`. Benchmark fallback (53 przypadki): P 0,960 / R 0,686 / F1 0,800. Stos Docker w wersji API 1.3.0 uruchomiony i sprawdzony (backend, frontend, SearXNG).
+Stan na 2026-11-22. Testy backendu: `222 passed`, `yarn audit` 0, `pip-audit` 0. Benchmark fallback (53 przypadki): P 0,960 / R 0,686 / F1 0,800. Stos Docker w wersji API 1.4.0 uruchomiony i sprawdzony (backend, frontend, SearXNG).
 
 ## ✅ Zrobione
 
@@ -30,6 +30,7 @@ Stan na 2026-11-21 (wieczór). Testy backendu: `194 passed`. Benchmark fallback 
 - [x] Moduł 3: shadow advisory, porównanie z rejestrem KNF, wykrywanie podszywania się pod firmy z rejestru, Lista Ostrzeżeń
 - [x] Dodatki: wykrywanie prompt injection, odrzucanie cytatów nieobecnych w treści, RAG z przykładami few-shot, analiza zrzutów ekranu (VLM), benchmark P/R/F1
 - [x] Fałszywe alarmy na prawdziwych stronach brokerów (sprawdzone crawlem xtb.com, bossa.pl, etoro.com; po poprawkach wszystkie poniżej progów):
+  - moduł 2: informacja o uldze podatkowej IKE/IKZE i zapowiedzi artykułów („Czytaj…”) nie są obietnicą zysku (FP na xtb.com)
   - reguły 6 i 7 tylko wtedy, gdy ostrzeżenie jest **wyłącznie** w stopce lub za kliknięciem (legalne strony powtarzają je w stopce)
   - moduł 1 pomija kody polecające na oficjalnej domenie firmy z rejestru (to komunikacja własna, zakres modułu 2)
   - podszywanie: subdomeny oficjalnych domen są zaufane (`online.bossa.pl`), fuzzy matching tylko dla marek z ręcznymi aliasami, słowa ogólne nie są literówką marki (`bank.pl` ≠ mBank); 0 fałszywych alarmów na 40 popularnych domenach, podróbki dalej wykrywane
@@ -45,7 +46,7 @@ Stan na 2026-11-21 (wieczór). Testy backendu: `194 passed`. Benchmark fallback 
 ### Wymagania techniczne
 - [x] Cały stos startuje jedną komendą `docker compose up`, Ollama w opcjonalnym profilu `ai`
 - [x] Tylko open source, zero płatnych API, sekrety wyłącznie w `.env`
-- [x] Audyt zależności (`pip-audit`, `yarn audit`, rezolucje), opis w `docs/security-licenses.md`
+- [x] Audyt zależności 2026-11-22: `pip-audit` 0, `yarn audit` 0 z 1428 pakietów (usunięte 43 nieużywane zależności i 44 nieużywane komponenty `ui/`), opis w `docs/security-licenses.md`
 - [x] README z Quick Startem, wymaganiami sprzętowymi i tabelą konfiguracji
 - [x] Opis procesu pracy z asystentami AI (`docs/ai-workflow.md`), pod kryterium 20% za proces wytwarzania
 
@@ -59,17 +60,17 @@ Stan na 2026-11-21 (wieczór). Testy backendu: `194 passed`. Benchmark fallback 
 ### Automatyczny crawling internetu
 - [x] Timeout liczony per żądanie (czekanie z grzeczności poza budżetem), wolna podstrona nie wywraca zadania, błędy pobierania z nazwą hosta zamiast przypiętego IP (`fetcher.py`, `queue_worker.py`)
 - [x] Discovery sprawdzone na żywo (2026-11-21): SearXNG `2026.11.21-c6ee3e9fd` (tag przypięty), 3 frazy → 30 wyników → 6 nowych URL-i w kolejce → 6 przeanalizowanych; strony afiliacyjne wykryte (M1), oficjalne strony brokera bez fałszywych alarmów
-- [x] Seed watchlisty sprawdzony: xtb.com i bossa.pl odpowiadają i pozwalają w `robots.txt`; po starcie Dockera watchlista ma 9 celów (4 z seeda + domeny z rejestru: mbank.pl, pkobp.pl, santander.pl, interactivebrokers.com/.ie)
-- [ ] etoro.com i trading212.com odpowiadają `403` na nagłówek bota (ochrona antybotowa). Zdecydować: usunąć z seeda, skanować przez Playwright albo zostawić jako znane ograniczenie
+- [x] Seed watchlisty sprawdzony 2026-11-22 fetcherem aplikacji (UA crawlera): 8 celów odpowiada (xtb.com, bossa.pl, www.saxobank.com z seeda + mbank.pl, pkobp.pl, santander.pl, interactivebrokers.com/.ie z rejestru). saxobank.com bez `www.` odrzuca połączenie, dlatego seed ma jawny wpis `https://www.saxobank.com`
+- [x] etoro.com i trading212.com odpowiadają `403` na nagłówek bota (Cloudflare). Rozstrzygnięte: wyłączone z seeda (`exclude_domains`), crawler nie obchodzi zabezpieczeń antybotowych
 - [ ] Włączyć discovery w Dockerze: `.env` z `DISCOVERY_ENABLED=true` i `docker compose --profile discovery up -d` (domyślnie wyłączone)
 - [ ] (warto rozważyć) Publiczne profile social mediów w seedzie (teraz tylko strony brokerów)
 
 ### Dashboard (spec, pkt 3)
-- [ ] **Filtry po dacie, źródle (platformie) i poziomie ryzyka.** Teraz jest tylko filtr po module (`frontend/src/pages/Dashboard.jsx`). Backend już obsługuje `date_from/date_to`, `source_platform` i `risk_level`.
+- [x] **Filtry po dacie, źródle (platformie) i poziomie ryzyka** w `frontend/src/pages/Dashboard.jsx` (backend: `date_from/date_to`, `source_platform`, `risk_level`; `date_to=YYYY-MM-DD` obejmuje cały dzień)
 - [x] **Uruchamianie crawla z panelu** (`POST /api/v1/crawl/trigger`) i lista zadań (`GET /api/v1/crawl/jobs`) — strona „Crawler” (`/crawler`, `frontend/src/pages/Crawler.jsx`)
 - [x] **Widok watchlisty** (dodawanie, włączanie/wyłączanie i usuwanie źródeł, „skanuj teraz”, źródła startowe, wynik ostatniego skanu) na stronie „Crawler”
-- [ ] **Pobieranie raportów modułów z backendu** (`/api/v1/reports/{1|2|3}?format=csv`). Teraz eksport jest liczony lokalnie z listy w przeglądarce.
-- [x] Komentarz w `frontend/src/lib/api.js` zaktualizowany (CONTRACT.md v1.3.0)
+- [x] **Pobieranie raportów modułów z backendu** (`/api/v1/reports/{1|2|3}?format=csv`)
+- [x] Komentarz w `frontend/src/lib/api.js` zaktualizowany (CONTRACT.md v1.4.0)
 - [x] Pobieranie tekstu ze zrzutu ekranu dla zgłoszenia obywatelskiego (VLM, patrz sekcja Frontend)
 - [x] Widok wyników discovery (`GET /api/v1/discovery/recent`) i przycisk „uruchom discovery” w panelu (strona „Crawler”)
 
@@ -78,8 +79,8 @@ Stan na 2026-11-21 (wieczór). Testy backendu: `194 passed`. Benchmark fallback 
 - [x] **Odświeżanie rejestru KNF** (`python -m scripts.refresh_knf_registry`, `POST /api/v1/knf-registry/refresh`, `KNF_REFRESH_CRON`), data snapshotu na dashboardzie
 - [x] **Parser list KNF sprawdzony na prawdziwych stronach (2026-11-21).** knf.gov.pl zrywa połączenia z nagłówkiem bota (robots.txt pozwala wszystkim), więc synchronizacja przedstawia się jako przeglądarka (`KNF_SYNC_USER_AGENT`). Parser czyta tabele klucz–wartość („Nazwa podmiotu”), pomija dawne nazwy (`<strike>`), przechodzi paginację `?page=N`: 754 podmioty (10 banków, 27 DM, 10 oddziałów, 707 transgranicznych). Wpisy z ręcznymi aliasami nie są usuwane automatycznie (`unmatched_kept` w raporcie), a fuzzy-matching podszywania działa tylko na markach z aliasami.
 - [x] Snapshot rejestru w repo zastąpiony danymi z knf.gov.pl (2026-11-21, 758 podmiotów + 4 [DEMO]); ręczne wpisy scalone z oficjalnymi nazwami KNF (BOŚ, PKO BP, mBank, Santander→Erste, OANDA TMS, IBKR), dawne nazwy zostały aliasami.
-- [ ] Do potwierdzenia ręcznie: eToro (Europe) Ltd. i Saxo Bank A/S nie występują na pobranych listach notyfikacji; Trading 212 figuruje jako „Trading 212 Ltd” i „Trading 212 EU GmbH”, a w snapshocie jest „Trading 212 Markets Ltd.” — wpisy ręczne zostawione bez zmian
-- [ ] Lista dopisków podszywania nie łapie części wzorców (`pkobp-makler.com`, `saxobank-pro.pl`, `trading-212-bonus.pl`) — rozważyć rozszerzenie `SUSPICIOUS_AFFIXES` (makler, pro, bonus)
+- [ ] Do potwierdzenia ręcznie: eToro (Europe) Ltd. i Saxo Bank A/S nie występują na pobranych listach notyfikacji (Saxo ma w snapshocie ręczne aliasy, w tym `saxobank.com`); Trading 212 figuruje jako „Trading 212 Ltd” i „Trading 212 EU GmbH”, a w snapshocie jest „Trading 212 Markets Ltd.” — wpisy ręczne zostawione bez zmian
+- [x] Podszywanie: wzorce `pkobp-makler.com`, `saxobank-pro.pl`, `trading-212-bonus.pl` wykrywane (rozszerzone `SUSPICIOUS_AFFIXES`), 0 fałszywych alarmów na 42 popularnych domenach
 - [ ] (warto rozważyć) Kolejka na zewnętrznym narzędziu (Redis z RQ/Celery/Arq) i MinIO jako object storage, pod kryterium architektury i skalowalności
 - [ ] (warto rozważyć) Skan **Snyk** wprost wymieniony w specu: `snyk test` z wynikiem w `docs/security-licenses.md` albo workflow w GitHub Actions (w repo nie ma `.github/`)
 
@@ -103,5 +104,5 @@ Uporządkowane od najwyższego stosunku efektu na demo / wartości dla UKNF do n
 ### Przed oceną Jury
 - [x] Scenariusz demo przez API w trybie bez Ollamy: crawl mocków (14 stron), 8 alertów `high_risk_alert` na WebSockecie, zmiana statusu i etykiety, raporty modułów 1–3, kalibracja (P 1,00 / R 0,91 / F1 0,95)
 - [ ] Ten sam scenariusz **z Ollamą** (`--profile ai` albo Ollama na hoście) i przeklikany w przeglądarce
-- [ ] Sprawdzić konsolę przeglądarki na buildzie produkcyjnym (Jury patrzy na `Console.log`). Jedyny `console.log` w bundlu pochodzi z domyślnej strony błędu react-routera i pojawia się tylko przy wywrotce aplikacji — można dodać własny `errorElement`
+- [ ] Sprawdzić konsolę przeglądarki na buildzie produkcyjnym (Jury patrzy na `Console.log`). Wywrotki stron łapie własny `PageErrorBoundary`; `console.log` z domyślnej strony błędu react-routera zostaje w bundlu, ale jest nieosiągalny (`BrowserRouter`, bez data routera)
 - [ ] Wpisać aktualny wynik `python -m scripts.evaluate_detection --mode both` do prezentacji jako dowód trafności klasyfikacji

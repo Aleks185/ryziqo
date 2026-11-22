@@ -25,17 +25,22 @@
   - Czy obsługuje `ping` → `pong`?
   - Czy przy `POST /api/v1/crawl/trigger` emituje sekwencję: `crawler_status` (`queued` → `fetching` → `preprocessing` → `analyzing`), `high_risk_alert` (gdy `risk_score >= HIGH_RISK_ALERT_THRESHOLD`) oraz `analysis_complete`?
   - Czy komunikaty mają spójne pola z `CONTRACT.md` (`type`, `timestamp`, `job_id`, `stage`, `source`, `module_id`, `incident_id`, `risk_score`, `message`)?
-- [ ] **A7. Analiza na żądanie i etykiety (CONTRACT.md od v1.1.0, aktualnie v1.2.0):**
+- [ ] **A7. Analiza na żądanie i etykiety (CONTRACT.md od v1.1.0, aktualnie v1.4.0):**
   - Czy `POST /api/v1/analyze/text` waliduje `content` (20–20 000 znaków) i `module_ids` (`1`–`3`, niepuste) — `422` dla błędnych danych — oraz zwraca `{items: IncidentDetail[], mode}`?
   - Czy wklejony HTML jest escapowany (traktowany jako tekst), a ponowna analiza identycznej treści aktualizuje istniejący incydent bez resetu `status` i `ground_truth_label`?
   - Czy `POST /api/v1/analyze/url` zwraca `400` dla adresów blokowanych przez anty-SSRF i `502` dla błędów pobierania?
   - Czy `PATCH /api/v1/incidents/{id}/label` przyjmuje `true` / `false` / `null`, zwraca `404` dla nieistniejącego ID i emituje `status_updated`?
 - [ ] **A8. CORS:** czy `CORSMiddleware` dopuszcza adresy dev frontendu (`localhost:5173`, `localhost:3000`, `localhost:8080`) konfigurowane przez `.env`?
-- [ ] **A9. Rozszerzenia CONTRACT.md v1.2.0:**
+- [ ] **A9. Rozszerzenia CONTRACT.md v1.2.0 (nadal obowiązują w v1.4.0):**
   - Czy `GET /api/v1/incidents?risk_level=low|medium|high` filtruje zgodnie z progami z kontraktu (`< 0.40`, `0.40–0.69`, `>= 0.70`)?
   - Czy watchlista (`GET/POST /api/v1/watchlist`, `PATCH/DELETE /api/v1/watchlist/{id}`, `POST /api/v1/watchlist/run`) waliduje URL anty-SSRF przy dodaniu i zwraca `404` dla nieistniejącego ID?
   - Czy `GET /api/v1/reports/{module_id}?format=csv` ma kolumny z kontraktu, UTF-8 z BOM, separator `;` i ochronę przed CSV injection (`=`, `+`, `-`, `@` poprzedzone `'`)?
   - Czy `source_platform: "x"` jest rozpoznawane dla `x.com` / `twitter.com`?
+- [ ] **A10. Rozszerzenia CONTRACT.md v1.3.0 i v1.4.0:**
+  - Czy `POST /api/v1/crawl/trigger` przyjmuje `origin`, `follow_depth` (0–2) i `follow_max_pages`, a duplikat w kolejce zwraca `409`?
+  - Czy `POST /api/v1/watchlist/seed`, `/api/v1/discovery/*` i `POST /api/v1/knf-registry/refresh` działają zgodnie z kontraktem?
+  - Czy `IncidentDetail` zawiera `prompt_injection_snippets`, `hidden_text_snippets` i `quote_checks`, a `GET /incidents/{id}/similar`, `/versions` i `/evidence-pack` zwracają `404` dla nieistniejącego ID?
+  - Czy `GET /api/v1/intelligence/graph` zwraca węzły i krawędzie, a `StatsResponse` ma `verified_decisions`?
 
 ---
 

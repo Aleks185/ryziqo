@@ -106,9 +106,10 @@ function targetLabel(job, l) {
   return job.target || "—";
 }
 
-function NewScan({ mockCount, onQueued }) {
+function NewScan({ mockFiles, onQueued }) {
   const l = useLabels();
   const [url, setUrl] = useState("");
+  const [mockFile, setMockFile] = useState("");
   const [depth, setDepth] = useState(0);
   const [maxPages, setMaxPages] = useState(10);
   const [modules, setModules] = useState([...MODULES]);
@@ -201,15 +202,39 @@ function NewScan({ mockCount, onQueued }) {
             {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
             {l("Skanuj", "Scan")}
           </button>
-          <button
-            type="button"
-            className={secondaryCls}
-            disabled={busy || !mockCount}
-            data-testid="crawler-mock-all"
-            onClick={() => send({ mode: "mock_all", module_ids: modules }, l("Dodano skan stron demo", "Demo scan queued"))}
-          >
-            {l(`Skanuj strony demo (${mockCount})`, `Scan demo pages (${mockCount})`)}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label={l("Strona demo do skanu", "Demo page to scan")}
+              data-testid="crawler-mock-select"
+              className={`${inputCls} w-auto max-w-full`}
+              disabled={busy || !mockFiles.length}
+              value={mockFile}
+              onChange={(e) => setMockFile(e.target.value)}
+            >
+              <option value="">{l(`Wszystkie strony demo (${mockFiles.length})`, `All demo pages (${mockFiles.length})`)}</option>
+              {mockFiles.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className={secondaryCls}
+              disabled={busy || !mockFiles.length}
+              data-testid="crawler-mock-all"
+              onClick={() =>
+                mockFile
+                  ? send(
+                      { mode: "mock_single", mock_file: mockFile, module_ids: modules },
+                      l(`Dodano skan strony demo ${mockFile}`, `Demo page ${mockFile} queued`),
+                    )
+                  : send({ mode: "mock_all", module_ids: modules }, l("Dodano skan stron demo", "Demo scan queued"))
+              }
+            >
+              {mockFile ? l("Skanuj stronę demo", "Scan demo page") : l("Skanuj strony demo", "Scan demo pages")}
+            </button>
+          </div>
         </div>
         <Message message={message} />
       </form>
@@ -691,7 +716,7 @@ export default function Crawler() {
       ) : (
         <>
           {error && <Message message={{ kind: "error", text: error }} />}
-          <NewScan mockCount={jobs?.available_mock_files.length || 0} onQueued={loadJobs} />
+          <NewScan mockFiles={jobs?.available_mock_files || []} onQueued={loadJobs} />
           <JobsTable jobs={jobs?.jobs || []} nextRun={jobs?.scheduler_next_run} onRefresh={refreshAll} loading={loading} />
           <Watchlist data={watch} lastJobByTarget={lastJobByTarget} onChange={loadWatch} onQueued={loadJobs} />
           <Discovery data={discovery} onChange={loadDiscovery} onQueued={loadJobs} />
