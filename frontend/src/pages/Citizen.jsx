@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { MODULES, riskLevel } from "@/lib/config";
@@ -89,6 +89,16 @@ export default function Citizen() {
   const [consent, setConsent] = useState(false);
   const [name, setName] = useState(storedName);
   const [shared, setShared] = useState(undefined);
+  const confirmationHeading = useRef(null);
+  useEffect(() => {
+    if (result) confirmationHeading.current?.focus();
+  }, [result]);
+
+  function startAnother() {
+    setContent(""); setUrl(""); setFile(null); setKind("text");
+    setShareMode(""); setConsent(false); setEmail(""); setEmailValid(false);
+    setResult(null); setReport(null); setShared(undefined); setError("");
+  }
   const needsText = kind === "text" || (kind === "url" && mode !== "online");
   const ready = Boolean(shareMode && consent && !busy && mode !== "checking"
     && (shareMode !== "signed" || (name.trim() && emailValid))
@@ -131,6 +141,28 @@ export default function Citizen() {
       setBusy(false);
     }
   }
+  if (result) {
+    const pl = lang === "pl";
+    const signed = shareMode === "signed";
+    const heading = signed
+      ? (pl ? `Dziękujemy za zgłoszenie, ${name.trim()}!` : `Thanks for your report, ${name.trim()}!`)
+      : (pl ? "Dziękujemy za anonimowe zgłoszenie!" : "Thank you for your anonymous report!");
+    return <div className="w-full max-w-2xl mx-auto space-y-5">
+      <Panel><h1 ref={confirmationHeading} tabIndex={-1} className="text-2xl font-bold text-[#0B192C]">{heading}</h1>
+        <p className="mt-3 text-slate-700">{shared
+          ? (pl ? "Materiał trafił do weryfikacji przez analityka." : "Your material has been submitted for analyst review.")
+          : (pl ? "Reklamę sprawdzono lokalnie w trybie DEMO." : "Your ad was checked locally in DEMO mode.")}</p>
+        {signed && shared && <p className="mt-2 text-sm">{pl
+          ? "Gdy analityk potwierdzi nową dla Ciebie kampanię, otrzymasz 1 punkt w drabince."
+          : "You earn 1 leaderboard point when an analyst confirms a campaign you have not already scored for."}</p>}
+      </Panel>
+      <Verdict inc={result} report={report} shared={shared}/>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" className="compact-action" onClick={startAnother}>{pl ? "Dodaj kolejne zgłoszenie" : "Submit another report"}</button>
+        <Link className="inline-flex items-center gap-2 rounded bg-[#0B192C] px-4 py-2 font-semibold text-white focus-ring" to="/leaderboard"><Trophy size={18} aria-hidden="true"/>{leaderboardLabel}</Link>
+      </div>
+    </div>;
+  }
   return <div className="w-full max-w-2xl mx-auto space-y-5">
     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center text-[#0B192C]">{t("public_title")}</h1>
     <div className="flex justify-center">
@@ -144,7 +176,7 @@ export default function Citizen() {
           onEmail={e => { setEmail(e.target.value); setEmailValid(e.target.validity.valid); }} />
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" required checked={consent} onChange={e => setConsent(e.target.checked)} className="size-4 accent-slate-800" />
-          {lang === "pl" ? "Jestem pewien, że chcę to zgłosić." : "I am sure I want to submit this report."}
+          {lang === "pl" ? "Jestem pewien, że chcę przesłać materiał do weryfikacji." : "I am sure I want to submit this material for verification."}
         </label>
         <div className="flex flex-wrap justify-center gap-2">{["text", "url", "image"].map(k =>
           <button key={k} type="button" aria-pressed={kind === k} onClick={() => { if (kind !== k) setFile(null); setKind(k); setResult(null); setError(""); }}
@@ -157,6 +189,5 @@ export default function Citizen() {
       </fieldset>
     </form></Panel>
     {error && <p role="alert" className="text-amber-950">{t(error)}</p>}
-    {result && <Verdict inc={result} report={report} shared={shared} />}
   </div>;
 }

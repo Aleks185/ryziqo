@@ -337,3 +337,7 @@ Format komunikatów serwera:
 | `1.2.0` | Filtr `risk_level` w `GET /api/v1/incidents`; endpointy `/api/v1/watchlist*` i `GET /api/v1/reports/{module_id}`; nowa wartość `source_platform: "x"`. Bez zmian istniejących pól, typów i ścieżek. |
 | `1.1.0` | Dodane endpointy `POST /api/v1/analyze/text`, `POST /api/v1/analyze/url`, `PATCH /api/v1/incidents/{incident_id}/label`; nowa wartość `source_platform: "manual"`; `analysis_complete` może zawierać `extra.incident_ids`. Bez zmian istniejących pól, typów i ścieżek. |
 | `1.0.0` | Zamrożenie kontraktu: model `Incident`, REST (`/health`, `/incidents`, `/status`, `/stats`, `/crawl/*`, `/knf-registry`, `/rules`), WebSocket `/ws/alerts`. |
+
+### Odświeżenie infrastruktury pojedynczego zgłoszenia
+
+`POST /api/v1/intelligence/reports/{report_id}/enrich` ponawia OSINT dla zapisanego URL. Zwraca `skipped` (null lub `no_url`) i listę `errors`. Nieistniejące zgłoszenie zwraca 404. Aktualne metadane udostępnia GET szczegółów zgłoszenia.

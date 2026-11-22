@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import logging
 import re
-import socket
 from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urljoin, urlsplit
@@ -31,34 +30,25 @@ OSINT_FIELDS = ("redirect_chain", "target_server_ip", "hosting_asn", "hosting_co
                 "registrar", "nameservers", "domain_created_at", "domain_age_days")
 
 
-def follow_redirects(url: str, timeout: float) -> tuple[list[str], str | None]:
+def follow_redirects(url: str, timeout: float) -> tuple[list[str], str | None, str | None]:
     """Redirect chain (initial URL first) following Location headers hop by hop, each hop SSRF-checked."""
-    chain, error = [url], None
+    chain = []
     current = url
-    with httpx.Client(timeout=timeout, follow_redirects=False, headers=HEADERS) as client:
+    with httpx.Client(timeout=timeout, follow_redirects=False, trust_env=False, headers=HEADERS) as client:
         for _ in range(MAX_HOPS):
             try:
                 checked = validate_public_url(current)
+                chain.append(current)
                 with client.stream("GET", **pinned_request(checked, dict(HEADERS))) as res:
                     location = res.headers.get("location") if 300 <= res.status_code < 400 else None
             except (SSRFError, httpx.HTTPError, ValueError, OSError) as exc:
-                error = f"redirects: {type(exc).__name__}"
-                break
+                return chain, None, f"redirects: {type(exc).__name__}"
             if not location:
-                break
+                return chain, checked.address, None
             current = urljoin(current, location)
             if current in chain:
-                error = "redirects: loop"
-                break
-            chain.append(current)
-    return chain, error
-
-
-def resolve_ipv4(host: str) -> str | None:
-    try:
-        return socket.getaddrinfo(host, None, socket.AF_INET, socket.SOCK_STREAM)[0][4][0]
-    except OSError:
-        return None
+                return chain, None, "redirects: loop"
+    return chain, None, "redirects: limit"
 
 
 def lookup_ip(ip: str, timeout: float) -> dict[str, Any]:
@@ -122,12 +112,13 @@ def enrich_url_infrastructure(url: str, timeout: float = 3.5) -> dict[str, Any]:
         result["errors"].append("invalid_url")
         return result
     try:
-        chain, error = follow_redirects(url, timeout)
-        result.update(redirect_chain=chain, final_url=chain[-1], domain=domain_of(chain[-1]) or result["domain"])
+        chain, ip, error = follow_redirects(url, timeout)
+        result["redirect_chain"] = chain
         if error:
             result["errors"].append(error)
+            return result
+        result.update(final_url=chain[-1], domain=domain_of(chain[-1]))
         host = urlsplit(chain[-1]).hostname or ""
-        ip = resolve_ipv4(host) if host else None
         if ip:
             result["target_server_ip"] = ip
             info = lookup_ip(ip, timeout)

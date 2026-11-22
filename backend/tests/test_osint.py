@@ -17,8 +17,7 @@ def test_parse_rdap_registrar_age_and_nameservers():
 
 
 def test_enrichment_degrades_gracefully_when_sources_are_down(monkeypatch):
-    monkeypatch.setattr(osint, "follow_redirects", lambda url, t: ([url, "https://vectra.example.pl/x"], None))
-    monkeypatch.setattr(osint, "resolve_ipv4", lambda host: None)
+    monkeypatch.setattr(osint, "follow_redirects", lambda url, t: ([url, "https://vectra.example.pl/x"], None, None))
     monkeypatch.setattr(osint, "lookup_rdap", lambda host, t: {})
     info = osint.enrich_url_infrastructure("https://short.example/abc")
     assert info["redirect_chain"][-1] == "https://vectra.example.pl/x"
@@ -42,6 +41,10 @@ def test_campaign_detail_enrich_and_graph_roundtrip(tmp_path, monkeypatch):
         r = detail["reports"][0]
         assert r["hosting_org"] == "Hetzner Online GmbH" and r["registrar"] == "OVH" and r["nameservers"] == ["ns1.ovh.net"]
         assert r["redirect_chain"][-1] == "https://vectra-trade.pl/start" and "reporter_ip" not in r
+        single=client.post(f"{api}/intelligence/reports/{r['id']}/enrich")
+        assert single.status_code == 200 and single.json() == {"skipped":None,"errors":[]}
+        assert client.get(f"{api}/intelligence/reports/{r['id']}").json()["registrar"] == "OVH"
+        assert client.post(f"{api}/intelligence/reports/missing/enrich").status_code == 404
         graph = {"nodes": [{"id": "c1", "type": "social", "label": "@vectra_vip", "note": "kanał"}],
                  "edges": [{"id": "e1", "source": "c1", "target": "campaign:" + group, "label": "promuje"}],
                  "positions": {"c1": {"x": 10, "y": 20}}, "hidden": []}
@@ -63,3 +66,13 @@ def test_campaign_detail_carries_decision_and_dissolve(tmp_path):
         assert (detail["classification"], detail["description"]) == ("confirmed", "ten sam schemat")
         assert client.delete(f"{api}/campaigns/{group}").json()["detached"] >= 2
         assert client.get(f"{api}/campaigns/{group}").status_code == 404
+
+
+def test_rejected_target_stops_enrichment(monkeypatch):
+    monkeypatch.setattr(osint, "follow_redirects", lambda url,t: ([url],None,"redirects: SSRFError"))
+    def unexpected(*args):
+        raise AssertionError("No provider lookup after rejected target")
+    monkeypatch.setattr(osint,"lookup_ip",unexpected)
+    monkeypatch.setattr(osint,"lookup_rdap",unexpected)
+    result=osint.enrich_url_infrastructure("https://public.example/path")
+    assert result["errors"]==["redirects: SSRFError"] and "target_server_ip" not in result

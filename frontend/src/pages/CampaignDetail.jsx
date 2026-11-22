@@ -37,6 +37,19 @@ function Step({ title, children, tone = "slate" }) {
   return <div className={`min-w-[170px] flex-1 rounded-sm border bg-white p-3 ${tones[tone]}`}><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{title}</p><div className="mt-1 text-sm text-slate-900 [overflow-wrap:anywhere]">{children}</div></div>;
 }
 
+function redirectLabel(r, l) {
+  if (!r.target_url && !r.redirect_chain?.length) return l("Brak URL", "No URL");
+  if (r.redirect_verified === 0) return l("Nie udało się ustalić", "Could not verify");
+  if (r.redirect_verified || (r.target_server_ip && r.redirect_chain?.length)) return l("Bez przekierowania", "No redirect");
+  return l("Nie ustalono", "Unverified");
+}
+function readPreference(key) {
+  try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+}
+function writePreference(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* Private browsing. */ }
+}
+
 function RedirectChain({ reports, l }) {
   const r = [...reports].sort((a, b) => (b.redirect_chain?.length || 0) - (a.redirect_chain?.length || 0) || b.risk_score - a.risk_score)[0];
   if (!r) return null;
@@ -49,7 +62,7 @@ function RedirectChain({ reports, l }) {
       <div className="flex flex-col items-stretch gap-2 lg:flex-row lg:items-center" data-testid="redirect-chain">
         <Step title={l("Źródło reklamy / Social Media", "Ad source / Social media")} tone="pink">{r.platform || r.source_channel}<div className="text-xs text-slate-600">{chain[0] && chain.length > 1 ? shortUrl(chain[0]) : ""}</div></Step>
         <ArrowRight className="mx-auto shrink-0 rotate-90 text-slate-400 lg:rotate-0" size={20} />
-        <Step title={l("Link przekierowujący", "Redirecting link")}>{middle.length ? middle.map((u) => <div key={u}>{shortUrl(u)}</div>) : <span className="text-slate-500">{l("brak pośrednich przekierowań", "no intermediate redirects")}</span>}</Step>
+        <Step title={l("Link przekierowujący", "Redirecting link")}>{middle.length ? middle.map((u) => <div key={u}>{shortUrl(u)}</div>) : <span className="text-slate-500">{chain.length > 1 ? l("Bez pośredniego adresu", "No intermediate URL") : redirectLabel(r,l)}</span>}</Step>
         <ArrowRight className="mx-auto shrink-0 rotate-90 text-slate-400 lg:rotate-0" size={20} />
         <Step title={l("Domena docelowa", "Target domain")} tone="cyan"><span className="font-semibold">{hostOf(last) || "—"}</span><div className="text-xs text-slate-600">{shortUrl(last)}</div></Step>
         <ArrowRight className="mx-auto shrink-0 rotate-90 text-slate-400 lg:rotate-0" size={20} />
@@ -124,11 +137,10 @@ function ReportsTable({ detail, demo, l }) {
                 <td className="max-w-[300px] px-5 py-2.5">{link ? <Link className="underline focus-ring" to={link}>{r.excerpt?.slice(0, 80) || r.canonical_domain}</Link> : r.excerpt?.slice(0, 80)}
                   <div className="text-xs text-slate-500">{r.platform}</div></td>
                 <td className="px-5 py-2.5"><div className="font-medium">{r.canonical_domain || hostOf(chain.at(-1)) || "—"}</div>
-                  <div className="text-xs text-slate-600">{chain.length > 1 ? chain.map((u) => hostOf(u)).join(" → ") : l("bez przekierowania", "no redirect")}</div></td>
-                <td className="px-5 py-2.5">{r.target_server_ip ? <><div className="font-mono">{r.target_server_ip}</div>
+                  <div className="text-xs text-slate-600">{chain.length > 1 ? chain.map((u) => hostOf(u)).join(" → ") : redirectLabel(r,l)}</div></td>
+                <td className="px-5 py-2.5"><div className="font-mono">{r.target_server_ip || "—"}</div>
                   <div className="text-xs text-slate-600">{[r.hosting_org, r.hosting_asn, r.hosting_country].filter(Boolean).join(" · ")}</div>
-                  <div className="text-xs text-slate-600">{[r.registrar, r.domain_age_days != null && ageLabel(r.domain_age_days, l)].filter(Boolean).join(" · ")}</div></>
-                  : <span className="text-slate-500">{l("Brak danych — odśwież OSINT", "No data — refresh OSINT")}</span>}</td>
+                  <div className="text-xs text-slate-600">{[r.registrar, r.domain_age_days != null && ageLabel(r.domain_age_days, l)].filter(Boolean).join(" · ")}</div></td>
                 <td className="px-5 py-2.5"><span className={`inline-block rounded-sm border px-2 py-0.5 font-mono font-semibold ${LEVEL[level][1]}`}>{r.risk_score}%</span></td>
                 <td className="px-5 py-2.5">{l(...STATUS[r.verdict_status])}</td>
               </tr>);
@@ -151,7 +163,7 @@ export default function CampaignDetail() {
   const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
-    if (demo) { setState({ id, value: DEMO_CAMPAIGN }); return DEMO_CAMPAIGN; }
+    if (demo) { const value = {...DEMO_CAMPAIGN, ...readPreference("ryziqo.demo.review."+id)}; setState({id,value}); return value; }
     if (mode !== "online") { setState({ id, error: l("Kampanie wymagają połączenia z backendem (poza kampanią DEMO).", "Campaigns require a backend connection (except the DEMO campaign).") }); return null; }
     try { const value = await backend.intel(`campaigns/${encodeURIComponent(id)}`); setState({ id, value }); return value; }
     catch (e) { setState({ id, error: e.message }); return null; }
@@ -164,12 +176,13 @@ export default function CampaignDetail() {
       const remote = value.graph || emptySaved();
       const local = loadSavedLocal(id);
       // Backend jest źródłem prawdy; localStorage tylko wtedy, gdy backend nie ma jeszcze zapisu (lub w DEMO).
-      const empty = !remote.nodes?.length && !remote.edges?.length && !Object.keys(remote.positions || {}).length && !remote.hidden?.length;
-      setSavedRaw({ ...emptySaved(), ...(empty ? local : remote) });
-      setDirty(false);
+      const empty = !remote.nodes?.length && !remote.edges?.length && !Object.keys(remote.positions || {}).length && !remote.hidden?.length && !Object.keys(remote.overrides || {}).length;
+      const pending = readPreference("ryziqo.graph.pending."+id);
+      setSavedRaw({ ...emptySaved(), ...(pending || (demo || empty ? local : remote)) });
+      setDirty(Boolean(pending));
     });
     return () => { cancelled = true; };
-  }, [id, load]);
+  }, [id, demo, load]);
 
   const setSaved = useCallback((updater, markDirty = true) => {
     setSavedRaw(updater);
@@ -184,10 +197,12 @@ export default function CampaignDetail() {
   async function persist() {
     storeSavedLocal(id, saved);
     if (!demo) {
+      writePreference("ryziqo.graph.pending."+id, saved);
       try { await backend.intel(`campaigns/${encodeURIComponent(id)}/graph`, { method: "PUT", body: saved }); }
-      catch (e) { toast.warning(l("Zapisano lokalnie; backend odrzucił zapis: ", "Saved locally; the backend rejected the save: ") + e.message); setDirty(false); return; }
+      catch (e) { toast.warning(l("Zapisano lokalnie; backend odrzucił zapis: ", "Saved locally; the backend rejected the save: ") + e.message); setDirty(true); return; }
     }
     setDirty(false);
+    writePreference("ryziqo.graph.pending."+id,null);
     toast.success(l("Zapisano układ grafu.", "Graph layout saved."));
   }
 
@@ -236,13 +251,13 @@ export default function CampaignDetail() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" data-testid="campaign-kpis">
         <Kpi label={l("Średnie ryzyko kampanii", "Average campaign risk")} value={`${Math.round(stats.avgRisk)}%`} accent={LEVEL[level][0]}
           sub={level === "high" ? l("Wysokie (≥ 70%)", "High (≥ 70%)") : level === "medium" ? l("Średnie (40–69%)", "Medium (40–69%)") : l("Niskie (< 40%)", "Low (< 40%)")} />
-        <Kpi label={l("Powiązane zgłoszenia", "Linked reports")} value={stats.members} sub={`${stats.reporters} ${l("unikalnych zgłaszających", "unique reporters")}`} />
+        <Kpi label={l("Powiązane zgłoszenia", "Linked reports")} value={stats.members} sub={`${l("Rozpoznani zgłaszający", "Identified reporters")}: ${stats.reporters} · ${l("Zgłoszenia bez identyfikatora", "Unidentified reports")}: ${detail.unidentified_reports ?? 0}`} />
         <Kpi label={l("Wykryta infrastruktura", "Detected infrastructure")} value={`${stats.domains} / ${stats.ips}`}
           sub={`${l("domen", "domains")} / ${l("adresów IP", "IPs")}${stats.sharedIps ? ` · ${stats.sharedIps} ${l("wspólne IP", "shared IP")}` : ""}`} />
         <Kpi label={l("Wiek najstarszej domeny / Status", "Oldest domain age / Status")} accent={fresh ? "#DC2626" : undefined}
           value={stats.oldestAge == null ? "—" : ageLabel(stats.oldestAge, l)}
           sub={stats.oldestAge == null ? l("brak danych RDAP", "no RDAP data") : fresh ? l("Świeża domena — wysokie ryzyko", "Fresh domain — high risk") : l("Domena starsza niż 30 dni", "Domain older than 30 days")}>
-          <span className="mt-2 inline-block rounded-sm border border-[#CBD5E1] bg-slate-50 px-2 py-0.5 text-xs font-medium">{l(...STATUS[stats.status])}</span>
+          <span className="mt-2 inline-block rounded-sm border border-[#CBD5E1] bg-slate-50 px-2 py-0.5 text-xs font-medium">{(VERDICTS.find(([key])=>key===detail.classification) || VERDICTS[2])[lang==="en"?2:1]}</span>
         </Kpi>
       </div>
 
@@ -254,7 +269,7 @@ export default function CampaignDetail() {
 
       <Decision key={`${detail.classification}${detail.description}`} detail={detail} demo={demo} l={l} lang={lang}
         onSaved={(verdict, note) => {
-          if (demo) setState({ id, value: { ...detail, classification: verdict, description: note } });
+          if (demo) { const review={classification:verdict,description:note}; writePreference("ryziqo.demo.review."+id,review); setState({id,value:{...detail,...review}}); }
           else load();
         }} />
       <ReportsTable detail={detail} demo={demo} l={l} />

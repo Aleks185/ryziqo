@@ -1,4 +1,6 @@
-import { exportRegister } from "@/lib/exportRegister";
+import { useState } from "react";
+import { toast } from "sonner";
+import { exportExcel, exportRegister } from "@/lib/exportRegister";
 import { useNavigate } from "react-router-dom";
 import { SAMPLE_URL_PREFIX } from "@/lib/config";
 import { useApp } from "@/lib/store";
@@ -7,10 +9,17 @@ import { ModuleTag, Panel, RiskScore, StatusBadge } from "./Badges";
 
 export const IncidentTable = ({ incidents }) => {
   const { t, lang } = useApp();
+  const [exporting, setExporting] = useState(false);
+  async function saveExcel() {
+    setExporting(true);
+    try { await exportExcel(incidents, lang, t); }
+    catch { toast.error(lang === "pl" ? "Nie udało się utworzyć raportu Excel." : "Could not create the Excel report."); }
+    finally { setExporting(false); }
+  }
   const nav = useNavigate();
   return (
     <Panel title={`${t("list_title")} (${incidents.length})`} testId="incident-table" right={
-      <div className="flex gap-2">{["csv", "json"].map(format => (
+      <div className="flex flex-wrap gap-2"><button type="button" className="compact-action" disabled={exporting} onClick={saveExcel}>{exporting ? "…" : t("export") + " Excel (.xlsx)"}</button>{["csv", "json"].map(format => (
         <button key={format} type="button" className="compact-action" onClick={() => exportRegister(incidents, format)}>
           {t("export")} {format.toUpperCase()}
         </button>

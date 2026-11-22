@@ -73,12 +73,32 @@ export function Reports(){
     <Panel title={l("Zgłoszenia","Reports")+(data.value ? " ("+data.value.total+")":"")}>{data.value ? <><ReportRows rows={data.value.items}/>
       {data.value.total>50 && <div className="flex gap-2"><button className="compact-action" disabled={!offset} onClick={()=>page(offset-50)}>←</button><button className="compact-action" disabled={offset+50>=data.value.total} onClick={()=>page(offset+50)}>→</button></div>}</> : <Feedback data={data}/>}</Panel></div>;
 }
-function Evidence({r}){
+function Evidence({r,onRefresh}){
   const l=useLabels(), [message,setMessage]=useState("");
+  const [busy,setBusy]=useState(false);
+  const url=r.target_url || r.redirect_chain?.[0] || "";
+  const eligible=/^https?:\/\//i.test(url);
+  async function refresh(){
+    setBusy(true);setMessage("");
+    try {
+      const result=await backend.intel("reports/"+encodeURIComponent(r.id)+"/enrich",{method:"POST"});
+      onRefresh();
+      setMessage(result.skipped ? l("Brak adresu do sprawdzenia.","No URL to check.") : result.errors.length
+        ? l("Sprawdzono. Nie uzyskano wszystkich danych: ","Checked. Some data unavailable: ")+result.errors.join(", ")
+        : l("Odświeżono dane infrastruktury.","Infrastructure refreshed."));
+    }catch(e){setMessage(e.message);}finally{setBusy(false);}
+  }
   const pairs=[
     [l("Źródło wyniku","Result origin"),originLabel(l,r.origin)],["URL",r.target_url],
     [l("Platforma","Platform"),r.platform],[l("Przekierowania","Redirect chain"),r.redirect_chain.join(" → ")],
     ["IP / ASN / "+l("kraj hostingu","hosting country"),[r.target_server_ip,r.hosting_asn,r.hosting_country].filter(Boolean).join(" / ")],
+    [l("Domena","Domain"),r.canonical_domain],
+    [l("Dostawca hostingu","Hosting provider"),r.hosting_org],
+    [l("Rejestrator domeny","Domain registrar"),r.registrar],
+    [l("Data rejestracji","Registration date"),r.domain_created_at],
+    [l("Wiek domeny (dni)","Domain age (days)"),r.domain_age_days],
+    [l("Serwery DNS","Nameservers"),r.nameservers?.join(", ")],
+    [l("Ostatnie sprawdzenie OSINT","Last OSINT check"),r.osint_at],
     [l("Kanał zgłoszenia","Source channel"),r.source_channel],
     ["UTC",r.created_at],["SHA-256",r.content_hash],["pHash",r.image_phash],
     [l("Podmioty","Entities"),r.detected_entities.join(", ")], [l("Kampania","Campaign"),r.campaign_id]];
@@ -87,7 +107,8 @@ function Evidence({r}){
       ...r.ai_report_json.findings.flatMap(f=>[...f.reasons,...f.evidence]),...r.ai_report_json.limitations,...(r.hosting_asn || r.hosting_country ? ["IP Geolocation by DB-IP · https://db-ip.com · CC BY 4.0"] : [])].join("\n"));
       setMessage(l("Skopiowano.","Copied."));}catch{setMessage(l("Brak dostępu do schowka.","Clipboard access unavailable."));}
   }
-  return <Panel title={l("Metadane techniczne","Technical metadata")}><dl className="space-y-1 text-sm">{pairs.map(([k,v])=><div key={k}><dt className="font-semibold">{k}</dt><dd className="break-all">{v||"—"}</dd></div>)}</dl>
+  return <Panel title={l("Infrastruktura i metadane techniczne","Infrastructure and technical metadata")}><div className="mb-4"><button type="button" className="compact-action" disabled={busy || !eligible} onClick={refresh}>{busy ? l("Sprawdzanie…","Checking…") : l("Odśwież OSINT i NASK","Refresh OSINT and NASK")}</button>
+    {!eligible && <p className="mt-1 text-xs text-slate-600">{l("Materiał nie zawiera adresu strony do sprawdzenia.","This material has no website URL to check.")}</p>}</div><dl className="space-y-1 text-sm">{pairs.map(([k,v])=><div key={k}><dt className="font-semibold">{k}</dt><dd className="break-all">{v??"—"}</dd></div>)}</dl>
     {(r.hosting_asn || r.hosting_country) && <a className="text-xs underline text-slate-600" href="https://db-ip.com">IP Geolocation by DB-IP</a>}
     <button type="button" className="compact-action" onClick={copy}>{l("Kopiuj paczkę dowodową (CERT / KNF)","Copy evidence package (CERT / KNF)")}</button><span role="status">{message}</span></Panel>;
 }
@@ -96,7 +117,7 @@ export function IncidentEvidence({incident}){
   const latest=useData(params.get("report") ? null : "reports?limit=1&incident="+encodeURIComponent(incident));
   const id=params.get("report") || latest.value?.items[0]?.id;
   const data=useData(id && "reports/"+encodeURIComponent(id));
-  return data.value?.incident_ids.includes(incident) ? <Evidence r={data.value}/> : null;
+  return data.value?.incident_ids.includes(incident) ? <Evidence key={id} r={data.value} onRefresh={data.reload}/> : null;
 }
 function ReviewForm({r,onSave}){
   const l=useLabels(); const [v,status]=useState(r.verdict_status),[note,setNote]=useState(r.analyst_notes),[msg,setMsg]=useState("");
@@ -113,7 +134,7 @@ export function ReportDetails(){
   return <div className="space-y-6"><h1 className={title}>{l("Szczegóły zgłoszenia","Report details")}</h1>
     <Panel title={l("Wynik analizy","Analysis result")}><RiskScore score={r.risk_score/100}/><p>{r.ai_report_json.summary}</p>
     {r.incident_ids.map(i=><Link key={i} className="underline focus-ring" to={"/incidents/"+i+"?report="+r.id}>{i} </Link>)}</Panel>
-    <Panel title={l("Opis zgłoszenia","Report description")}><p className="whitespace-pre-wrap">{r.excerpt || "—"}</p></Panel><Evidence r={r}/><ReviewForm key={id} r={r} onSave={data.reload}/></div>;
+    <Panel title={l("Opis zgłoszenia","Report description")}><p className="whitespace-pre-wrap">{r.excerpt || "—"}</p></Panel><Evidence key={id} r={r} onRefresh={data.reload}/><ReviewForm key={id} r={r} onSave={data.reload}/></div>;
 }
 const decisions = {
   confirmed:["Kampania potwierdzona przez człowieka","Human-confirmed campaign"],

@@ -125,6 +125,14 @@ def detail(request:Request, report_id:str):
     return public_row(row)
 
 
+@router.post("/reports/{report_id}/enrich")
+def refresh_report_infrastructure(request: Request, report_id: str):
+    result = request.app.state.intel.enrich_report(report_id, force=True)
+    if result is None:
+        raise HTTPException(404, "Nie znaleziono zgłoszenia.")
+    return {"skipped": result.get("skipped"), "errors": result.get("errors", [])}
+
+
 def _propagate(request:Request,where:str,args:list,verdict:str|None):
     """Carry a report / campaign verdict over to the linked incidents (clone memory, RAG few-shot)."""
     if verdict is None:
@@ -219,8 +227,8 @@ def review_campaign(request:Request,campaign_id:str,body:Review):
 def _campaign_reports(request:Request,campaign_id:str):
     with request.app.state.intel.connection() as c:
         rows=c.execute("SELECT * FROM threat_reports WHERE campaign_id=? ORDER BY created_at DESC,rowid DESC",(campaign_id,)).fetchall()
-        reporters=c.execute("SELECT count(DISTINCT coalesce(reporter_key_hash,reporter_ip_hash,id)) FROM threat_reports WHERE campaign_id=?",
-                            (campaign_id,)).fetchone()[0]
+        reporters=c.execute("SELECT count(DISTINCT reporter_key_hash),count(*)-count(reporter_key_hash) FROM threat_reports WHERE campaign_id=?",
+                            (campaign_id,)).fetchone()
     return [public_row(r) for r in rows],reporters
 
 
@@ -242,7 +250,7 @@ def campaign_detail(request:Request,campaign_id:str):
     with request.app.state.intel.connection() as c:
         review=c.execute("SELECT classification,description FROM campaign_reviews WHERE campaign_id=?",(campaign_id,)).fetchone()
     return {"campaign_id":campaign_id,"classification":review[0] if review else "pending","description":review[1] if review else "",
-            "reports":reports,"reporters":reporters,"entities":list(entities.values()),
+            "reports":reports,"reporters":reporters[0],"unidentified_reports":reporters[1],"entities":list(entities.values()),
             "graph":request.app.state.intel.get_graph(campaign_id)}
 
 

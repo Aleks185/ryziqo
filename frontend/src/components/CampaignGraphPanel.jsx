@@ -16,7 +16,7 @@ const KIND_COLORS = { domain: "#0891B2", ip: "#059669", entity: "#2563EB" };
 const field = "w-full border border-[#CBD5E1] rounded-sm px-3 py-2 text-sm bg-white focus-ring";
 const tool = "inline-flex items-center gap-1.5 border border-[#CBD5E1] bg-white rounded-sm px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-ring disabled:opacity-50";
 
-const colorOf = (n) => (n.type === "custom" ? KIND_COLORS[n.kind] || NODE_TYPES.custom.color : NODE_TYPES[n.type].color);
+const defaultColor = (n) => (n.type === "custom" ? KIND_COLORS[n.kind] || NODE_TYPES.custom.color : NODE_TYPES[n.type].color);
 const iconOf = (n) => (n.type === "custom" ? KIND_ICONS[n.kind] || CircleHelp : ICONS[n.type]);
 const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
@@ -145,6 +145,16 @@ function Details({ node, l, lang, demo }) {
 }
 
 export default function CampaignGraphPanel({ nodes, edges, saved, setSaved, dirty, onSave, summary, lang, demo }) {
+  const paletteKey = "ryziqo.campaignGraph.colors";
+  const [palette, setPalette] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(paletteKey)) || {}; } catch { return {}; }
+  });
+  function changePalette(next) {
+    setPalette(next);
+    try { localStorage.setItem(paletteKey, JSON.stringify(next)); } catch { /* Session preference. */ }
+  }
+  const colorOf = n => palette[n.type] || defaultColor(n);
+
   const l = (pl, en) => (lang === "en" ? en : pl);
   const boxRef = useRef(null);
   const svgRef = useRef(null);
@@ -358,9 +368,10 @@ export default function CampaignGraphPanel({ nodes, edges, saved, setSaved, dirt
           </svg>
           <ul className="absolute bottom-3 left-3 space-y-1 rounded-sm border border-[#CBD5E1] bg-white/95 px-3 py-2 text-xs text-slate-700 shadow-sm" aria-label={l("Legenda", "Legend")}>
             {Object.entries(NODE_TYPES).map(([type, meta]) => (
-              <li key={type} className="flex items-center gap-2"><span className="h-3 w-3 rounded-full border-2 bg-white" style={{ borderColor: meta.color }} />{meta[lang] || meta.pl}
+              <li key={type} className="flex items-center gap-2"><input type="color" className="h-5 w-5" aria-label={l("Kolor: ", "Color: ") + (meta[lang] || meta.pl)} value={palette[type] || meta.color} onChange={e => changePalette({...palette, [type]: e.target.value})} />{meta[lang] || meta.pl}
                 {typeCounts[type] ? <span className="font-mono text-slate-500">({typeCounts[type]})</span> : null}</li>
             ))}
+            <li><button type="button" onClick={() => changePalette({})}>{l("Przywróć kolory", "Restore colors")}</button></li>
             <li className="flex items-center gap-2"><span className="w-3 border-t-2 border-dashed border-[#EA580C]" />{l("Relacja analityka", "Analyst relation")}</li>
           </ul>
           <p className="absolute bottom-3 right-3 hidden rounded-sm bg-white/90 px-2 py-1 text-[11px] text-slate-500 sm:block">{l("Kółko: zoom · tło: przesuń · węzeł: przeciągnij / kliknij", "Wheel: zoom · background: pan · node: drag / click")}</p>

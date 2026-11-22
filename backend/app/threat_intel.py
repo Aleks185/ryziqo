@@ -283,7 +283,7 @@ class Intelligence:
             # campaign_locked: the analyst detached the report, automatic merging must not undo it.
             for column,kind in (("reporter_display_name","TEXT"),("reporter_key_hash","TEXT"),("text_content_hash","TEXT"),
                                 ("infrastructure","TEXT"),("module_ids","TEXT"),("campaign_locked","INTEGER NOT NULL DEFAULT 0"),
-                                ("hosting_org","TEXT"),("registrar","TEXT"),("nameservers","TEXT"),("osint_at","TEXT")):
+                                ("hosting_org","TEXT"),("registrar","TEXT"),("nameservers","TEXT"),("osint_at","TEXT"),("redirect_verified","INTEGER")):
                 if column not in existing:
                     c.execute(f"ALTER TABLE threat_reports ADD COLUMN {column} {kind}")
             c.executescript("""
@@ -525,7 +525,8 @@ class Intelligence:
                 updates[field]=info[field]
         if info.get("nameservers") and (force or not row["nameservers"]):
             updates["nameservers"]=json.dumps(info["nameservers"])
-        if len(info["redirect_chain"])>len(chain):
+        updates["redirect_verified"]=int(not any(e.startswith("redirects:") or e=="unexpected" for e in info.get("errors",[])) and bool(info.get("target_server_ip")))
+        if updates["redirect_verified"] and (force or not chain or len(info["redirect_chain"])>=len(chain)):
             updates["redirect_chain"]=json.dumps(info["redirect_chain"],ensure_ascii=False)
         updates["osint_at"]=utc_now_iso()
         with self.connection() as c:

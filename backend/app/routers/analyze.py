@@ -122,6 +122,13 @@ async def dispatch(request, body):
     modules = _unique_modules(body.module_ids)
     meta["module_ids"] = json.dumps(modules)
 
+    def schedule_osint(saved):
+        if persist and meta.get("target_url") and request.app.state.settings.osint_auto_enrich:
+            # fire-and-forget: OSINT sources are slow / flaky and must never delay or fail the analysis
+            task = asyncio.create_task(asyncio.to_thread(intel.enrich_report, saved.report.report_id))
+            _background.add(task)
+            task.add_done_callback(_background.discard)
+
     def known():
         if body.force_full:
             return None
@@ -143,6 +150,7 @@ async def dispatch(request, body):
 
     hit = await asyncio.to_thread(known)
     if hit:
+        schedule_osint(hit)
         return queue.completed(hit)
 
     async def operation():
@@ -156,6 +164,7 @@ async def dispatch(request, body):
             await asyncio.to_thread(enrich_page, meta, page, request.app.state.settings)
             hit = await asyncio.to_thread(known)
             if hit:
+                schedule_osint(hit)
                 return hit
         job.history = await asyncio.to_thread(intel.context, meta)
         fn = run_url if is_url else run_text
@@ -169,11 +178,7 @@ async def dispatch(request, body):
         if not meta["excerpt"] and response.items:
             meta["excerpt"] = response.items[0].content_excerpt
         saved = await asyncio.to_thread(intel.save, meta, body, response, origin, time.monotonic()-start)
-        if meta.get("target_url") and request.app.state.settings.osint_auto_enrich:
-            # fire-and-forget: OSINT sources are slow / flaky and must never delay or fail the analysis
-            task = asyncio.create_task(asyncio.to_thread(intel.enrich_report, saved.report.report_id))
-            _background.add(task)
-            task.add_done_callback(_background.discard)
+        schedule_osint(saved)
         return saved
     return queue.submit(operation)
 
