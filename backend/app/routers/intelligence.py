@@ -26,10 +26,11 @@ def public_row(row):
         r.pop(key,None)
     for key in ("redirect_chain","detected_entities","incident_ids","ai_report_json"):
         if key in r: r[key]=json.loads(r[key])
+    if "infrastructure" in r: r["infrastructure"]=json.loads(r["infrastructure"] or "{}")
     return r
 
 
-LIST_FIELDS="id,created_at,source_channel,reporter_display_name,source_type,target_url,canonical_domain,platform,target_server_ip,hosting_asn,hosting_country,analyst_notes,campaign_id,detected_entities,risk_score,verdict_status,excerpt,origin,incident_ids"
+LIST_FIELDS="infrastructure,domain_created_at,domain_age_days,redirect_chain,id,created_at,source_channel,reporter_display_name,source_type,target_url,canonical_domain,platform,target_server_ip,hosting_asn,hosting_country,analyst_notes,campaign_id,detected_entities,risk_score,verdict_status,excerpt,origin,incident_ids"
 
 
 @router.get("/leaderboard")
@@ -139,19 +140,40 @@ def campaigns(request:Request,active_only:bool=False,limit:int=Query(100,ge=1,le
 
 
 class CampaignDecision(BaseModel):
-    classification: Literal["confirmed", "false_coincidence"]
+    classification: Literal["pending","confirmed", "false_coincidence"]
     description: str = Field("", max_length=4000)
 
 
 @router.get("/campaigns/{campaign_id}")
 def campaign_detail(request: Request, campaign_id: str):
     with request.app.state.intel.connection() as c:
-        row=c.execute("""SELECT t.campaign_id, count(*) AS members, max(t.canonical_domain) AS domain,
+        row=c.execute("""SELECT t.campaign_id, count(*) AS members, count(DISTINCT t.reporter_key_hash) AS reporters, max(t.canonical_domain) AS domain,
                          r.classification, r.description FROM threat_reports t
                          LEFT JOIN campaign_reviews r ON r.campaign_id=t.campaign_id
                          WHERE t.campaign_id=? GROUP BY t.campaign_id HAVING count(*)>1""",(campaign_id,)).fetchone()
     if not row: raise HTTPException(404,"Nie znaleziono kampanii.")
     return dict(row)
+
+
+@router.post("/campaigns/{campaign_id}/enrich")
+async def enrich_campaign(request: Request, campaign_id: str):
+    from app.campaign_osint import update_reports
+    intel=request.app.state.intel
+    with intel.connection() as c:
+        rows=c.execute("SELECT id,target_url,redirect_chain FROM threat_reports WHERE campaign_id=?", (campaign_id,)).fetchall()
+    if not rows: raise HTTPException(404,"Nie znaleziono kampanii.")
+    groups={}
+    for row in rows:
+        url=(json.loads(row["redirect_chain"] or "[]") or [row["target_url"]])[0]
+        if url and url.startswith(("http://","https://")): groups.setdefault(url,[]).append(row["id"])
+    updated=0
+    import asyncio
+    entries=list(groups.items())
+    for start in range(0,len(entries),4):
+        batch=entries[start:start+4]
+        results=await asyncio.gather(*(update_reports(intel,ids,url) for url,ids in batch),return_exceptions=True)
+        updated+=sum(len(ids) for (_,ids),ok in zip(batch,results) if ok is True)
+    return {"updated":updated,"eligible":sum(map(len,groups.values()))}
 
 
 @router.put("/campaigns/{campaign_id}/decision")

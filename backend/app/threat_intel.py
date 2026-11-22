@@ -281,7 +281,7 @@ class Intelligence:
             # image), links a screenshot with a pasted copy; module_ids: modules the verdict covers;
             # campaign_locked: the analyst detached the report, automatic merging must not undo it.
             for column,kind in (("reporter_display_name","TEXT"),("reporter_key_hash","TEXT"),("text_content_hash","TEXT"),
-                                ("module_ids","TEXT"),("campaign_locked","INTEGER NOT NULL DEFAULT 0")):
+                                ("infrastructure","TEXT"),("module_ids","TEXT"),("campaign_locked","INTEGER NOT NULL DEFAULT 0")):
                 if column not in existing:
                     c.execute(f"ALTER TABLE threat_reports ADD COLUMN {column} {kind}")
             c.executescript("""
@@ -534,4 +534,6 @@ class Intelligence:
                 if old!=group: c.execute("UPDATE threat_reports SET campaign_id=? WHERE campaign_id=? AND campaign_locked=0",(group,old))
             data["campaign_id"]=group
             c.execute(f"INSERT INTO threat_reports ({','.join(data)}) VALUES ({','.join('?' for _ in data)})",tuple(data.values()))
+        from app.campaign_osint import schedule_report
+        schedule_report(self, report.report_id, (meta.get("redirect_chain") or [meta.get("target_url")])[0])
         return response

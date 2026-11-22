@@ -1,6 +1,7 @@
-import { ForceGraph, TYPES } from "./Graph";
+import CampaignDesk from "./CampaignDesk";
+import { demoCampaign, demoId } from "./campaignNetwork";
 import { useEffect, useState } from "react";
-import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { backend } from "@/lib/api";
 import { useApp } from "@/lib/store";
 import { Panel, RiskScore } from "@/components/Badges";
@@ -122,8 +123,11 @@ const decisions = {
 const pending=["Do oceny powiązania","Pending relationship review"];
 export function Campaigns(){
   const l=useLabels(),data=useData("campaigns?limit=500"),[filter,setFilter]=useState("");
-  const rows=data.value?.filter(c=>!filter || (c.classification || "pending")===filter);
+  const [hiddenDemo,setHiddenDemo]=useState(()=>localStorage.getItem("ryziqo.demo.dissolved")==="1");
+  const groups=data.mode==="demo" ? [] : data.value;
+  const rows=groups?.filter(c=>!filter || (c.classification || "pending")===filter);
   return <div className="space-y-6"><h1 className={title}>{l("Kampanie","Campaigns")}</h1>
+    {hiddenDemo ? <button className="compact-action" onClick={()=>{localStorage.removeItem("ryziqo.demo.dissolved");setHiddenDemo(false);}}>Przywróć kampanię DEMO</button> : <Link className="compact-action" to={"/campaigns/"+demoId}>Kampania demonstracyjna · VectraTrade Polska</Link>}
     <label>{l("Ocena powiązania","Relationship assessment")}<select className={field} value={filter} onChange={e=>setFilter(e.target.value)}>
       <option value="">{l("Wszystkie","All")}</option><option value="pending">{l(...pending)}</option>
       {Object.entries(decisions).map(([key,label])=><option key={key} value={key}>{l(...label)}</option>)}</select></label>
@@ -133,122 +137,9 @@ export function Campaigns(){
     </Panel>) : <Panel>{l("Brak kampanii.","No campaigns.")}</Panel>}</div>;
 }
 export function CampaignDetails(){
-  const {id}=useParams(),data=useData("campaigns/"+id);
-  return data.value ? <CampaignCase key={id} c={data.value}/> : <Feedback data={data}/>;
-}
-const campaignColorsKey="ryziqo.campaignGraph.colors";
-function readColors(){
-  try {
-    const saved=JSON.parse(localStorage.getItem(campaignColorsKey)) || {};
-    return Object.fromEntries(Object.entries(saved).filter(([type,color])=>TYPES[type] && /^#[0-9a-f]{6}$/i.test(color)));
-  } catch { return {}; }
-}
-function NodeDetails({node,data,lang,onSelect,close}){
-  const l=useLabels();
-  const neighbourIds=new Set(data.edges.filter(e=>e.source===node.id || e.target===node.id)
-    .map(e=>e.source===node.id ? e.target : e.source));
-  const neighbours=data.nodes.filter(n=>neighbourIds.has(n.id));
-  const report=node.report;
-  const id=node.id.slice(node.type.length+1);
-  const url=node.type==="incident" ? "/incidents/"+encodeURIComponent(id) : report ? "/reports/"+encodeURIComponent(id) : null;
-  const typeName=n=>n.type==="entity" ? l("Wykryty podmiot","Detected entity") : TYPES[n.type]?.[lang] || n.type;
-  return <section className="mt-3 rounded border bg-white p-4" aria-live="polite" data-testid="node-details">
-    <div className="flex justify-between gap-2"><strong>{typeName(node)}</strong><button onClick={close} aria-label={l("Zamknij","Close")}>×</button></div>
-    <p className="break-words">{node.label}</p>
-    {report && <dl className="my-2 grid gap-2 sm:grid-cols-2">{[
-      [l("Dodano","Submitted"),new Date(report.created_at).toLocaleString(lang)],
-      ["Status",states[report.verdict_status] && l(...states[report.verdict_status])],
-      [l("Źródło","Source"),report.target_url || report.platform || report.source_type],
-      [l("Notatka analityka","Analyst note"),report.analyst_notes]
-    ].filter(([,v])=>v).map(([k,v])=><div key={k}><dt className="text-xs text-slate-600">{k}</dt><dd className="break-words">{v}</dd></div>)}</dl>}
-    <h3 className="mt-3 font-semibold">{l("Bezpośrednie powiązania","Direct connections")} ({neighbours.length})</h3>
-    <ul className="max-h-52 overflow-auto">{neighbours.map(n=><li key={n.id}><button className="text-left underline break-words" onClick={()=>onSelect(n)}>{typeName(n)} · {n.label}</button></li>)}</ul>
-    {url && <Link className="compact-action mt-3" to={url}>{l("Otwórz pełną kartę","Open full details")}</Link>}
-  </section>;
-}
-function CampaignMap({campaign}){
-  const {lang}=useApp(),l=useLabels();
-  const [selected,setSelected]=useState(null);
-  const [colors,setColors]=useState(readColors);
-  function saveColors(next){
-    setColors(next);
-    try {localStorage.setItem(campaignColorsKey,JSON.stringify(next));} catch { /* Session-only colors. */ }
-  }
-  const [state,setState]=useState({});
-  useEffect(()=>{
-    const controller=new AbortController();
-    async function load(){
-      const nodes=new Map(),edges=[];
-      function node(type,key,label){
-        const id=type+":"+key;
-        if(!nodes.has(id))nodes.set(id,{id,type,label,weight:0});
-        nodes.get(id).weight++;
-        return id;
-      }
-      const root=node("campaign",campaign.campaign_id,campaign.domain || (lang==="en" ? "Campaign" : "Kampania"));
-      let offset=0;
-      while(true){
-        const page=await backend.intel("reports?"+new URLSearchParams({campaign:campaign.campaign_id,limit:200,offset}),{signal:controller.signal});
-        for(const r of page.items){
-          const id=node("report",r.id,r.excerpt || r.target_url || r.source_type);
-          nodes.get(id).report=r;
-          edges.push({source:root,target:id,type:"member"});
-          const connect=(type,key,label)=>{if(key)edges.push({source:id,target:node(type,key,label),type});};
-          connect("domain",r.canonical_domain,r.canonical_domain);
-          connect("server",r.target_server_ip,r.target_server_ip);
-          for(const entity of new Set(r.detected_entities || []))connect("entity",entity.toLowerCase(),entity);
-          for(const incident of new Set(r.incident_ids || []))connect("incident",incident,incident);
-        }
-        offset+=page.items.length;
-        if(offset>=page.total || !page.items.length)break;
-      }
-      if(!controller.signal.aborted)setState({data:{nodes:[...nodes.values()],edges}});
-    }
-    load().catch(e=>{if(!controller.signal.aborted)setState({error:e.message});});
-    return ()=>controller.abort();
-  },[campaign.campaign_id,campaign.domain,lang]);
-  function open(n){
-    setSelected(n);
-  }
-  return <Panel title={l("Graf powiązań kampanii","Campaign relationship map")}>
-    <p className="mb-3 text-sm text-slate-600">{l("Kliknij węzeł, aby sprawdzić jego dane i przejść do powiązanych elementów. Wspólne domeny, adresy IP i podmioty łączą materiały.","Select a node to inspect it and explore its connections. Shared domains, IP addresses and entities connect materials.")}</p>
-    {state.data ? <div>
-      <details className="mb-2"><summary className="cursor-pointer">{l("Kolory węzłów","Node colors")}</summary>
-        <div className="my-2 flex flex-wrap items-center gap-3">{[...new Set(state.data.nodes.map(n=>n.type))].map(type=><label key={type} className="flex items-center gap-1 text-sm">
-          <input type="color" value={colors[type] || TYPES[type].color} onChange={e=>saveColors({...colors,[type]:e.target.value})}/>
-          {type==="entity" ? l("Wykryty podmiot","Detected entity") : TYPES[type][lang]}</label>)}
-          <button className="compact-action" onClick={()=>saveColors({})}>{l("Przywróć domyślne","Restore defaults")}</button></div></details>
-      <div className={selected ? "grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,30%)]" : ""}>
-        <ForceGraph data={state.data} onOpen={open} lang={lang} colors={colors} selectedId={selected?.id}/>
-        {selected && <NodeDetails node={selected} data={state.data} lang={lang} onSelect={open} close={()=>setSelected(null)}/>}</div>
-    </div> : <p role="status">{state.error || l("Wczytywanie…","Loading…")}</p>}
-  </Panel>;
-}
-function CampaignCase({c}){
-  const l=useLabels(),navigate=useNavigate(),[decision,setDecision]=useState(c.classification || ""),
-    [description,setDescription]=useState(c.description || ""),[message,setMessage]=useState(""),[busy,setBusy]=useState(false),
-    [offset,setOffset]=useState(0),path="campaigns/"+c.campaign_id;
-  const reports=useData("reports?campaign="+encodeURIComponent(c.campaign_id)+"&limit=50&offset="+offset);
-  async function submit(remove){
-    if(remove && !window.confirm(l("Rozwiązać kampanię? Zgłoszenia i ich oceny pozostaną w bazie.","Dissolve campaign? Reports and verdicts will be retained.")))return;
-    setBusy(true);
-    try{
-      if(remove){await backend.intel(path,{method:"DELETE"});navigate("/campaigns");}
-      else{await backend.intel(path+"/decision",{method:"PUT",body:{classification:decision,description}});setMessage(l("Zapisano ocenę powiązania.","Relationship assessment saved."));}
-    }catch(e){setMessage(e.message);}finally{setBusy(false);}
-  }
-  return <div className="space-y-6"><Link to="/campaigns" className="underline">{l("Wszystkie kampanie","All campaigns")}</Link>
-    <h1 className={title}>{l("Kampania","Campaign")} · {c.domain || c.campaign_id}</h1>
-    <CampaignMap campaign={c}/>
-    <Panel title={l("Ocena powiązania","Relationship assessment")}><fieldset disabled={busy} className="space-y-3">
-      <label>{l("Decyzja analityka","Analyst decision")}<select className={field} value={decision} onChange={e=>setDecision(e.target.value)}>
-        <option value="" disabled>{l(...pending)}</option>{Object.entries(decisions).map(([k,v])=><option key={k} value={k}>{l(...v)}</option>)}</select></label>
-      <label className="block">{l("Opis kampanii i uzasadnienie","Campaign description and rationale")}<textarea className={field} maxLength={4000} value={description} onChange={e=>setDescription(e.target.value)}/></label>
-      <button className="compact-action" disabled={!decision} onClick={()=>submit(false)}>{l("Zapisz ocenę","Save assessment")}</button>{" "}
-      <button className="compact-action" onClick={()=>submit(true)}>{l("Rozwiąż błędną kampanię","Dissolve incorrect campaign")}</button>
-      <p role="status">{message}</p></fieldset></Panel>
-    <Panel title={l("Zgłoszenia w kampanii","Campaign reports")}><p className="mb-3 text-sm">{l("Otwórz materiał, aby sprawdzić metadane, opisać go i ocenić jako fake lub fałszywy alarm.","Open a report to inspect metadata, add notes and decide its verdict.")}</p>
-      {reports.value ? <><ReportRows rows={reports.value.items}/>{reports.value.total>50 && <div><button disabled={!offset} onClick={()=>setOffset(offset-50)}>←</button><button disabled={offset+50>=reports.value.total} onClick={()=>setOffset(offset+50)}>→</button></div>}</> : <Feedback data={reports}/>}</Panel></div>;
+  const {id}=useParams(),data=useData(id===demoId ? null : "campaigns/"+id);
+  if(id===demoId || data.mode==="demo")return <CampaignDesk key={demoId} campaign={demoCampaign} demo/>;
+  return data.value ? <CampaignDesk key={id} campaign={data.value}/> : <Feedback data={data}/>;
 }
 export function Diagnostics(){
   const l=useLabels(),data=useData("diagnostics",3000),d=data.value;
