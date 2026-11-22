@@ -35,22 +35,50 @@ class CloneMatch:
     title: str
 
 
-def source_domain(url: str) -> str:
-    """Registrable-ish host for http(s) URLs (without www.), else the whole URL (mock://, manual://)."""
-    parsed = urlparse(url)
-    if parsed.scheme in ("http", "https") and parsed.hostname:
-        host = parsed.hostname.lower()
-        return host[4:] if host.startswith("www.") else host
-    return url.lower()
+ANONYMOUS_SOURCES = ("manual://text",)
+
+
+def source_domain(url: str | None) -> str:
+    """Origin of a document for clone / few-shot decisions.
+
+    http(s): the registrable domain (same definition as the report registry, `domain_of`), so
+    `promo.broker.pl` and `lp.broker.pl` are one site. Pasted text without a source URL has no origin
+    (""): two different pastes are never "the same domain". Other schemes (mock://, unique
+    manual://screenshot/<sha>) are their own origin.
+    """
+    from app.threat_intel import domain_of
+
+    raw = (url or "").strip()
+    if not raw or raw.lower() in ANONYMOUS_SOURCES:
+        return ""
+    parsed = urlparse(raw)
+    if parsed.scheme in ("http", "https"):
+        return domain_of(raw) or (parsed.hostname or "").lower()
+    return raw.lower()
+
+
+def is_other_source(a: str | None, b: str | None) -> bool:
+    """True when two documents do not come from the same site (unknown origin counts as other)."""
+    da, db = source_domain(a), source_domain(b)
+    return not da or not db or da != db
 
 
 def best_similarity(doc_vectors: list[list[float]], other_vectors: list[list[float]]) -> float:
-    best = 0.0
-    for a in doc_vectors:
-        for b in other_vectors:
-            if a and b and len(a) == len(b):
-                best = max(best, cosine_similarity(a, b))
-    return best
+    """Cosine similarity on the richest representation both documents have.
+
+    The semantic embedding (largest shared dimensionality, e.g. 768-dim Ollama) decides; the
+    128-dim hashing vector is only a fallback, otherwise its hash collisions could override a low
+    semantic score and fire a false clone match.
+    """
+    dims = {len(a) for a in doc_vectors if a} & {len(b) for b in other_vectors if b}
+    if not dims:
+        return 0.0
+    dim = max(dims)
+    return max(
+        (cosine_similarity(a, b) for a in doc_vectors for b in other_vectors
+         if a and b and len(a) == dim and len(b) == dim),
+        default=0.0,
+    )
 
 
 class Retriever:
@@ -92,7 +120,9 @@ class Retriever:
                             if row["module_id"] == module_id
                             and row["label"] is want_label
                             and sim >= self.rag_min_similarity
-                            and row["source_url"] != doc.source_url
+                            # another snapshot of the same page is not an example; pasted texts
+                            # (manual://text) are told apart by content hash / id, not by URL
+                            and not (row["source_url"] == doc.source_url and source_domain(doc.source_url))
                         ),
                         None,
                     )
@@ -112,7 +142,6 @@ class Retriever:
                 if picked:
                     rag[module_id] = picked
 
-        doc_domain = source_domain(doc.source_url)
         clones = [
             CloneMatch(
                 incident_id=row["id"],
@@ -125,12 +154,13 @@ class Retriever:
             for sim, row in scored
             if sim >= self.clone_threshold
             and row["label"] is True
-            and source_domain(row["source_url"]) != doc_domain
+            and is_other_source(row["source_url"], doc.source_url)
         ]
         return rag, clones[:3]
 
 
-def clone_rule(clone: CloneMatch) -> ViolatedRule:
+def clone_rule(clone: CloneMatch, others: list[CloneMatch] | None = None) -> ViolatedRule:
+    related = [clone.incident_id, *(c.incident_id for c in others or [] if c.incident_id != clone.incident_id)]
     return ViolatedRule(
         rule_id="CAMPAIGN_CLONE_MATCH",
         rule_name="Klon potwierdzonej kampanii na innej domenie",
@@ -140,6 +170,7 @@ def clone_rule(clone: CloneMatch) -> ViolatedRule:
             f"Treść w {int(clone.similarity * 100)}% podobna do potwierdzonego incydentu {clone.incident_id} "
             f"({clone.source_url})."
         ),
+        related_incident_ids=list(dict.fromkeys(related)),
     )
 
 

@@ -326,7 +326,7 @@ class CrawlQueueWorker:
 
         modules = list(req.module_ids)
         processed = 1
-        created_or_updated = len(await self.analyze_page(root, modules, job_id=job_id))
+        created_or_updated = len(await self._analyze_and_register(root, modules, job_id))
 
         visited = {canonicalize_url(req.target_url), canonicalize_url(root.final_url)}
         frontier: list[tuple[FetchedPage, int]] = [(root, 0)]
@@ -347,11 +347,22 @@ class CrawlQueueWorker:
                     logger.info("Pominięto podstronę %s: %s", link, exc)
                     continue
                 visited.add(canonicalize_url(child.final_url))
-                created_or_updated += len(await self.analyze_page(child, modules, job_id=job_id))
+                created_or_updated += len(await self._analyze_and_register(child, modules, job_id))
                 processed += 1
                 frontier.append((child, depth + 1))
 
         await self._finish_job(job_id, req, processed, created_or_updated)
+
+    async def _analyze_and_register(self, page: FetchedPage, modules: list[int], job_id: str) -> list:
+        """Analyze a crawled page and register it in the threat-report registry at once (campaigns,
+        fast path and the graph see watchlist / discovery / manual crawl results without a restart)."""
+        saved = await self.analyze_page(page, modules, job_id=job_id)
+        if saved and (registry := getattr(self, "report_registry", None)):
+            try:
+                await asyncio.to_thread(registry.import_crawled_page, page, saved, modules, self.settings)
+            except Exception:  # the registry is auxiliary: a failure must not fail the crawl job
+                logger.exception("Nie udało się zarejestrować zgłoszenia dla %s", page.source_url)
+        return saved
 
     async def _finish_job(
         self,

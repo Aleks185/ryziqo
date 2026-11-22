@@ -16,7 +16,8 @@ from fastapi.responses import StreamingResponse
 from app.ai.vision_analyzer import VISION_SCHEMA, VISION_SYSTEM_PROMPT, VisionFindings
 from app.analysis_queue import current_job, TERMINAL, status
 from app.database import utc_now_iso
-from app.threat_intel import input_meta, enrich_page, mask_personal_data
+from app.threat_intel import (apply_read_text, base_summary, enrich_page, fast_path_summary, input_meta,
+                              mask_personal_data)
 from app.ocr import read_text as ocr_read_text
 from app.image_processor import normalize_screenshot
 from app.models import AnalysisReport, AnalyzeResponse, AnalyzeScreenshotRequest, AnalyzeTextRequest, AnalyzeUrlRequest, WebSocketAlertEvent
@@ -115,21 +116,27 @@ async def dispatch(request, body):
     # happen inside the analysis queue, so slow pages cannot block unrelated text submissions.
     async with request.app.state.signature_slots:
         meta = {**await asyncio.to_thread(input_meta, body), **identity}
+    modules = _unique_modules(body.module_ids)
+    meta["module_ids"] = json.dumps(modules)
 
     def known():
         if body.force_full:
             return None
-        match, count = intel.confirmed(meta)
+        match, count = intel.confirmed(meta, modules)
         if match is None:
             return None
         response = AnalyzeResponse.model_validate_json(match["response_json"])
-        previous_summary = response.report.summary
+        # The stored copy keeps the original summary; the "matched" note is added to the answer only,
+        # so it never stacks up when a later report matches this one.
+        summary = base_summary(response.report.summary)
         response.report.source_type = meta["source_type"]
-        response.report.summary = f"Dopasowano do potwierdzonego zagrożenia w bazie zgłoszeń (liczba wcześniejszych zgłoszeń: {count}). {previous_summary}"
-        if not persist:
+        response.report.summary = summary
+        if persist:
+            response = intel.save(meta, body, response, "fast_path", time.monotonic()-started, match)
+        else:
             response.report.result_origin = "fast_path"
-            return response
-        return intel.save(meta, body, response, "fast_path", time.monotonic()-started, match)
+        response.report.summary = fast_path_summary(summary, count)
+        return response
 
     hit = await asyncio.to_thread(known)
     if hit:
@@ -150,6 +157,7 @@ async def dispatch(request, body):
         job.history = await asyncio.to_thread(intel.context, meta)
         fn = run_url if is_url else run_text
         response = await fn(request, body, persist)
+        apply_read_text(meta, getattr(request.state, "screenshot_text", None))
         origin = ("cache" if job.metrics["cache_hit"] else
                   "ollama" if any(not i.is_demo_fallback for i in response.items) else "rules")
         if not persist:
@@ -263,6 +271,7 @@ async def run_text(request: Request, body: AnalyzeTextRequest | AnalyzeScreensho
             raise HTTPException(422, "Nie udało się odczytać reklamy z obrazu.")
         if body.source_channel == "public_form":
             content = mask_personal_data(content)
+        request.state.screenshot_text = content  # links the screenshot with pasted copies of the text
         digest = hashlib.sha256(pixels).hexdigest()
         page = build_manual_text_page(content, body.title, "manual://screenshot/" + digest)
         page.screenshots = [pixels]

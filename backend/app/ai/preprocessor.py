@@ -32,6 +32,22 @@ FONT_SIZE_RE = re.compile(r"font-size\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*px", re.IGNO
 COLOR_HEX_RE = re.compile(r"(?:^|[;\s])color\s*:\s*(#[0-9a-fA-F]{3,6})", re.IGNORECASE)
 WIDTH_PX_RE = re.compile(r"width\s*:\s*([0-9]+)\s*px", re.IGNORECASE)
 TOKEN_RE = re.compile(r"[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9%]{2,}")
+# Frequent Polish / English function words: they carry no topic and inflate similarity of unrelated
+# texts (local hashing vector, Jaccard hints for the LLM context).
+STOPWORDS = frozenset(
+    """
+    na do się nie jest to że lub dla ze za po od przez przy pod nad bez we wo co jak już tak też oraz
+    ale czy by być był była było są być może jego jej ich ten ta te tego tej tym ty ja my wy on ona ono
+    oni one mi mnie ci cię go mu nam was wam im aby gdy jeśli tylko jeszcze bardzo tu tam kto który która
+    które którzy np itd itp jako albo ani lecz więc czyli też sobie swoje swój swoją
+    the and or of to in on for with is are was be by at as an it this that from not you your we our
+    """.split()
+)
+
+
+def content_tokens(tokens: list[str], min_len: int = 2) -> list[str]:
+    """Tokens without stop-words (and shorter than `min_len`)."""
+    return [t for t in tokens if len(t) >= min_len and t.lower() not in STOPWORDS]
 
 # --- Anti-obfuscation ---------------------------------------------------------------------------
 ZERO_WIDTH_RE = re.compile("[­​-‏‪-‮⁠-⁤﻿]")
@@ -467,15 +483,22 @@ def extract_sections(
 
 
 def build_local_embedding(tokens: list[str], dim: int = 128) -> list[float]:
-    """Deterministic L2-normalized feature-hashing vector representation (zero external APIs)."""
+    """Deterministic L2-normalized feature-hashing vector representation (zero external APIs).
+
+    Stop-words are dropped and term frequency is damped (1 + log tf), so shared function words and
+    repeated boilerplate do not make unrelated texts look like clones.
+    """
     vec = [0.0] * dim
-    if not tokens:
+    counts: dict[str, int] = {}
+    for tok in content_tokens(tokens) or tokens:
+        counts[tok] = counts.get(tok, 0) + 1
+    if not counts:
         return vec
-    for tok in tokens:
+    for tok, tf in counts.items():
         digest = hashlib.blake2b(tok.encode("utf-8"), digest_size=8).digest()
         idx = int.from_bytes(digest[:4], "little") % dim
         sign = 1.0 if (digest[4] & 1) == 0 else -1.0
-        vec[idx] += sign
+        vec[idx] += sign * (1.0 + math.log(tf))
 
     norm = math.sqrt(sum(v * v for v in vec))
     if norm == 0.0:

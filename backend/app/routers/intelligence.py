@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.analysis_queue import TERMINAL
 from app.graph import build_graph
+from app.verdicts import linked_incidents, sync_incidents
 
 router = APIRouter(prefix="/api/v1/intelligence", tags=["intelligence"])
 Verdict = Literal["new","confirmed_fake","requires_review","false_positive"]
@@ -33,21 +34,28 @@ LIST_FIELDS="id,created_at,source_channel,reporter_display_name,source_type,targ
 
 @router.get("/leaderboard")
 def leaderboard(request: Request):
-    """Expose points and public nicknames without reporter identifiers."""
+    """Expose points and public nicknames without reporter identifiers.
+
+    One point per confirmed fake (campaign) per signed reporter: every reporter of a fake scores,
+    even if others reported it first, but reporting the same fake again earns nothing more.
+    """
     with request.app.state.intel.connection() as conn:
         rows = conn.execute("""
             WITH confirmed AS (
-                SELECT reporter_display_name AS nickname,
-                       count(*) OVER (PARTITION BY reporter_key_hash) AS points,
-                       row_number() OVER (
-                           PARTITION BY reporter_key_hash ORDER BY created_at DESC, rowid DESC
-                       ) AS latest
+                SELECT reporter_key_hash, campaign_id, reporter_display_name, created_at, rowid AS seq
                 FROM threat_reports
                 WHERE source_channel = 'public_form' AND verdict_status = 'confirmed_fake'
                   AND reporter_display_name IS NOT NULL AND reporter_key_hash IS NOT NULL
+            ),
+            named AS (
+                SELECT reporter_key_hash, reporter_display_name AS nickname,
+                       row_number() OVER (PARTITION BY reporter_key_hash ORDER BY created_at DESC, seq DESC) AS latest
+                FROM confirmed
             )
-            SELECT nickname, points FROM confirmed WHERE latest = 1
-            ORDER BY points DESC, nickname COLLATE NOCASE, nickname
+            SELECT n.nickname, count(DISTINCT c.campaign_id) AS points
+            FROM confirmed c JOIN named n ON n.reporter_key_hash = c.reporter_key_hash AND n.latest = 1
+            GROUP BY c.reporter_key_hash
+            ORDER BY points DESC, n.nickname COLLATE NOCASE, n.nickname
         """)
         return [dict(row) for row in rows]
 
@@ -80,6 +88,18 @@ def detail(request:Request, report_id:str):
     return public_row(row)
 
 
+def _propagate(request:Request,where:str,args:list,verdict:str|None):
+    """Carry a report / campaign verdict over to the linked incidents (clone memory, RAG few-shot)."""
+    if verdict is None:
+        return
+    with request.app.state.intel.connection() as c:
+        ids=linked_incidents(c.execute("SELECT incident_ids FROM threat_reports WHERE "+where,args).fetchall())
+        # other reports of the same incidents (cache / fast-path copies) must not keep a stale verdict
+        c.execute("""UPDATE threat_reports SET verdict_status=? WHERE EXISTS (SELECT 1 FROM json_each(incident_ids)
+                     WHERE value IN (SELECT value FROM json_each(?)))""",(verdict,json.dumps(ids)))
+    sync_incidents(request.app.state.db,ids,verdict)
+
+
 @router.patch("/reports/{report_id}")
 def review(request:Request,report_id:str,body:Review):
     updates=body.model_dump(exclude_none=True)
@@ -87,24 +107,46 @@ def review(request:Request,report_id:str,body:Review):
     with request.app.state.intel.connection() as c:
         count=c.execute("UPDATE threat_reports SET "+",".join(k+"=?" for k in updates)+" WHERE id=?",[*updates.values(),report_id]).rowcount
     if not count: raise HTTPException(404,"Nie znaleziono zgłoszenia.")
+    _propagate(request,"id=?",[report_id],body.verdict_status)
     return detail(request,report_id)
 
 
+@router.post("/reports/{report_id}/detach")
+def detach(request:Request,report_id:str):
+    """Split a wrongly grouped report off its campaign (it stays separate on later merges)."""
+    group=request.app.state.intel.detach(report_id)
+    if group is None: raise HTTPException(404,"Nie znaleziono zgłoszenia.")
+    return {"campaign_id":group}
+
+
 @router.get("/campaigns")
-def campaigns(request:Request):
+def campaigns(request:Request,active_only:bool=False,limit:int=Query(100,ge=1,le=500),offset:int=Query(0,ge=0)):
+    """Groups of related reports. `active_only` matches the dashboard: groups not entirely rejected."""
+    having="count(*)>1"+(" AND sum(verdict_status!='false_positive')>0" if active_only else "")
     with request.app.state.intel.connection() as c:
-        rows=c.execute("""SELECT campaign_id,count(*) AS members,max(risk_score) AS risk_score,
-            min(canonical_domain) AS domain,min(target_server_ip) AS server_ip,max(created_at) AS last_seen
-            FROM threat_reports GROUP BY campaign_id HAVING count(*)>1 ORDER BY last_seen DESC""")
+        rows=c.execute(f"""SELECT campaign_id,count(*) AS members,max(risk_score) AS risk_score,
+            (SELECT d.canonical_domain FROM threat_reports d WHERE d.campaign_id=t.campaign_id
+               AND coalesce(d.canonical_domain,'')!='' GROUP BY d.canonical_domain
+               ORDER BY count(*) DESC,d.canonical_domain LIMIT 1) AS domain,
+            min(target_server_ip) AS server_ip,max(created_at) AS last_seen,
+            sum(verdict_status='new') AS new_count,sum(verdict_status='confirmed_fake') AS confirmed_count,
+            sum(verdict_status='requires_review') AS review_count,sum(verdict_status='false_positive') AS fp_count,
+            (SELECT n.analyst_notes FROM threat_reports n WHERE n.campaign_id=t.campaign_id AND n.analyst_notes!=''
+               ORDER BY n.created_at DESC,n.rowid DESC LIMIT 1) AS analyst_notes
+            FROM threat_reports t GROUP BY campaign_id HAVING {having}
+            ORDER BY last_seen DESC LIMIT ? OFFSET ?""",(limit,offset))
         return [dict(r) for r in rows]
 
 
 @router.patch("/campaigns/{campaign_id}")
 def review_campaign(request:Request,campaign_id:str,body:Review):
-    if body.verdict_status is None: raise HTTPException(422,"Wybierz status kampanii.")
+    updates=body.model_dump(exclude_none=True)
+    if not updates: raise HTTPException(422,"Wybierz status kampanii lub dodaj notatkę.")
     with request.app.state.intel.connection() as c:
-        count=c.execute("UPDATE threat_reports SET verdict_status=? WHERE campaign_id=?",(body.verdict_status,campaign_id)).rowcount
+        count=c.execute("UPDATE threat_reports SET "+",".join(k+"=?" for k in updates)+" WHERE campaign_id=?",
+                        [*updates.values(),campaign_id]).rowcount
     if not count: raise HTTPException(404,"Nie znaleziono kampanii.")
+    _propagate(request,"campaign_id=?",[campaign_id],body.verdict_status)
     return {"updated":count}
 
 

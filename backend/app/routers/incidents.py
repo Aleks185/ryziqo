@@ -7,9 +7,10 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import Response
 
-from app.ai.retrieval import RAG_MIN_SIMILARITY, best_similarity, source_domain
+from app.ai.retrieval import RAG_MIN_SIMILARITY, best_similarity, is_other_source
 from app.database import utc_now_iso
 from app.evidence import build_evidence_pack, version_history
+from app.verdicts import STATUS_LABEL, verdict_for_label, verdict_for_status
 from app.models import (
     Incident,
     IncidentDetail,
@@ -91,7 +92,6 @@ async def similar_incidents(
     if not vectors:
         return []
     threshold = request.app.state.settings.ai_clone_similarity_threshold
-    domain = source_domain(inc.source_url)
     scored = []
     for row in db.list_verified_incident_vectors(exclude_content_hash=inc.content_hash):
         if row["id"] == inc.id:
@@ -114,7 +114,7 @@ async def similar_incidents(
             label=row["label"],
             status=statuses[row["id"]],
             analyst_note=row["analyst_note"],
-            is_clone=row["label"] is True and sim >= threshold and source_domain(row["source_url"]) != domain,
+            is_clone=row["label"] is True and sim >= threshold and is_other_source(row["source_url"], inc.source_url),
         )
         for sim, row in scored[:limit]
     ]
@@ -177,12 +177,17 @@ async def update_incident_status(
     if updated is None:
         raise HTTPException(status_code=404, detail=f"Incydent '{incident_id}' nie istnieje.")
 
-    verdict = {"confirmed":"confirmed_fake","false_positive":"false_positive","in_review":"requires_review",
-               "dismissed":"false_positive"}.get(updated.status,"new")
+    # A decided status also settles the reference label, so the clone memory cannot keep treating
+    # a rejected incident as a confirmed fake (and vice versa).
+    if updated.status in STATUS_LABEL and updated.ground_truth_label is not STATUS_LABEL[updated.status]:
+        updated = db.update_incident_label(incident_id, STATUS_LABEL[updated.status]) or updated
+    # Every report of this incident (the original, cache and fast-path hits) gets the decision
     with request.app.state.intel.connection() as c:
-        c.execute("""UPDATE threat_reports SET verdict_status=?, analyst_notes=? WHERE id=(
-            SELECT t.id FROM threat_reports t,json_each(t.incident_ids) j WHERE j.value=?
-            ORDER BY t.created_at DESC,t.rowid DESC LIMIT 1)""",(verdict,updated.analyst_note or "",incident_id))
+        c.execute(
+            """UPDATE threat_reports SET verdict_status=?, analyst_notes=?
+               WHERE EXISTS (SELECT 1 FROM json_each(incident_ids) WHERE value=?)""",
+            (verdict_for_status(updated.status), updated.analyst_note or "", incident_id),
+        )
     await ws_manager.broadcast(
         WebSocketAlertEvent(
             type="status_updated",
@@ -207,6 +212,18 @@ async def update_incident_label(
     updated = db.update_incident_label(incident_id, body.ground_truth_label)
     if updated is None:
         raise HTTPException(status_code=404, detail=f"Incydent '{incident_id}' nie istnieje.")
+
+    # A reference label decides undecided reports too (enables the fast path for a confirmed fake);
+    # an explicit analyst verdict on a report is not overridden.
+    verdict = verdict_for_label(body.ground_truth_label)
+    if verdict:
+        with request.app.state.intel.connection() as c:
+            c.execute(
+                """UPDATE threat_reports SET verdict_status=?
+                   WHERE verdict_status IN ('new', 'requires_review')
+                     AND EXISTS (SELECT 1 FROM json_each(incident_ids) WHERE value=?)""",
+                (verdict, incident_id),
+            )
 
     await ws_manager.broadcast(
         WebSocketAlertEvent(
