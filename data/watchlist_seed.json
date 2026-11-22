@@ -2,7 +2,8 @@
   "description": "Startowa watchlista: publiczne strony podmiotów z rejestru KNF (punkt odniesienia dla wykrywania podszywania się i porównania ostrzeżeń o ryzyku). Ładowana tylko, gdy watchlista jest pusta (WATCHLIST_SEED_ON_START=true) albo przez POST /api/v1/watchlist/seed. Wpisy z rejestru oznaczone is_synthetic_demo są pomijane.",
   "items": [
     {"url": "https://www.xtb.com/pl", "label": "XTB S.A. (rejestr KNF)", "module_ids": [2, 3], "use_playwright": false, "follow_depth": 0},
-    {"url": "https://bossa.pl", "label": "DM BOŚ / Bossa (rejestr KNF)", "module_ids": [2, 3], "use_playwright": false, "follow_depth": 0}
+    {"url": "https://bossa.pl", "label": "DM BOŚ / Bossa (rejestr KNF)", "module_ids": [2, 3], "use_playwright": false, "follow_depth": 0},
+    {"url": "https://www.saxobank.com", "label": "Saxo Bank A/S (rejestr KNF)", "module_ids": [2, 3], "use_playwright": false, "follow_depth": 0}
   ],
   "include_registry_domains": true,
   "exclude_domains": ["etoro.com", "trading212.com"],
