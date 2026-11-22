@@ -86,7 +86,7 @@ Confirm the model runs on the GPU — in a second terminal while a prompt is bei
 ollama ps
 ```
 The `PROCESSOR` column must say **`100% GPU`**. If you see something like `35%/65% CPU/GPU`, the model
-does not fit in VRAM — lower the context window (`OLLAMA_NUM_CTX=4096`, step 5) or use a smaller model.
+does not fit in VRAM — lower the context window (`OLLAMA_NUM_CTX`, step 5) or use a smaller model.
 
 ---
 
@@ -115,9 +115,9 @@ OLLAMA_EMBED_MODEL=nomic-embed-text
 
 # GPU: 120 is plenty. CPU-only: use 300 — a timed-out call silently falls back to rules only
 OLLAMA_TIMEOUT_SECONDS=120
-OLLAMA_NUM_PREDICT=1024
-# Lower to 4096 if `ollama ps` shows a CPU/GPU split
-OLLAMA_NUM_CTX=4096
+OLLAMA_NUM_PREDICT=300
+OLLAMA_NUM_CTX=2048
+OLLAMA_KEEP_ALIVE=60m
 
 # Screenshot analysis needs Playwright (step 8); keep off for the first runs
 OLLAMA_VISION_ENABLED=false
@@ -132,7 +132,16 @@ memory and the calls only get slower.
 
 ---
 
-Set the Ollama server environment to `OLLAMA_NUM_PARALLEL=1`, `OLLAMA_MAX_LOADED_MODELS=1` and `OLLAMA_MAX_QUEUE=8`. Restart the native server after changing its environment. The Compose AI profile supplies these variables directly. Ryziqo requests a one-minute keep-alive.
+Set the Ollama server environment to `OLLAMA_NUM_PARALLEL=1`, `OLLAMA_MAX_LOADED_MODELS=1` and `OLLAMA_MAX_QUEUE=8`. Also enable Flash Attention and an 8-bit KV cache, which roughly halves the cache memory:
+
+```powershell
+# cmd.exe: set OLLAMA_FLASH_ATTENTION=1 / set OLLAMA_KV_CACHE_TYPE=q8_0 (current window only)
+$env:OLLAMA_FLASH_ATTENTION = "1"
+$env:OLLAMA_KV_CACHE_TYPE = "q8_0"
+ollama serve
+```
+
+To make them permanent use `setx OLLAMA_FLASH_ATTENTION 1` and `setx OLLAMA_KV_CACHE_TYPE q8_0`, then quit the Ollama tray app and start it again. Restart the native server after changing its environment. The Compose AI profile supplies these variables directly. Ryziqo requests a 60-minute keep-alive (`OLLAMA_KEEP_ALIVE`).
 
 ## 6. Run the tests and the benchmark
 
@@ -255,7 +264,7 @@ Docker users: the backend container already points at the host via `http://host.
 |---|---|
 | `/api/v1/health` → `"mode": "demo_fallback"` | Ollama not running or wrong `OLLAMA_BASE_URL`. Check `curl http://localhost:11434/api/tags`. |
 | Benchmark `ollama` results equal to `fallback` | Calls time out (fallback is silent). Raise `OLLAMA_TIMEOUT_SECONDS`, check the backend log for `Błąd inferencji Ollama`. |
-| `ollama ps` shows CPU/GPU split | Model + context do not fit in VRAM: `OLLAMA_NUM_CTX=4096`, close other GPU apps, or use a smaller model. |
+| `ollama ps` shows CPU/GPU split | Model + context do not fit in VRAM: `OLLAMA_NUM_CTX=2048`, close other GPU apps, or use a smaller model. |
 | `nvidia-smi` works but Ollama uses the CPU | Update the NVIDIA driver, restart Ollama; on hybrid laptops set *High-performance NVIDIA processor* for `ollama.exe` in NVIDIA Control Panel. |
 | Log: `Ollama odrzuciła JSON Schema w polu 'format'` | Ollama older than 0.5 — upgrade (`winget upgrade Ollama.Ollama`); the backend falls back to plain JSON mode meanwhile. |
 | `model "gemma3:4b" not found` | Run `ollama pull gemma3:4b`; the backend auto-picks another installed model family if the exact tag is missing. |

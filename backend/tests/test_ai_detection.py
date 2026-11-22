@@ -328,6 +328,8 @@ async def test_rag_examples_injected_into_prompt() -> None:
     rag, _ = retriever.analyze(doc, [1])
     assert [e.label for e in rag[1]] == [True, False]
     fake = FakeOllama({1: _assessment(0.5)})
+    # Enough context for the examples; trimming under a small num_ctx is covered by the budget loop
+    fake.num_ctx, fake.num_predict = 4096, 1024
     await run_analytical_pipeline(doc, [1], _registry(), fake, retriever=retriever)
     prompt = fake.calls[0]["user"]
     assert "POTWIERDZONE NARUSZENIE" in prompt and "FAŁSZYWY ALARM" in prompt
@@ -456,8 +458,8 @@ async def test_ollama_schema_format_falls_back_to_json(monkeypatch: pytest.Monke
 
         body = _json.loads(request.content)
         seen.append(body["format"])
-        assert body["options"]["num_ctx"] == 4096 and body["options"]["num_predict"] == 1024
-        assert body["keep_alive"] == "1m" and body["stream"]
+        assert body["options"]["num_ctx"] == 2048 and body["options"]["num_predict"] == 300
+        assert body["keep_alive"] == "60m" and body["stream"]
         if isinstance(body["format"], dict):
             return httpx.Response(400, json={"error": "invalid format"})
         return httpx.Response(200, json={"done": True, "response": '{"llm_risk_score": 0.3, "summary_reason": "ok"}'})

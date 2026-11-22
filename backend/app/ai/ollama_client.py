@@ -33,6 +33,7 @@ class OllamaClient:
         self.timeout = settings.ollama_timeout_seconds
         self.num_predict = settings.ollama_num_predict
         self.num_ctx = settings.ollama_num_ctx
+        self.keep_alive = settings.ollama_keep_alive
         self.vision_enabled = settings.ollama_vision_enabled
         self.vision_model_override = settings.ollama_vision_model.strip()
         self.active_model: str = settings.ollama_model
@@ -75,7 +76,7 @@ class OllamaClient:
 
     async def _post_generate(self, body: dict[str, Any]) -> dict[str, Any] | None:
         async with self.session(body["model"]) as client:
-            body.update(keep_alive="1m", stream=True)
+            body.update(keep_alive=self.keep_alive, stream=True)
             for attempt in range(2):
                 async with client.stream("POST", f"{self.base_url}/api/generate", json=body) as resp:
                     if attempt == 0 and resp.status_code in (400, 500) and isinstance(body["format"], dict):
@@ -219,7 +220,7 @@ class OllamaClient:
             async with self.session(self.embed_model) as client:
                 resp = await client.post(
                     f"{self.base_url}/api/embeddings",
-                    json={"model": self.embed_model, "prompt": text[:1500], "keep_alive": "1m"},
+                    json={"model": self.embed_model, "prompt": text[:1500], "keep_alive": self.keep_alive},
                 )
                 if resp.status_code != 200:
                     return None

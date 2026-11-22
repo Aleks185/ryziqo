@@ -45,7 +45,7 @@ async def request_llm_assessment(
     user = build_user_prompt(doc, metadata, budget, examples)
     # A UTF-8 byte is a conservative upper bound for a byte-fallback token. Reserve
     # 128 additional tokens for the Gemma chat template, BOS and role boundaries.
-    input_limit = 4096 - 1024 - 128
+    input_limit = ollama.num_ctx - ollama.num_predict - 128
     if len((system + user).encode()) > input_limit:
         system = (ROLE_BY_MODULE[module_id] + " Odpowiadaj po polsku zgodnie ze schematem JSON. "
                   "Oceń tożsamość, afiliację, gwarancje zysku, presję czasu, podszywanie się, "
