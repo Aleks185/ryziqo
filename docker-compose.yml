@@ -102,8 +102,17 @@ services:
     image: "searxng/searxng:${SEARXNG_IMAGE_TAG:-2026.11.21-c6ee3e9fd}"
     container_name: investwatch-searxng
     profiles: ["discovery"]
+    # Bez SEARXNG_SECRET w .env (albo z wartością z .env.example) klucz jest losowany przy każdym starcie,
+    # więc żadna instancja nie działa na jawnym, domyślnym sekrecie.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        if [ -z "$$SEARXNG_SECRET" ] || [ "$$SEARXNG_SECRET" = "change-me" ]; then
+        SEARXNG_SECRET="$$(head -c 32 /dev/urandom | od -An -tx1 | tr -dc 0-9a-f)"; export SEARXNG_SECRET; fi;
+        exec /usr/local/searxng/entrypoint.sh
     environment:
-      SEARXNG_SECRET: "${SEARXNG_SECRET:-change-me}"
+      SEARXNG_SECRET: "${SEARXNG_SECRET:-}"
       SEARXNG_BASE_URL: "http://searxng:8080/"
     volumes:
       - ./deploy/searxng/settings.yml:/etc/searxng/settings.yml:ro

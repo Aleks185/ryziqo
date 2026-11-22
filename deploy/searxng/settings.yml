@@ -6,7 +6,7 @@ general:
   instance_name: "Ryziqo discovery"
 
 server:
-  # Nadpisywane przez zmienną SEARXNG_SECRET z .env
+  # Zawsze nadpisywane przez SEARXNG_SECRET (z .env albo losowane przy starcie, patrz docker-compose.yml)
   secret_key: "change-me-in-env"
   limiter: false
   image_proxy: false
