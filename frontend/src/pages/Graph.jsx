@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from "d3-force";
 import { backend } from "@/lib/api";
 import { riskLevel } from "@/lib/config";
@@ -7,7 +7,9 @@ import { formatRiskPercent } from "@/lib/utils";
 import { useApp } from "@/lib/store";
 import { Panel } from "@/components/Badges";
 
-const TYPES = {
+export const TYPES = {
+  report: { color: "#0B192C", pl: "Zgłoszenie", en: "Report" },
+  server: { color: "#A16207", pl: "IP serwera", en: "Server IP" },
   incident: { color: "#0B192C", pl: "Incydent", en: "Incident" },
   promoter: { color: "#7C3AED", pl: "Promotor / finfluencer", en: "Promoter / finfluencer" },
   entity: { color: "#2563EB", pl: "Podmiot (rejestr KNF)", en: "Entity (KNF register)" },
@@ -40,7 +42,7 @@ function localGraph(incidents, minScore) {
     nodes.get(id).weight += 1;
     return id;
   };
-  incidents.filter((i) => i.risk_score >= minScore && !["false_positive", "dismissed"].includes(i.status)).forEach((i) => {
+  incidents.filter((i) => i.risk_score >= minScore).forEach((i) => {
     const inc = add("incident", i.id, i.title || i.id, { risk_score: i.risk_score, module_id: i.module_id });
     const host = hostOf(i.source_url);
     if (host) edges.push({ source: inc, target: add("domain", host, host), type: "published_on" });
@@ -71,7 +73,7 @@ function useGraphData(minScore) {
   return remote.minScore === minScore ? remote : {};
 }
 
-function ForceGraph({ data, onOpen, lang }) {
+export function ForceGraph({ data, onOpen, lang, colors = {}, selectedId }) {
   const svgRef = useRef(null);
   const simRef = useRef(null);
   const drag = useRef(null);
@@ -202,15 +204,15 @@ function ForceGraph({ data, onOpen, lang }) {
           {graph.nodes.map((n) => {
             if (n.x == null) return null;
             const r = radius(n);
-            const ring = n.type === "incident" ? RISK_RING[riskLevel(n.risk_score)] : "#FFFFFF";
+            const ring = n.type === "incident" && n.risk_score != null ? RISK_RING[riskLevel(n.risk_score)] : "#FFFFFF";
             const showLabel = n.type !== "incident" || hover === n.id;
             return (
               <g key={n.id} transform={`translate(${n.x},${n.y})`} opacity={dim(n.id) ? 0.2 : 1}
-                className="cursor-pointer" data-testid="graph-node" data-type={n.type}
+                role="button" tabIndex={0} aria-label={(TYPES[n.type]?.[lang] || n.type) + " · " + n.label} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(n); } }} className="cursor-pointer" data-testid="graph-node" data-type={n.type}
                 onPointerDown={(e) => onPointerDown(e, n)} onPointerEnter={() => setHover(n.id)} onPointerLeave={() => setHover(null)}>
                 {n.type === "referral_code" || n.type === "warning_list"
-                  ? <rect x={-r} y={-r} width={2 * r} height={2 * r} transform="rotate(45)" fill={TYPES[n.type].color} stroke="#FFFFFF" strokeWidth={1.5} />
-                  : <circle r={r} fill={TYPES[n.type]?.color || "#64748B"} stroke={ring} strokeWidth={n.type === "incident" ? 3 : 1.5} />}
+                  ? <rect x={-r} y={-r} width={2 * r} height={2 * r} transform="rotate(45)" fill={colors[n.type] || TYPES[n.type].color} stroke="#FFFFFF" strokeWidth={1.5} />
+                  : <circle r={r} fill={colors[n.type] || TYPES[n.type]?.color || "#64748B"} stroke={selectedId === n.id ? "#0F172A" : ring} strokeWidth={selectedId === n.id ? 5 : n.type === "incident" ? 3 : 1.5} />}
                 {showLabel && <text x={r + 4} y={4} fontSize={11} fill="#0F172A" stroke="#F8FAFC" strokeWidth={3} paintOrder="stroke">{n.label.length > 32 ? `${n.label.slice(0, 31)}…` : n.label}</text>}
               </g>
             );
@@ -221,7 +223,7 @@ function ForceGraph({ data, onOpen, lang }) {
         <div className="pointer-events-none absolute left-3 top-3 max-w-xs bg-white/95 border border-[#CBD5E1] rounded-sm px-3 py-2 text-xs shadow-sm">
           <div className="font-semibold text-slate-500 uppercase tracking-wider text-[10px]">{TYPES[hovered.type]?.[lang] || hovered.type}</div>
           <div className="text-slate-900 [overflow-wrap:anywhere]">{hovered.label}</div>
-          {hovered.type === "incident" && <div className="font-mono mt-0.5">{formatRiskPercent(hovered.risk_score || 0)} · M{hovered.module_id}</div>}
+          {hovered.type === "incident" && hovered.risk_score != null && <div className="font-mono mt-0.5">{formatRiskPercent(hovered.risk_score || 0)} · M{hovered.module_id}</div>}
           {hovered.registry_status && <div className="mt-0.5 text-slate-600">{hovered.registry_status}</div>}
           {neighbours && <div className="mt-0.5 text-slate-500">{neighbours.size - 1} {lang === "en" ? "connections" : "powiązań"}</div>}
         </div>
@@ -230,15 +232,36 @@ function ForceGraph({ data, onOpen, lang }) {
   );
 }
 
-export default function Graph() {
+export default function Graph({ incidents, module }) {
   const { lang, mode } = useApp();
   const navigate = useNavigate();
-  const [minScore, setMinScore] = useState(0.5);
-  const { value, error } = useGraphData(minScore);
+  const [minScore, setMinScore] = useState(0);
+  const { value: network, error } = useGraphData(minScore);
+  const [selected, setSelected] = useState("");
+  const cases = useMemo(() => incidents.filter(i => i.risk_score >= minScore), [incidents, minScore]);
+  const value = useMemo(() => {
+    if (!network) return null;
+    const local = localGraph(cases, minScore);
+    const ids = new Set(cases.map(i => "incident:" + i.id));
+    const relevant = id => !id.startsWith("incident:") || ids.has(id);
+    const edges = new Map();
+    const visible = new Set(ids);
+    for (const edge of [...network.edges, ...local.edges]) {
+      if (!(ids.has(edge.source) || ids.has(edge.target)) || !relevant(edge.source) || !relevant(edge.target)) continue;
+      edges.set(JSON.stringify([edge.source, edge.target, edge.type]), edge);
+      visible.add(edge.source);
+      visible.add(edge.target);
+    }
+    const nodes = new Map([...local.nodes, ...network.nodes].filter(n => visible.has(n.id)).map(n => [n.id, n]));
+    return { nodes: [...nodes.values()], edges: [...edges.values()], truncated: network.truncated };
+  }, [network, cases, minScore]);
+  const current = cases.find(i => i.id === selected) || cases[0];
+  const nodeId = "incident:" + current?.id;
+  const related = new Set(value?.edges.filter(e => e.source === nodeId || e.target === nodeId).map(e => e.source === nodeId ? e.target : e.source));
   const l = (pl, en) => (lang === "en" ? en : pl);
   const open = (node) => {
-    if (node.type === "incident") navigate(`/incidents/${encodeURIComponent(node.id.slice("incident:".length))}`);
-    else if (node.type === "campaign" && mode === "online") navigate(`/reports?campaign=${encodeURIComponent(node.id.slice("campaign:".length))}`);
+    if (node.type === "incident") setSelected(node.id.slice("incident:".length));
+    else if (node.type === "campaign" && mode === "online") navigate(`/campaigns/${encodeURIComponent(node.id.slice("campaign:".length))}`);
   };
   const counts = useMemo(() => {
     const c = {};
@@ -249,7 +272,7 @@ export default function Graph() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0B192C]">{l("Mapa powiązań kampanii", "Campaign relationship map")}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0B192C]">{l("Mapa powiązań incydentów", "Incident relationship map")} · M{module}</h1>
         <p className="text-sm text-slate-600 mt-1 max-w-3xl">{l(
           "Incydenty połączone przez wspólnych promotorów, reklamowane podmioty, domeny docelowe linków, kody polecające i kampanie z bazy zgłoszeń. Czerwona przerywana linia oznacza klon potwierdzonej kampanii.",
           "Incidents linked by shared promoters, advertised entities, link target domains, referral codes and campaigns from the report registry. A red dashed line marks a clone of a confirmed campaign.",
@@ -269,7 +292,7 @@ export default function Graph() {
         {value?.truncated && <p className="mt-2 text-xs text-slate-500">{l("Pokazano część węzłów (limit). Podnieś próg ryzyka, aby zawęzić mapę.", "Only part of the nodes is shown (limit). Raise the risk threshold to narrow the map.")}</p>}
         {mode !== "online" && <p className="mt-2 text-xs text-slate-500">{l("Tryb DEMO: mapa z lokalnych incydentów (bez linków, kodów polecających i kampanii).", "DEMO mode: map built from local incidents (no links, referral codes or campaigns).")}</p>}
         <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-700" aria-label={l("Legenda", "Legend")}>
-          {Object.entries(TYPES).map(([type, meta]) => (
+          {Object.entries(TYPES).filter(([type]) => !["report", "server"].includes(type)).map(([type, meta]) => (
             <li key={type} className="flex items-center gap-1.5">
               <span className={`h-3 w-3 ${type === "referral_code" || type === "warning_list" ? "rotate-45" : "rounded-full"}`} style={{ background: meta.color }} />
               {meta[lang] || meta.pl}{counts[type] ? <span className="font-mono text-slate-500">({counts[type]})</span> : null}
@@ -277,8 +300,24 @@ export default function Graph() {
           ))}
           <li className="flex items-center gap-1.5"><span className="w-5 border-t-2 border-dashed border-[#DC2626]" />{l("Klon kampanii", "Campaign clone")}</li>
         </ul>
-        <p className="mt-2 text-xs text-slate-500">{l("Kółko myszy: zoom · przeciągnij tło: przesuń · kliknij incydent: karta sprawy.", "Mouse wheel: zoom · drag background: pan · click an incident: case card.")}</p>
+        <p className="mt-2 text-xs text-slate-500">{l("Kółko myszy: zoom · przeciągnij tło: przesuń · kliknij incydent, aby zobaczyć szczegóły poniżej.", "Mouse wheel: zoom · drag background: pan · click an incident for details below.")}</p>
       </Panel>
+      {current && <Panel title={l("Szczegóły incydentu", "Incident details")}>
+        <label className="block text-sm font-semibold">{l("Wybierz incydent", "Choose incident")}
+          <select className="block mt-1 w-full rounded border p-2" value={current.id} onChange={e => setSelected(e.target.value)}>
+            {cases.map(i => <option key={i.id} value={i.id}>{i.title || i.id} · {i.id}</option>)}
+          </select>
+        </label>
+        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+          {[[l("Gdzie opublikowano", "Published at"), [current.source_platform, current.source_url].filter(Boolean).join(" · ")],
+            [l("Kto promuje", "Promoter"), current.promoter_name], [l("Reklamowany podmiot", "Advertised entity"), current.entity_name],
+            [l("Kiedy wykryto", "Detected"), current.detected_at && new Date(current.detected_at).toLocaleString(lang)],
+            [l("Treść materiału", "Source excerpt"), current.content_excerpt], [l("Ryzyko", "Risk"), formatRiskPercent(current.risk_score)]].map(([label, detail]) =>
+            <div key={label}><dt className="text-xs text-slate-600">{label}</dt><dd className="break-words">{detail || l("Brak danych", "Unavailable")}</dd></div>)}
+        </dl>
+        <ul className="my-4 text-sm">{value?.nodes.filter(n => related.has(n.id)).map(n => <li key={n.id}>{TYPES[n.type]?.[lang]} · {n.label}</li>)}</ul>
+        <Link className="compact-action" to={`/incidents/${encodeURIComponent(current.id)}`}>{l("Otwórz pełną kartę sprawy", "Open full case file")}</Link>
+      </Panel>}
     </div>
   );
 }

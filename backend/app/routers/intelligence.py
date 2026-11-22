@@ -29,7 +29,7 @@ def public_row(row):
     return r
 
 
-LIST_FIELDS="id,created_at,source_channel,reporter_display_name,source_type,target_url,canonical_domain,platform,target_server_ip,campaign_id,detected_entities,risk_score,verdict_status,excerpt,origin,incident_ids"
+LIST_FIELDS="id,created_at,source_channel,reporter_display_name,source_type,target_url,canonical_domain,platform,target_server_ip,hosting_asn,hosting_country,analyst_notes,campaign_id,detected_entities,risk_score,verdict_status,excerpt,origin,incident_ids"
 
 
 @router.get("/leaderboard")
@@ -124,7 +124,7 @@ def campaigns(request:Request,active_only:bool=False,limit:int=Query(100,ge=1,le
     """Groups of related reports. `active_only` matches the dashboard: groups not entirely rejected."""
     having="count(*)>1"+(" AND sum(verdict_status!='false_positive')>0" if active_only else "")
     with request.app.state.intel.connection() as c:
-        rows=c.execute(f"""SELECT campaign_id,count(*) AS members,max(risk_score) AS risk_score,
+        rows=c.execute(f"""SELECT campaign_id,(SELECT classification FROM campaign_reviews WHERE campaign_id=t.campaign_id) AS classification,count(*) AS members,max(risk_score) AS risk_score,
             (SELECT d.canonical_domain FROM threat_reports d WHERE d.campaign_id=t.campaign_id
                AND coalesce(d.canonical_domain,'')!='' GROUP BY d.canonical_domain
                ORDER BY count(*) DESC,d.canonical_domain LIMIT 1) AS domain,
@@ -136,6 +136,46 @@ def campaigns(request:Request,active_only:bool=False,limit:int=Query(100,ge=1,le
             FROM threat_reports t GROUP BY campaign_id HAVING {having}
             ORDER BY last_seen DESC LIMIT ? OFFSET ?""",(limit,offset))
         return [dict(r) for r in rows]
+
+
+class CampaignDecision(BaseModel):
+    classification: Literal["confirmed", "false_coincidence"]
+    description: str = Field("", max_length=4000)
+
+
+@router.get("/campaigns/{campaign_id}")
+def campaign_detail(request: Request, campaign_id: str):
+    with request.app.state.intel.connection() as c:
+        row=c.execute("""SELECT t.campaign_id, count(*) AS members, max(t.canonical_domain) AS domain,
+                         r.classification, r.description FROM threat_reports t
+                         LEFT JOIN campaign_reviews r ON r.campaign_id=t.campaign_id
+                         WHERE t.campaign_id=? GROUP BY t.campaign_id HAVING count(*)>1""",(campaign_id,)).fetchone()
+    if not row: raise HTTPException(404,"Nie znaleziono kampanii.")
+    return dict(row)
+
+
+@router.put("/campaigns/{campaign_id}/decision")
+def decide_campaign(request: Request, campaign_id: str, body: CampaignDecision):
+    with request.app.state.intel.connection() as c:
+        c.execute("BEGIN IMMEDIATE")
+        if c.execute("SELECT count(*) FROM threat_reports WHERE campaign_id=?",(campaign_id,)).fetchone()[0]<2:
+            raise HTTPException(404,"Nie znaleziono kampanii.")
+        c.execute("""INSERT INTO campaign_reviews VALUES (?,?,?) ON CONFLICT(campaign_id) DO UPDATE SET
+                     classification=excluded.classification, description=excluded.description""",
+                  (campaign_id,body.classification,body.description))
+    return {"classification":body.classification,"description":body.description}
+
+
+@router.delete("/campaigns/{campaign_id}")
+def dissolve_campaign(request: Request, campaign_id: str):
+    with request.app.state.intel.connection() as c:
+        c.execute("BEGIN IMMEDIATE")
+        if c.execute("SELECT count(*) FROM threat_reports WHERE campaign_id=?",(campaign_id,)).fetchone()[0]<2:
+            raise HTTPException(404,"Nie znaleziono kampanii.")
+        count=c.execute("""UPDATE threat_reports SET campaign_id=lower(hex(randomblob(16))), campaign_locked=1
+                           WHERE campaign_id=?""",(campaign_id,)).rowcount
+        c.execute("DELETE FROM campaign_reviews WHERE campaign_id=?",(campaign_id,))
+    return {"detached":count}
 
 
 @router.patch("/campaigns/{campaign_id}")

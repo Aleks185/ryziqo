@@ -1,5 +1,5 @@
 import "@/App.css";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AppProvider } from "@/lib/store";
 import { Header, Sidebar } from "@/components/Header";
@@ -11,10 +11,10 @@ import IncidentDetail from "@/pages/IncidentDetail";
 import Calibration from "@/pages/Calibration";
 import LogPage from "@/pages/LogPage";
 
-import { Reports, ReportDetails, Campaigns, Diagnostics } from "@/pages/Intelligence";
+import { Reports, ReportDetails, Campaigns, CampaignDetails, Diagnostics } from "@/pages/Intelligence";
 import Citizen from "@/pages/Citizen";
 import Leaderboard from "@/pages/Leaderboard";
-import Graph from "@/pages/Graph";
+
 import Crawler from "@/pages/Crawler";
 
 function App() {
@@ -37,8 +37,9 @@ function App() {
                   <Route path="/incidents/:id" element={<IncidentDetail />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/reports/:id" element={<ReportDetails />} />
+                  <Route path="/campaigns/:id" element={<CampaignDetails />} />
                   <Route path="/campaigns" element={<Campaigns />} />
-                  <Route path="/graph" element={<Graph />} />
+                  <Route path="/graph" element={<Navigate to="/" replace />} />
                   <Route path="/diagnostics" element={<Diagnostics />} />
                   <Route path="/calibration" element={<Calibration />} />
                   <Route path="/log" element={<LogPage />} />
