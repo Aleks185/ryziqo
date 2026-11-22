@@ -141,6 +141,7 @@ async def dispatch(request, body):
         summary = base_summary(response.report.summary)
         response.report.source_type = meta["source_type"]
         response.report.summary = summary
+        response.report.llm_seconds = None
         if persist:
             response = intel.save(meta, body, response, "fast_path", time.monotonic()-started, match)
         else:
@@ -170,6 +171,7 @@ async def dispatch(request, body):
         fn = run_url if is_url else run_text
         response = await fn(request, body, persist)
         apply_read_text(meta, getattr(request.state, "screenshot_text", None))
+        response.report.llm_seconds = round(job.metrics["llm_s"], 2) or None
         origin = ("cache" if job.metrics["cache_hit"] else
                   "ollama" if any(not i.is_demo_fallback for i in response.items) else "rules")
         if not persist:

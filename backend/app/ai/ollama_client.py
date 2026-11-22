@@ -103,6 +103,8 @@ class OllamaClient:
                         if part.get("done"):
                             if job:
                                 job.metrics["load_s"] += part.get("load_duration", 0) / 1e9
+                                # total_duration covers model load + prompt eval + generation, not lock wait
+                                job.metrics["llm_s"] += part.get("total_duration", 0) / 1e9
                             return self._parse_json_response("".join(parts))
         return None
 

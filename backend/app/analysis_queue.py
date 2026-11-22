@@ -27,7 +27,7 @@ class Job:
         self.changed = asyncio.Event()
         self.started = self.updated = time.monotonic()
         self.result = self.error = self.task = None
-        self.metrics = {"queue_s": 0, "preprocessing_s": 0, "load_s": 0, "ttft_s": None, "cache_hit": False}
+        self.metrics = {"queue_s": 0, "preprocessing_s": 0, "load_s": 0, "llm_s": 0, "ttft_s": None, "cache_hit": False}
         self.emit("status", "pending")
 
     def emit(self, event, value):
