@@ -204,3 +204,23 @@ def test_label_patch_updates_calibration(tmp_path: Path) -> None:
 
         missing = client.patch("/api/v1/incidents/nope/label", json={"ground_truth_label": True})
         assert missing.status_code == 404
+
+
+def test_list_incidents_date_to_includes_whole_day(tmp_path) -> None:
+    from app.database import Database
+    from app.models import Incident
+
+    db = Database(tmp_path / "t.db", tmp_path / "store")
+    db.init_schema()
+    for inc_id, ts in [("inc_a", "2026-11-21T23:30:00Z"), ("inc_b", "2026-11-22T10:00:00Z"), ("inc_c", "2026-11-23T00:00:00Z")]:
+        db.upsert_incident(
+            Incident(
+                id=inc_id, module_id=1, module_name="M1", entity_name="X", source_url=f"https://a.example/{inc_id}",
+                title="t", content_excerpt="e", risk_score=0.5, risk_level="medium", status="new",
+                detected_at=ts, updated_at=ts,
+            )
+        )
+    ids = lambda **kw: sorted(i.id for i in db.list_incidents(limit=50, offset=0, **kw)[0])  # noqa: E731
+    assert ids(date_from="2026-11-22", date_to="2026-11-22") == ["inc_b"]
+    assert ids(date_to="2026-11-22") == ["inc_a", "inc_b"]
+    assert ids(date_to="2026-11-22T10:00:00Z") == ["inc_a", "inc_b"]
