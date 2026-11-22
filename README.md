@@ -17,9 +17,11 @@ docs/        dokumentacja szczegółowa
 ## Quick Start
 
 ```bash
-cp .env.example .env
+cp .env.example .env   # opcjonalnie — każda zmienna ma wartość domyślną
 docker compose up --build
 ```
+
+Pierwszy build trwa kilka–kilkanaście minut (obraz backendu ~2 GB z Chromium i OCR; mniejszy: `INSTALL_PLAYWRIGHT=false`, `INSTALL_OCR=false` w `.env`).
 
 | Co | Adres |
 |---|---|
@@ -30,15 +32,16 @@ docker compose up --build
 
 Bez Ollamy backend działa na regułach UKNF (`demo_fallback`). Modele AI:
 
-- **Ollama na hoście:** `ollama pull gemma3:4b` i `ollama pull nomic-embed-text`; w `.env` `OLLAMA_BASE_URL` (domyślnie `http://host.docker.internal:11434`).
-- **Ollama w kontenerze:** `OLLAMA_BASE_URL=http://ollama:11434` w `.env`, potem `docker compose --profile ai up --build`.
+- **Ollama na hoście:** `ollama pull gemma3:4b` i `ollama pull nomic-embed-text`; backend łączy się z `http://host.docker.internal:11434` (domyślnie). Na Linuksie Ollama musi słuchać na wszystkich interfejsach: `sudo systemctl edit ollama` → `[Service]` `Environment="OLLAMA_HOST=0.0.0.0"`, potem `sudo systemctl restart ollama`.
+- **Ollama w kontenerze:** `OLLAMA_BASE_URL=http://ollama:11434` w `.env`, potem `docker compose --profile ai up --build` (modele pobierają się automatycznie). Z GPU NVIDIA: `docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile ai up --build`.
+- **Sprawdzenie:** `curl http://localhost:8000/api/v1/health` — `"mode": "live"` oznacza aktywne AI, `"demo_fallback"` — tryb reguł; log backendu „aktywny tryb fallback” oznacza brak połączenia.
 - **Discovery (SearXNG):** `DISCOVERY_ENABLED=true` w `.env`, potem `docker compose --profile discovery up --build`.
 
 ## Wymagania sprzętowe
 
 - Docker i Docker Compose.
 - RAM: 4 GB bez modelu językowego, 8–16 GB z lokalnym modelem.
-- Dla Ollamy zalecana karta NVIDIA z min. 6–8 GB VRAM (`gemma3:4b` ~50 tokenów/s; na CPU kilka–kilkanaście). Serwis `ollama` w `docker-compose.yml` rezerwuje GPU — na maszynie bez NVIDIA usuń blok `deploy`.
+- Dla Ollamy zalecana karta NVIDIA z min. 6–8 GB VRAM (`gemma3:4b` ~50 tokenów/s; na CPU kilka–kilkanaście). Serwis `ollama` (profil `ai`) domyślnie działa na CPU; GPU włącza `docker-compose.gpu.yml` (wymaga NVIDIA Container Toolkit lub Docker Desktop z WSL2).
 - Bez Dockera: Python 3.11+, Node.js 20+, Yarn 1.22 (`uvicorn app.main:app` w `backend/`, `yarn start` w `frontend/`).
 
 ## Konfiguracja
@@ -63,9 +66,14 @@ Wszystkie parametry opisuje [.env.example](.env.example); `.env` jest ignorowany
 ## Testy i audyt zależności
 
 ```bash
-cd backend && pytest -q && pip-audit -r requirements-dev.txt
+cd backend
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
+pytest -q                          # bez Ollamy; testy Playwrighta pomijane, gdy nie jest zainstalowany
+pip-audit -r requirements-dev.txt
 python -m scripts.evaluate_detection --mode both   # precision / recall / F1
-cd ../frontend && yarn audit
+cd ../frontend && yarn install --frozen-lockfile && yarn audit
 ```
 
 Wyniki audytów: [docs/security-licenses.md](docs/security-licenses.md).

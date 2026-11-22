@@ -1,0 +1,12 @@
+# Dostęp do GPU NVIDIA dla serwisu ollama (profil "ai").
+# Wymaga NVIDIA Container Toolkit (Linux) albo Docker Desktop z WSL2 (Windows).
+# Użycie: docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile ai up --build
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
