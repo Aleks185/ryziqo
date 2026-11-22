@@ -328,28 +328,36 @@ class Database:
     ) -> list[dict[str, Any]]:
         """Analyst-verified incidents with stored vectors (RAG few-shot and campaign-clone search).
 
-        label = True for ground_truth_label = 1 (or status 'confirmed' without a label),
-        label = False for ground_truth_label = 0 (or status 'false_positive' without a label).
+        The analyst's decision (`status`) wins over the reference label: status 'confirmed' → True,
+        'false_positive' / 'dismissed' → False; otherwise `ground_truth_label` decides. A stale
+        label = 1 left from a sample therefore cannot keep a rejected incident in the clone memory.
+        Confirmed and rejected incidents have separate windows of `limit` rows each, so a burst of
+        false-positive decisions does not push older confirmed campaigns out of the clone search.
         """
-        with self._connect() as conn:
-            rows = conn.execute(
-                """
+        label_sql = (
+            "CASE WHEN i.status = 'confirmed' THEN 1 "
+            "WHEN i.status IN ('false_positive', 'dismissed') THEN 0 ELSE i.ground_truth_label END"
+        )
+        query = f"""
                 SELECT i.id, i.module_id, i.source_url, i.risk_score, i.status, i.ground_truth_label,
                        i.analyst_note, i.violated_rules_json, i.content_excerpt, i.title,
-                       s.embedding_json, s.local_embedding_json
+                       s.embedding_json, s.local_embedding_json, {label_sql} AS label
                 FROM incidents i
                 JOIN content_snapshots s ON s.content_hash = i.content_hash
-                WHERE (i.ground_truth_label IS NOT NULL OR i.status IN ('confirmed', 'false_positive'))
+                WHERE {label_sql} = ?
                   AND (? IS NULL OR i.content_hash != ?)
                 ORDER BY i.updated_at DESC
                 LIMIT ?
-                """,
-                (exclude_content_hash, exclude_content_hash, limit),
-            ).fetchall()
+                """
+        with self._connect() as conn:
+            rows = [
+                row
+                for wanted in (1, 0)
+                for row in conn.execute(query, (wanted, exclude_content_hash, exclude_content_hash, limit))
+            ]
         items: list[dict[str, Any]] = []
         for row in rows:
-            gt = row["ground_truth_label"]
-            label = bool(gt) if gt is not None else row["status"] == "confirmed"
+            label = bool(row["label"])
             vectors: list[list[float]] = []
             for col in ("embedding_json", "local_embedding_json"):
                 try:
@@ -494,10 +502,14 @@ class Database:
         limit: int = 100,
         offset: int = 0,
         risk_level: str | None = None,
+        exclude_statuses: tuple[str, ...] | list[str] = (),
     ) -> tuple[list[Incident], int]:
         where: list[str] = []
         params: list[Any] = []
 
+        if exclude_statuses:
+            where.append(f"status NOT IN ({','.join('?' for _ in exclude_statuses)})")
+            params.extend(exclude_statuses)
         if module_id is not None:
             where.append("module_id = ?")
             params.append(module_id)

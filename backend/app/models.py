@@ -25,6 +25,9 @@ class ViolatedRule(BaseModel):
     legal_basis: str
     severity: Literal["low", "medium", "high"] = "medium"
     reason: str
+    # Incidents this rule points at (CAMPAIGN_CLONE_MATCH: the confirmed originals), so links in the
+    # relationship graph do not depend on parsing the human-readable `reason`.
+    related_incident_ids: list[str] = Field(default_factory=list)
 
 
 class DomMetrics(BaseModel):

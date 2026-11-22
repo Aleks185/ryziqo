@@ -50,21 +50,53 @@ def referral_codes(url: str) -> list[str]:
     return [f"{k}={v}"[:60] for k, v in parse_qsl(query) if REFERRAL_PARAMS.match(k) and v.strip()]
 
 
+REJECTED = ("false_positive", "dismissed")
+
+
+def clone_originals(rule: Any) -> list[str]:
+    """Confirmed originals of a CAMPAIGN_CLONE_MATCH rule (structured field; regex only for old rows)."""
+    if rule.related_incident_ids:
+        return list(rule.related_incident_ids)
+    m = CLONE_ID_RE.search(rule.reason or "")
+    return [m.group(1)] if m else []
+
+
 def build_graph(db: Any, intel: Any, min_score: float = 0.5, limit: int = 200, max_nodes: int = 400) -> dict[str, Any]:
-    incidents, _ = db.list_incidents(min_risk_score=min_score, limit=limit)
-    incidents = [i for i in incidents if i.status not in ("false_positive", "dismissed")]
+    # Rejected incidents are filtered in SQL, so they do not use up the `limit` budget
+    incidents, _ = db.list_incidents(min_risk_score=min_score, limit=limit, exclude_statuses=REJECTED)
+    # Confirmed originals of clones may be older than the window: fetch them, or the clone_of edge is lost
+    present = {i.id for i in incidents}
+    for inc in list(incidents):
+        for rule in inc.violated_rules:
+            if rule.rule_id != "CAMPAIGN_CLONE_MATCH":
+                continue
+            for original_id in clone_originals(rule):
+                if original_id in present:
+                    continue
+                original = db.get_incident(original_id)
+                if original is not None and original.status not in REJECTED:
+                    incidents.append(original)
+                    present.add(original_id)
     ids = [i.id for i in incidents]
 
     campaigns: dict[str, str] = {}
     if ids:
         with intel.connection() as c:
+            # Same notion of a campaign as the dashboard: 2+ reports, not all rejected
             rows = c.execute(
                 """SELECT j.value AS incident_id, t.campaign_id FROM threat_reports t, json_each(t.incident_ids) j
-                   WHERE t.campaign_id IN (SELECT campaign_id FROM threat_reports GROUP BY campaign_id HAVING count(*) > 1)
+                   WHERE t.campaign_id IN (SELECT campaign_id FROM threat_reports GROUP BY campaign_id
+                                           HAVING count(*) > 1 AND sum(verdict_status != 'false_positive') > 0)
+                     AND t.verdict_status != 'false_positive'
                      AND j.value IN (SELECT value FROM json_each(?))""",
                 (json.dumps(ids),),
             ).fetchall()
         campaigns = {r["incident_id"]: r["campaign_id"] for r in rows}
+        # A campaign with a single incident on the map is an orphan node that links nothing
+        members: dict[str, set[str]] = {}
+        for incident_id, campaign in campaigns.items():
+            members.setdefault(campaign, set()).add(incident_id)
+        campaigns = {i: c for i, c in campaigns.items() if len(members[c]) > 1}
 
     g = GraphBuilder(max_nodes)
     # Incidents first, so the limit never drops an incident while keeping its neighbours
@@ -101,10 +133,10 @@ def build_graph(db: Any, intel: Any, min_score: float = 0.5, limit: int = 200, m
             for code in referral_codes(url):
                 g.edge(inc_node, g.node("referral_code", code.casefold(), code), "uses_code")
         for rule in inc.violated_rules:
-            if rule.rule_id == "CAMPAIGN_CLONE_MATCH" and (m := CLONE_ID_RE.search(rule.reason)):
-                original = f"incident:{m.group(1)}"
-                if original in known:
-                    g.edge(inc_node, original, "clone_of")
+            if rule.rule_id == "CAMPAIGN_CLONE_MATCH":
+                for original_id in clone_originals(rule):
+                    if f"incident:{original_id}" in known:
+                        g.edge(inc_node, f"incident:{original_id}", "clone_of")
             elif rule.rule_id == "KNF_WARNING_LIST_MATCH":
                 g.edge(inc_node, g.node("warning_list", "knf", "Lista Ostrzeżeń Publicznych KNF"), "on_warning_list")
         if inc.id in campaigns:

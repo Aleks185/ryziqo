@@ -34,7 +34,8 @@ def _apply_finding(
         if rule.rule_id not in existing:
             res.violated_rules.append(rule)
             existing.add(rule.rule_id)
-    res.risk_score = round(min(cap, max(res.risk_score, min_score)), 4)
+    # `cap` bounds only the boost brought by this finding; it never lowers an earlier, higher score.
+    res.risk_score = round(max(res.risk_score, min(cap, min_score)), 4)
     res.evidence_quotes = [q for q in quotes if q not in res.evidence_quotes] + res.evidence_quotes
     if rules:
         res.relevant = True
@@ -81,12 +82,14 @@ def apply_clone_matches(results: list[ModuleAnalysisResult], clones: list[CloneM
         return
     clone = clones[0]
     targets = [r for r in results if r.module_id == clone.module_id] or [max(results, key=lambda r: r.risk_score)]
+    # Every detected original is kept: the rule lists all of them, each gets its own quote.
+    quotes = [f"[Klon] Podobieństwo {c.similarity:.2f} do potwierdzonego incydentu {c.incident_id}" for c in clones]
     for res in targets:
         _apply_finding(
             res,
-            [clone_rule(clone)],
+            [clone_rule(clone, clones[1:])],
             clone_boosted_score(res.risk_score, clone),
-            [f"[Klon] Podobieństwo {clone.similarity:.2f} do potwierdzonego incydentu {clone.incident_id}"],
+            quotes,
             cap=0.95,
         )
 
@@ -123,6 +126,15 @@ def select_results(
         # Primary module: concrete violations first, else the highest relevance score
         pool = with_violations or relevant_results
         primary = max(pool, key=lambda r: r.risk_score)
+        # A campaign-clone match describes the material, not one module: carry it over to the
+        # primary module so the rule (and the graph's clone_of edge) survives the selection.
+        for other in results:
+            if other is primary:
+                continue
+            clone_rules = [r for r in other.violated_rules if r.rule_id == "CAMPAIGN_CLONE_MATCH"]
+            if clone_rules:
+                _apply_finding(primary, clone_rules, primary.risk_score,
+                               [q for q in other.evidence_quotes if q.startswith("[Klon]")])
         # Secondary detections are summarized instead of being silently dropped
         for other in results:
             if other is primary or not other.violated_rules or other.risk_score < secondary_min_score:

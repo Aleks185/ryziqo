@@ -9,7 +9,9 @@ const title = "text-2xl sm:text-3xl font-bold tracking-tight text-[#0B192C]";
 const states = {new:["Nowe","New"], confirmed_fake:["Potwierdzony fake","Confirmed fake"],
   requires_review:["Do weryfikacji","Requires review"], false_positive:["Fałszywy alarm","False positive"]};
 const origins = {fast_path:["Baza zgłoszeń (Fast-Path)","Confirmed database match"], cache:["Cache","Cache"],
-  ollama:["Nowa analiza Ollama","New Ollama analysis"], rules:["Reguły","Rules"], history:["Zapis historyczny","Historical record"]};
+  ollama:["Nowa analiza Ollama","New Ollama analysis"], rules:["Reguły","Rules"], history:["Zapis historyczny","Historical record"],
+  crawler:["Skanowanie strony (crawler)","Website scan (crawler)"]};
+const originLabel=(l,origin)=>origins[origin] ? l(...origins[origin]) : origin || "—";
 
 function useLabels() {
   const {lang} = useApp();
@@ -72,7 +74,7 @@ export function Reports(){
 function Evidence({r}){
   const l=useLabels(), [message,setMessage]=useState("");
   const pairs=[
-    [l("Źródło wyniku","Result origin"),l(...origins[r.origin])],["URL",r.target_url],
+    [l("Źródło wyniku","Result origin"),originLabel(l,r.origin)],["URL",r.target_url],
     [l("Platforma","Platform"),r.platform],[l("Przekierowania","Redirect chain"),r.redirect_chain.join(" → ")],
     ["IP / ASN / "+l("kraj hostingu","hosting country"),[r.target_server_ip,r.hosting_asn,r.hosting_country].filter(Boolean).join(" / ")],
     [l("Kanał zgłoszenia","Source channel"),r.source_channel],
@@ -97,9 +99,11 @@ export function IncidentEvidence({incident}){
 function ReviewForm({r,onSave}){
   const l=useLabels(); const [v,status]=useState(r.verdict_status),[note,setNote]=useState(r.analyst_notes),[msg,setMsg]=useState("");
   async function save(){try{await backend.intel("reports/"+r.id,{method:"PATCH",body:{verdict_status:v,analyst_notes:note}});onSave();setMsg(l("Zapisano.","Saved."));}catch(e){setMsg(e.message);}}
+  async function detach(){try{await backend.intel("reports/"+r.id+"/detach",{method:"POST"});onSave();setMsg(l("Odłączono od kampanii.","Detached from the campaign."));}catch(e){setMsg(e.message);}}
   return <Panel title={l("Ocena analityka","Analyst review")}><div className="space-y-3"><VerdictSelect value={v} onChange={status}/>
     <label>{l("Notatka analityka","Analyst notes")}<textarea maxLength={4000} className={field} value={note} onChange={e=>setNote(e.target.value)}/></label>
-    <button className="compact-action" onClick={save}>{l("Zapisz","Save")}</button> <span role="status">{msg}</span></div></Panel>;
+    <button className="compact-action" onClick={save}>{l("Zapisz","Save")}</button>{" "}
+    <button className="compact-action" onClick={detach} title={l("Przenosi zgłoszenie do osobnej grupy; automatyczne scalanie go nie przywróci.","Moves the report to its own group; automatic merging will not bring it back.")}>{l("Odłącz od kampanii","Detach from campaign")}</button> <span role="status">{msg}</span></div></Panel>;
 }
 export function ReportDetails(){
   const {id}=useParams(); const data=useData("reports/"+id),l=useLabels(),r=data.value;
@@ -109,15 +113,24 @@ export function ReportDetails(){
     {r.incident_ids.map(i=><Link key={i} className="underline focus-ring" to={"/incidents/"+i+"?report="+r.id}>{i} </Link>)}</Panel>
     <Evidence r={r}/><ReviewForm key={id} r={r} onSave={data.reload}/></div>;
 }
+const countKeys={new:"new_count",confirmed_fake:"confirmed_count",requires_review:"review_count",false_positive:"fp_count"};
+const dominant=c=>Object.keys(countKeys).reduce((best,k)=>(c[countKeys[k]]||0)>(c[countKeys[best]]||0)?k:best,"requires_review");
 function Campaign({c,refresh}){
-  const l=useLabels(); const [status,set]=useState("requires_review"),[msg,setMsg]=useState("");
-  async function save(){try{const res=await backend.intel("campaigns/"+c.campaign_id,{method:"PATCH",body:{verdict_status:status}});setMsg(l("Zmieniono: ","Updated: ")+res.updated);refresh();}catch(e){setMsg(e.message);}}
-  return <Panel title={c.domain || c.server_ip || c.campaign_id}><div className="space-y-3"><Link className="underline focus-ring" to={"/reports?campaign="+c.campaign_id}>{l("Zgłoszenia","Reports")} ({c.members})</Link>
-    <VerdictSelect value={status} onChange={set}/><button className="compact-action" onClick={save}>{l("Zastosuj do całej kampanii","Apply to the entire campaign")}</button> <span role="status">{msg}</span></div></Panel>;
+  const l=useLabels(); const [status,set]=useState(dominant(c)),[note,setNote]=useState(c.analyst_notes||""),[msg,setMsg]=useState("");
+  async function save(){try{const res=await backend.intel("campaigns/"+c.campaign_id,{method:"PATCH",body:{verdict_status:status,...(note.trim()?{analyst_notes:note}:{})}});setMsg(l("Zmieniono: ","Updated: ")+res.updated);refresh();}catch(e){setMsg(e.message);}}
+  return <Panel title={c.domain || c.server_ip || c.campaign_id}><div className="space-y-3">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"><RiskScore score={(c.risk_score||0)/100}/>
+      <span className="text-slate-600">{l("Ostatnio","Last seen")}: {new Date(c.last_seen).toLocaleString()}</span></div>
+    <p className="text-sm text-slate-600">{Object.entries(countKeys).filter(([,k])=>c[k]).map(([s,k])=>l(...states[s])+": "+c[k]).join(" · ")}</p>
+    <Link className="underline focus-ring" to={"/reports?campaign="+c.campaign_id}>{l("Zgłoszenia","Reports")} ({c.members})</Link>
+    <VerdictSelect value={status} onChange={set}/>
+    <label className="block text-sm">{l("Notatka kampanii","Campaign note")}<textarea maxLength={4000} className={field} value={note} onChange={e=>setNote(e.target.value)}/></label>
+    <button className="compact-action" onClick={save}>{l("Zastosuj do całej kampanii","Apply to the entire campaign")}</button> <span role="status">{msg}</span></div></Panel>;
 }
 export function Campaigns(){
-  const l=useLabels(),data=useData("campaigns");
+  const l=useLabels(),[active,setActive]=useState(true),data=useData("campaigns?active_only="+active);
   return <div className="space-y-6"><h1 className={title}>{l("Kampanie","Campaigns")}</h1>
+    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/>{l("Tylko aktywne (bez kampanii w całości odrzuconych)","Active only (hide fully rejected campaigns)")}</label>
     {!data.value ? <Feedback data={data}/> : data.value.length ? data.value.map(c=><Campaign key={c.campaign_id} c={c} refresh={data.reload}/>) : <Panel>{l("Brak grup powiązanych zgłoszeń.","No related report groups.")}</Panel>}</div>;
 }
 export function Diagnostics(){
