@@ -14,6 +14,7 @@ import { Reports, ReportDetails, Campaigns, Diagnostics } from "@/pages/Intellig
 import Citizen from "@/pages/Citizen";
 import Leaderboard from "@/pages/Leaderboard";
 import Graph from "@/pages/Graph";
+import Crawler from "@/pages/Crawler";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/public" element={<Citizen />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/analyze" element={<Analyze />} />
+                <Route path="/crawler" element={<Crawler />} />
                 <Route path="/incidents/:id" element={<IncidentDetail />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/reports/:id" element={<ReportDetails />} />

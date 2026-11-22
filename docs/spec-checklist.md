@@ -57,6 +57,7 @@ Stan na 2026-11-21 (wieczór). Testy backendu: `194 passed`. Benchmark fallback 
 - [ ] (opcjonalnie) **Film do 3 minut**
 
 ### Automatyczny crawling internetu
+- [x] Timeout liczony per żądanie (czekanie z grzeczności poza budżetem), wolna podstrona nie wywraca zadania, błędy pobierania z nazwą hosta zamiast przypiętego IP (`fetcher.py`, `queue_worker.py`)
 - [x] Discovery sprawdzone na żywo (2026-11-21): SearXNG `2026.11.21-c6ee3e9fd` (tag przypięty), 3 frazy → 30 wyników → 6 nowych URL-i w kolejce → 6 przeanalizowanych; strony afiliacyjne wykryte (M1), oficjalne strony brokera bez fałszywych alarmów
 - [x] Seed watchlisty sprawdzony: xtb.com i bossa.pl odpowiadają i pozwalają w `robots.txt`; po starcie Dockera watchlista ma 9 celów (4 z seeda + domeny z rejestru: mbank.pl, pkobp.pl, santander.pl, interactivebrokers.com/.ie)
 - [ ] etoro.com i trading212.com odpowiadają `403` na nagłówek bota (ochrona antybotowa). Zdecydować: usunąć z seeda, skanować przez Playwright albo zostawić jako znane ograniczenie
@@ -65,12 +66,12 @@ Stan na 2026-11-21 (wieczór). Testy backendu: `194 passed`. Benchmark fallback 
 
 ### Dashboard (spec, pkt 3)
 - [ ] **Filtry po dacie, źródle (platformie) i poziomie ryzyka.** Teraz jest tylko filtr po module (`frontend/src/pages/Dashboard.jsx`). Backend już obsługuje `date_from/date_to`, `source_platform` i `risk_level`.
-- [ ] **Uruchamianie crawla z panelu** (`POST /api/v1/crawl/trigger`) i lista zadań (`GET /api/v1/crawl/jobs`)
-- [ ] **Widok watchlisty** (dodawanie i usuwanie źródeł, „uruchom teraz”). Endpointy istnieją, UI nie ma.
+- [x] **Uruchamianie crawla z panelu** (`POST /api/v1/crawl/trigger`) i lista zadań (`GET /api/v1/crawl/jobs`) — strona „Crawler” (`/crawler`, `frontend/src/pages/Crawler.jsx`)
+- [x] **Widok watchlisty** (dodawanie, włączanie/wyłączanie i usuwanie źródeł, „skanuj teraz”, źródła startowe, wynik ostatniego skanu) na stronie „Crawler”
 - [ ] **Pobieranie raportów modułów z backendu** (`/api/v1/reports/{1|2|3}?format=csv`). Teraz eksport jest liczony lokalnie z listy w przeglądarce.
 - [x] Komentarz w `frontend/src/lib/api.js` zaktualizowany (CONTRACT.md v1.3.0)
 - [x] Pobieranie tekstu ze zrzutu ekranu dla zgłoszenia obywatelskiego (VLM, patrz sekcja Frontend)
-- [ ] Widok wyników discovery (`GET /api/v1/discovery/recent`) i przycisk „uruchom discovery” w panelu
+- [x] Widok wyników discovery (`GET /api/v1/discovery/recent`) i przycisk „uruchom discovery” w panelu (strona „Crawler”)
 
 ### Zgodność ze specem
 - [x] **Reguła 8: desktop, tablet i telefon** (1280, 768 i 375 px w `backend/app/scraper/browser.py`; evidence podaje widok)
