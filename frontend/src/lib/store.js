@@ -72,6 +72,8 @@ const readLang = () => {
 export function AppProvider({ children }) {
   const [mode, setMode] = useState("checking");
   const [demoReason, setDemoReason] = useState(null);
+  // Tryb analizy po stronie backendu z /health: "live" (Ollama) albo "demo_fallback" (reguły, LLM niedostępny)
+  const [backendMode, setBackendMode] = useState(null);
   const [wsStatus, setWsStatus] = useState("disabled");
   const [records, setIncidents] = useState([]);
   const [knfSnapshotDate, setKnfSnapshotDate] = useState(null);
@@ -176,11 +178,13 @@ export function AppProvider({ children }) {
       setIncidents(loadLocal());
       setKnfSnapshotDate(null);
       setDemoReason(reason);
+      setBackendMode(null);
       setMode("demo");
     };
     if (isMixedContent()) return goDemo("mixed");
     try {
-      await backend.health();
+      const health = await backend.health();
+      setBackendMode(health?.mode || null);
       setIncidents([]);
       await loadRemote();
       setDemoReason(null);
@@ -194,6 +198,18 @@ export function AppProvider({ children }) {
   useEffect(() => {
     connect();
   }, [connect]);
+
+  // Ollama może paść albo wrócić w trakcie pracy, więc tryb analizy jest odświeżany co 30 s
+  useEffect(() => {
+    if (mode !== "online") return undefined;
+    const timer = setInterval(() => {
+      backend
+        .health()
+        .then((health) => setBackendMode(health?.mode || null))
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [mode]);
 
   useEffect(() => {
     if (mode === "demo") saveLocal(records);
@@ -325,9 +341,9 @@ export function AppProvider({ children }) {
   };
 
   const value = useMemo(
-    () => ({ annotate, runCycle, cycling, mode, demoReason, wsStatus, incidents, knfSnapshotDate, events, lang, t, setLang, connect, analyze, refreshIncident, updateStatus, setGroundTruth, analyzeSamples, clearDemo, clearEvents: () => setEvents([]) }),
+    () => ({ annotate, runCycle, cycling, mode, demoReason, backendMode, wsStatus, incidents, knfSnapshotDate, events, lang, t, setLang, connect, analyze, refreshIncident, updateStatus, setGroundTruth, analyzeSamples, clearDemo, clearEvents: () => setEvents([]) }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, demoReason, wsStatus, incidents, knfSnapshotDate, events, lang, t, connect, analyze, refreshIncident, cycling, annotate],
+    [mode, demoReason, backendMode, wsStatus, incidents, knfSnapshotDate, events, lang, t, connect, analyze, refreshIncident, cycling, annotate],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
