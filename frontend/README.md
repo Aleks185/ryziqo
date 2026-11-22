@@ -60,9 +60,8 @@ Wklejane do bundla w czasie **builda** — po zmianie zrestartuj `yarn start` / 
 src/
 ├── App.js          routing
 ├── pages/          widoki (tabela wyżej)
-├── components/     Header/Sidebar, DemoBanner, IncidentTable, TrendChart, LiveLog, Badges; ui/ = shadcn/ui
-├── lib/            config, api (REST + SSE), store (stan globalny), demoEngine, i18n, samples, exportRegister
-└── constants/testIds/
+├── components/     Header/Sidebar, DemoBanner, IncidentTable, TrendChart, LiveLog, Badges, ErrorBoundary; ui/ = shadcn/ui (slider, sheet)
+└── lib/            config, api (REST + SSE), store (stan globalny), demoEngine, i18n, samples, exportRegister
 ```
 
 Konwencje (i18n, `data-testid`, dodawanie widoku lub wywołania API): [docs/frontend-architecture.md §10](../docs/frontend-architecture.md#10-konwencje-i-rozwój).

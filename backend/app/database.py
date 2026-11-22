@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +31,14 @@ from app.scraper.urlnorm import canonicalize_url
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _next_day(value: str) -> str | None:
+    """Dla samej daty YYYY-MM-DD zwraca początek następnego dnia, inaczej None."""
+    try:
+        return (date.fromisoformat(value) + timedelta(days=1)).isoformat() if len(value) == 10 else None
+    except ValueError:
+        return None
 
 
 def score_to_risk_level(score: float) -> str:
@@ -532,8 +540,14 @@ class Database:
             where.append("detected_at >= ?")
             params.append(date_from)
         if date_to:
-            where.append("detected_at <= ?")
-            params.append(date_to)
+            day_end = _next_day(date_to)
+            if day_end:
+                # Sama data (YYYY-MM-DD) obejmuje cały dzień, a nie tylko północ.
+                where.append("detected_at < ?")
+                params.append(day_end)
+            else:
+                where.append("detected_at <= ?")
+                params.append(date_to)
         if search:
             like = f"%{search.strip()}%"
             where.append(

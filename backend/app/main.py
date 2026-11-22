@@ -112,7 +112,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
             "System monitoringu treści inwestycyjnych (Moduły 1–3: Finfluencerzy, "
             "18 kryteriów ryzyka MiFID II / 2017/565, Shadow Advisory art. 76 u.o.i.f.)."
         ),
-        version="1.3.0",
+        version="1.4.0",
         lifespan=lifespan,
     )
 

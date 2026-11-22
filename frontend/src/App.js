@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { AppProvider } from "@/lib/store";
 import { Header, Sidebar } from "@/components/Header";
 import { DemoBanner } from "@/components/DemoBanner";
+import { PageErrorBoundary } from "@/components/ErrorBoundary";
 import Dashboard from "@/pages/Dashboard";
 import Analyze from "@/pages/Analyze";
 import IncidentDetail from "@/pages/IncidentDetail";
@@ -26,21 +27,23 @@ function App() {
             <Header />
             <DemoBanner />
             <div className="app-page mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/public" element={<Citizen />} />
-                <Route path="/leaderboard" element={<Leaderboard />} />
-                <Route path="/analyze" element={<Analyze />} />
-                <Route path="/crawler" element={<Crawler />} />
-                <Route path="/incidents/:id" element={<IncidentDetail />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/reports/:id" element={<ReportDetails />} />
-                <Route path="/campaigns" element={<Campaigns />} />
-                <Route path="/graph" element={<Graph />} />
-                <Route path="/diagnostics" element={<Diagnostics />} />
-                <Route path="/calibration" element={<Calibration />} />
-                <Route path="/log" element={<LogPage />} />
-              </Routes>
+              <PageErrorBoundary>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/public" element={<Citizen />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/analyze" element={<Analyze />} />
+                  <Route path="/crawler" element={<Crawler />} />
+                  <Route path="/incidents/:id" element={<IncidentDetail />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/reports/:id" element={<ReportDetails />} />
+                  <Route path="/campaigns" element={<Campaigns />} />
+                  <Route path="/graph" element={<Graph />} />
+                  <Route path="/diagnostics" element={<Diagnostics />} />
+                  <Route path="/calibration" element={<Calibration />} />
+                  <Route path="/log" element={<LogPage />} />
+                </Routes>
+              </PageErrorBoundary>
             </div>
           </main>
         </div>

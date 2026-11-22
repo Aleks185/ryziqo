@@ -72,7 +72,8 @@ frontend/
     │   ├── LiveLog.jsx           # Live Crawler Log (zdarzenia WS i lokalne)
     │   ├── Badges.jsx            # RiskScore, ModuleTag, StatusBadge, DemoTag, Panel
     │   ├── Logo.jsx
-    │   └── ui/                   # komponenty shadcn/ui (Radix UI + Tailwind) — generowane, nie edytować ręcznie bez potrzeby
+    │   ├── ErrorBoundary.jsx     # błąd renderowania strony nie wywraca całego panelu
+    │   └── ui/                   # shadcn/ui (Radix + Tailwind): tylko używane slider i sheet
     ├── lib/
     │   ├── config.js             # API_URL, WS_URL, ALERT_THRESHOLD, MODULES, STATUSES, riskLevel()
     │   ├── api.js                # klient REST + SSE (fetch z timeoutem, EventSource)
@@ -82,8 +83,6 @@ frontend/
     │   ├── samples.js            # przykłady S1–S6 do demonstracji Modułów 1–3 (z etykietą referencyjną)
     │   ├── i18n.js               # słowniki PL / EN, RULE_LABELS, formatDate, platformLabel
     │   └── utils.js              # cn() (clsx + tailwind-merge), formatRiskPercent()
-    ├── hooks/use-toast.js
-    └── constants/testIds/        # stałe data-testid (kebab-case)
 ```
 
 ---
@@ -302,7 +301,7 @@ Każdy odczyt/zapis jest w `try/catch` — w trybie prywatnym lub przy zablokowa
 - **Stylowanie:** Tailwind + komponenty `shadcn/ui` w `components/ui/`. Paleta: granat `#0B192C` / `#0A1E33` (nawigacja), kolory modułów `MODULE_COLORS` (M1 niebieski, M2 bursztynowy, M3 czerwony). Fokus klawiatury: klasa `.focus-ring`. Przyciski pomocnicze: `.compact-action`.
 - **Teksty:** każdy tekst UI przez `t("klucz")` ze słowników w `lib/i18n.js` (PL i EN muszą mieć ten sam klucz). Wyjątek: widoki `Intelligence.jsx` i `Graph.jsx` używają lokalnego pomocnika `l(pl, en)`.
 - **Dostępność:** `aria-label` dla nawigacji i grup przycisków, `role="status"` / `role="alert"` dla komunikatów, `aria-pressed` / `aria-selected` dla przełączników i zakładek.
-- **`data-testid`:** kebab-case (np. `incident-print-button`, `analyze-submit-button`); stałe dla testów E2E w `src/constants/testIds/`.
+- **`data-testid`:** kebab-case (np. `incident-print-button`, `analyze-submit-button`).
 - **Dodanie nowego widoku:**
   1. komponent w `src/pages/`,
   2. `<Route>` w `src/App.js`,
@@ -346,7 +345,7 @@ CI=true yarn build
 9. Tryb DEMO po `docker compose stop backend` (analiza tekstu, graf lokalny, komunikaty w widokach wymagających backendu) i powrót do online po „Ponów połączenie”.
 10. Przełączanie PL/EN bez surowych kluczy tłumaczeń; nawigacja mobilna (< 1024 px).
 
-**Testy automatyczne frontendu:** brak (przygotowane są jedynie stałe `data-testid` w `src/constants/testIds/`).
+**Testy automatyczne frontendu:** brak (elementy kluczowe mają atrybuty `data-testid` pod testy E2E).
 
 ---
 
@@ -354,9 +353,8 @@ CI=true yarn build
 
 - **Notatka analityka i status „przekazane” (`referred`)** są przechowywane tylko w `localStorage` przeglądarki — nie trafiają do backendu ani do paczki dowodowej i nie są widoczne dla innych analityków. Notatka w bazie zgłoszeń (`/reports/:id`) jest osobnym polem zapisywanym w backendzie.
 - **Dwa słowniki statusów:** incydenty (`new`, `in_review`, `referred`, `confirmed`, `false_positive`) i wpisy bazy zgłoszeń (`new`, `confirmed_fake`, `requires_review`, `false_positive`) są niezależne.
-- **Filtry pulpitu** — tylko po module; backend obsługuje już `date_from` / `date_to`, `source_platform` i `risk_level` ([spec-checklist.md](./spec-checklist.md)).
-- **Brak widoku** raportów modułów (`/reports/{module_id}`) — dostępne tylko przez API / Swagger; eksport z pulpitu liczony jest w przeglądarce.
+- **Filtry pulpitu** (moduł, źródło, poziom ryzyka, daty) działają na liście załadowanej do przeglądarki (do 500 incydentów).
+- **Raporty modułów** (`/reports/{module_id}`, CSV/JSON) są pobierane z backendu po wybraniu modułu na pulpicie; eksport pod tabelą obejmuje bieżącą, przefiltrowaną listę z przeglądarki.
 - **Watchlista nie przechowuje wyniku ostatniego skanu** — kolumna „Ostatni skan” w `/crawler` jest wyliczana z 25 ostatnich zadań (`GET /crawl/jobs`), więc dla rzadko skanowanych źródeł bywa pusta.
 - **Lista incydentów** ładowana jest jednorazowo do 500 rekordów (bez stronicowania po stronie serwera).
 - **Teksty `Intelligence.jsx`, `Graph.jsx` i `Crawler.jsx`** są wpisane w komponentach (`l(pl, en)`), a nie w `i18n.js`.
-- **Nieużywane zależności** z szablonu Emergent/shadcn (m.in. `axios`, `swr`, część komponentów `ui/`) zwiększają powierzchnię audytu `yarn audit`. `@tanstack/react-query` jest tylko zainicjowany w `src/index.js` (`QueryClientProvider`) — żaden widok nie korzysta z `useQuery`.

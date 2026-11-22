@@ -46,6 +46,7 @@ SUSPICIOUS_AFFIXES = frozenset(
         "invest", "inwest", "inwestycje", "inwestycja", "investment", "investments", "polska", "poland",
         "bonus", "profit", "zysk", "zyski", "crypto", "krypto", "signals", "sygnaly", "club", "klub",
         "24", "online", "bot", "ai", "trade", "trading", "capital", "wallet", "portfel",
+        "makler", "maklerski", "broker", "konto", "login", "app",
     }
 )
 # Generic words of official names that must not be used as brand keys
@@ -234,7 +235,9 @@ class KNFRegistrySnapshot:
             if is_domain and len(parts) >= 2:
                 parts = parts[:-1] if parts[-1] in COMMON_TLDS else parts
             folded_parts = [_alnum(p) for p in parts]
-            if _alnum(token) in legit or "".join(folded_parts) in legit:
+            # A brand name in text ("PKO BP Makler") is legit, but a domain spelled like it
+            # (pkobp-makler.com) is not: domains are trusted only via is_official_host below.
+            if _alnum(token) in legit or (not is_domain and "".join(folded_parts) in legit):
                 continue
             if is_domain and self.is_official_host(token):  # online.bossa.pl is bossa.pl, not a look-alike
                 continue
@@ -258,6 +261,13 @@ class KNFRegistrySnapshot:
                             hit_kind = "typosquat"
                     if hit_kind:
                         break
+                if not hit_kind:
+                    # A brand split by a hyphen (trading-212-bonus.pl): only an exact key + affix counts
+                    for i in range(len(folded_parts) - 1):
+                        others = folded_parts[:i] + folded_parts[i + 2 :]
+                        if folded_parts[i] + folded_parts[i + 1] == key and any(o in SUSPICIOUS_AFFIXES for o in others):
+                            hit_kind = "affix"
+                            break
                 if hit_kind and token.lower() not in seen:
                     seen.add(token.lower())
                     matches.append(

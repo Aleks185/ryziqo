@@ -368,6 +368,12 @@ def test_knf_impersonation_and_typosquatting() -> None:
     assert reg.find_impersonations("", ["https://online.bossa.pl/login", "https://www.bossa.pl/"]) == []
     assert reg.find_impersonations("", ["https://online-bossa.pl/login"])[0].kind == "affix"
     assert reg.find_impersonations("", ["https://bossa.pl.online-login.com/"]) != []
+    # Brand split by hyphens, alias-shaped domains and broker affixes
+    for fake in ("https://pkobp-makler.com/", "https://saxobank-pro.pl/", "https://trading-212-bonus.pl/"):
+        assert reg.find_impersonations("", [fake])[0].kind == "affix", fake
+    for real in ("https://www.saxobank.com/", "https://app.trading212.com/", "https://www.pkobp.pl/"):
+        assert reg.find_impersonations("", [real]) == [], real
+    assert reg.find_impersonations("Konto w PKO BP Makler") == []
     # The impersonator is not mistaken for the licensed firm
     assert reg.match_entity_in_text("Inwestuj z XTB-Polska-VIP") is None
     assert reg.match_entity_in_text("Rachunek w XTB") is not None
