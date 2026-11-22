@@ -30,12 +30,11 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
 | `react-router-dom` | Routing SPA | MIT |
 | `react-scripts` (CRA) + `@craco/craco` | Build i dev server | MIT / Apache-2.0 |
 | `tailwindcss`, `tailwind-merge`, `class-variance-authority` | Stylowanie | MIT |
-| `@radix-ui/*` (shadcn/ui) | Dostępne komponenty UI | MIT |
+| `@radix-ui/react-slider`, `@radix-ui/react-dialog` (shadcn/ui) | Suwak kalibracji, menu mobilne | MIT |
 | `recharts` | Wykresy trendów | MIT |
 | `d3-force` | Układ siłowy grafu powiązań kampanii | ISC |
 | `sonner` | Powiadomienia (toast) | MIT |
 | `lucide-react` | Ikony | ISC |
-| `date-fns` | Formatowanie dat | MIT |
 | `nginx` (`nginx:1.27-alpine`) | Serwer statyki + reverse proxy | BSD-2-Clause |
 | IBM Plex Sans / Mono / Serif | Fonty | SIL OFL 1.1 |
 
@@ -72,6 +71,6 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
 - **Komenda:** `yarn audit` (Yarn `1.22.22`), 1521 pakietów
 - **Wynik:** `0 vulnerabilities found`.
 - **Co zostało zrobione** (poprzedni audyt z 2026-11-21: 35 zgłoszeń, w tym 11 high):
-  - usunięte nieużywane zależności po szablonie: `axios` (ciągnął `follow-redirects`), `zod`, `@hookform/resolvers`;
+  - usunięte nieużywane zależności po szablonie (`dependencies` z 57 do 14): m.in. `axios` (ciągnął `follow-redirects`), `zod`, `@tanstack/react-query`, `swr`, `framer-motion`, 25 pakietów `@radix-ui/*`, oraz 44 nieużywane komponenty `components/ui/`;
   - podbite przez `resolutions` w `package.json` zależności przechodnie narzędzi builda `react-scripts` 5 do wersji z poprawkami: `follow-redirects`, `fast-uri`, `qs`, `serialize-javascript`, `launch-editor`, `body-parser`, `postcss-selector-parser`, `svgo`.
 - Narzędzia builda i tak nie trafiają do obrazu produkcyjnego (Nginx serwuje tylko statyczny build). Dalszy krok przy wdrożeniu: migracja z niewspieranego CRA na Vite.
