@@ -1,0 +1,19 @@
+# Kontekst builda backendu (context: .) — tylko to, co kopiuje backend/Dockerfile
+.git
+.env
+.env.*
+!.env.example
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+backend/.venv
+backend/venv
+frontend
+docs
+deploy
+*.pdf
+*.md
+data/investwatch.db
+data/investwatch.db-*
+data/object_store
+data/uknf_samples

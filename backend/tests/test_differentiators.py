@@ -137,6 +137,10 @@ def test_screenshot_uses_local_ocr_when_vlm_is_down(tmp_path: Path, monkeypatch)
     buf = io.BytesIO()
     img.save(buf, "PNG")
     body = {"image_base64": base64.b64encode(buf.getvalue()).decode(), "source_channel": "public_form", "share_mode": "anonymous"}
+    async def passthrough(encoded: str) -> str:  # normalizacja wymaga Chromium; test dotyczy fallbacku OCR
+        return encoded
+
+    monkeypatch.setattr("app.routers.analyze.normalize_screenshot", passthrough)
     with _build_test_client(tmp_path) as client:
         monkeypatch.setattr("app.routers.analyze.ocr_read_text", lambda _: None)
         assert client.post(f"{API}/analyze/text", json=body).status_code == 503

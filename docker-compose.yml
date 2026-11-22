@@ -130,15 +130,7 @@ services:
     profiles: ["ai"]
     volumes:
       - ollama_models:/root/.ollama
-    # Dostęp do GPU NVIDIA (wymaga NVIDIA Container Toolkit / Docker Desktop z WSL2).
-    # Na maszynie bez GPU NVIDIA usuń ten blok, inaczej kontener nie wystartuje.
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # Domyślnie CPU. GPU NVIDIA: dołącz docker-compose.gpu.yml (patrz README)
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "ollama", "list"]
