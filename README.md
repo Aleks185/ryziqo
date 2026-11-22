@@ -42,7 +42,7 @@ Bez Ollamy backend działa na regułach UKNF (`demo_fallback`). Modele AI:
 - Docker i Docker Compose.
 - RAM: 4 GB bez modelu językowego, 8–16 GB z lokalnym modelem.
 - Dla Ollamy zalecana karta NVIDIA z min. 6–8 GB VRAM (`gemma3:4b` ~50 tokenów/s; na CPU kilka–kilkanaście). Serwis `ollama` (profil `ai`) domyślnie działa na CPU; GPU włącza `docker-compose.gpu.yml` (wymaga NVIDIA Container Toolkit lub Docker Desktop z WSL2).
-- Bez Dockera: Python 3.11+, Node.js 20+, Yarn 1.22 (`uvicorn app.main:app` w `backend/`, `yarn start` w `frontend/`).
+- Bez Dockera: Python 3.11+, Node.js 20+, Yarn 1.22 (`uvicorn app.main:app` w `backend/`, `yarn start` w `frontend/`); w `.env` ustaw wtedy `OLLAMA_BASE_URL=http://localhost:11434`.
 
 ## Konfiguracja
 
