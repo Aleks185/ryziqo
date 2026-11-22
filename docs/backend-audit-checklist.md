@@ -6,7 +6,7 @@
 > 1. Każdy punkt oceń jako `PASS`, `WARN` lub `FAIL` i podaj konkretny dowód (ścieżka pliku, numery linii lub wynik uruchomionej komendy).
 > 2. Nie zakładaj, że coś działa — zweryfikuj w kodzie i testach.
 > 3. Na końcu zwróć krótkie podsumowanie z podziałem na `BLOCKER` (blokuje demo/Jury), `HIGH`, `MEDIUM`, `LOW` oraz konkretne rekomendacje poprawek.
-> 4. **Pliki referencyjne:** `CONTRACT.md`, `Opis Wyzwania HackNation UKNF 19.11.pdf`, `data/risk_criteria_rules.json`, `hacknation aleks.md`, `backend/app/`, `backend/tests/`, `docker-compose.yml`, `README.md`.
+> 4. **Pliki referencyjne:** `CONTRACT.md`, `Opis Wyzwania HackNation UKNF 19.11.pdf`, `data/risk_criteria_rules.json`, `backend/app/`, `backend/tests/`, `docker-compose.yml`, `README.md`.
 
 ---
 

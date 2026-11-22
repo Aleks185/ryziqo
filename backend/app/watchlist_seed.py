@@ -14,11 +14,15 @@ def load_watchlist_seed(seed_path: Path, registry: KNFRegistrySnapshot) -> list[
     if not seed_path.exists():
         return []
     doc = json.loads(seed_path.read_text(encoding="utf-8"))
-    items: list[dict[str, Any]] = [dict(i) for i in doc.get("items", []) if i.get("url")]
+    # Sites that block every declared bot (Cloudflare challenge) would only show errors on the watchlist
+    excluded = {site_key(f"https://{d}") for d in doc.get("exclude_domains", [])}
+    items: list[dict[str, Any]] = [
+        dict(i) for i in doc.get("items", []) if i.get("url") and site_key(i["url"]) not in excluded
+    ]
     if not doc.get("include_registry_domains", False):
         return items
 
-    covered = {site_key(i["url"]) for i in items}
+    covered = {site_key(i["url"]) for i in items} | excluded
     for entity in registry.raw_snapshot.get("entities", []):
         if entity.get("is_synthetic_demo"):
             continue
