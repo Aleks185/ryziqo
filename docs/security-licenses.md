@@ -56,22 +56,22 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
 - **Odporność silnika AI na manipulacje:** treść strony w piaskownicy `<untrusted_content>`, wykrywanie prompt injection w ukrytym tekście (`AI_PROMPT_INJECTION`, blokuje weto FP), weryfikacja cytatów LLM w tekście źródłowym oraz normalizacja homoglifów i znaków zero-width (`backend/app/ai/`).
 - **Anty-SSRF dla rozwijania linków:** opcjonalne rozwijanie skracaczy (`CRAWLER_EXPAND_SHORT_LINKS`) waliduje każdy krok przekierowania tą samą funkcją `validate_public_url`.
 - **Limity scrapera:** limit rozmiaru odpowiedzi (`2 MB`), timeouty, limit przekierowań (`5`), łagodne tempo żądań.
-- **Etyka crawlera:** respektowanie `robots.txt` (cache per domena, `CRAWLER_RESPECT_ROBOTS`) i `Crawl-delay`, odstęp między żądaniami do jednego hosta (`CRAWLER_PER_HOST_DELAY_SECONDS`), jawny User-Agent bez podszywania się pod przeglądarki.
+- **Etyka crawlera:** respektowanie `robots.txt` (cache per domena, `CRAWLER_RESPECT_ROBOTS`) i `Crawl-delay`, odstęp między żądaniami do jednego hosta (`CRAWLER_PER_HOST_DELAY_SECONDS`), jawny User-Agent crawlera bez podszywania się pod przeglądarki. Wyjątkiem jest synchronizacja rejestru z knf.gov.pl (`KNF_SYNC_USER_AGENT`): serwer KNF zrywa połączenia z nagłówkiem bota, choć `robots.txt` na to pozwala.
 - **Discovery i chodzenie po linkach:** każdy URL z SearXNG i każda podstrona przechodzi kanonikalizację, listę wykluczeń domen i `validate_public_url`; liczba nowych URL-i na rundę i podstron na zadanie jest ograniczona. SearXNG nie ma portu na hoście (dostępny tylko w sieci Dockera).
 - **Odświeżanie rejestru KNF:** pobieranie z tymi samymi limitami i anty-SSRF; zapis atomowy obok bazy, a kategoria, która zwróci mniej niż połowę poprzednich wpisów, zostaje bez zmian (ochrona przed zmianą struktury strony).
 
 ## 3. Wynik audytu `pip-audit`
 
-- **Data audytu:** `2026-11-21`
-- **Komenda:** `backend\.venv\Scripts\pip-audit.exe -r requirements-dev.txt -r requirements-playwright.txt` (pip-audit `2.10.1`, Python `3.15.2`) — ponowione po wdrożeniu detekcji v2 (commit `a891f9e`, bez nowych zależności Pythona)
+- **Data audytu:** `2026-11-22` (ponowiony, wynik bez zmian)
+- **Komenda:** `pip-audit -r requirements-dev.txt -r requirements-playwright.txt` oraz `pip-audit --no-deps --disable-pip -r requirements-ocr.txt` (RapidOCR nie ma kół dla lokalnego Pythona, instaluje się tylko w obrazie Dockera)
 - **Wynik:** `No known vulnerabilities found` (kod wyjścia `0`, **0 znanych podatności** we wszystkich zainstalowanych pakietach).
 
 ## 4. Wynik audytu `yarn audit` (frontend)
 
-- **Data audytu:** `2026-11-21`
-- **Komenda:** `yarn audit` (Yarn `1.22.22`, `node:20-alpine`), 1560 pakietów
-- **Wynik:** **35 zgłoszeń** — 8 low, 16 moderate, 11 high.
-- **Analiza wpływu:**
-  - Niemal wszystkie zgłoszenia pochodzą z narzędzi builda/dev servera `react-scripts` 5 (`svgo`, `body-parser`, `launch-editor`, `fast-uri`, `qs`, `serialize-javascript`, `postcss-selector-parser`). Działają one wyłącznie w czasie `yarn build` / `yarn start` i **nie trafiają do obrazu produkcyjnego** (Nginx serwuje tylko statyczny build).
-  - `zod` (high) i `axios` → `follow-redirects` (high) są zadeklarowane w `package.json` (pozostałość szablonu), ale **nie są importowane przez kod aplikacji**, więc nie występują w bundlu.
-- **Rekomendacja:** usunąć nieużywane zależności (`axios`, `zod`, `@hookform/resolvers` i inne niewykorzystywane pakiety szablonu) oraz rozważyć migrację z niewspieranego CRA na Vite, co usunie większość zgłoszeń łańcucha narzędzi.
+- **Data audytu:** `2026-11-22`
+- **Komenda:** `yarn audit` (Yarn `1.22.22`), 1521 pakietów
+- **Wynik:** `0 vulnerabilities found`.
+- **Co zostało zrobione** (poprzedni audyt z 2026-11-21: 35 zgłoszeń, w tym 11 high):
+  - usunięte nieużywane zależności po szablonie: `axios` (ciągnął `follow-redirects`), `zod`, `@hookform/resolvers`;
+  - podbite przez `resolutions` w `package.json` zależności przechodnie narzędzi builda `react-scripts` 5 do wersji z poprawkami: `follow-redirects`, `fast-uri`, `qs`, `serialize-javascript`, `launch-editor`, `body-parser`, `postcss-selector-parser`, `svgo`.
+- Narzędzia builda i tak nie trafiają do obrazu produkcyjnego (Nginx serwuje tylko statyczny build). Dalszy krok przy wdrożeniu: migracja z niewspieranego CRA na Vite.
