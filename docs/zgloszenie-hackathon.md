@@ -1,0 +1,7 @@
+# Zgłoszenie: tytuł i opis projektu
+
+**Tytuł:** Ryziqo (#InvestWatch) — lokalny system monitoringu treści inwestycyjnych dla UKNF
+
+**Opis:** Ryziqo automatycznie zbiera materiały promocyjne i oferty finansowe z internetu (crawler z kolejką zadań, rotacją User-Agent i proxy, parsery social mediów, odkrywanie nowych treści przez SearXNG) i ocenia je trzema modułami: (1) reklamy firm inwestycyjnych publikowane przez finfluencerów i podmioty trzecie, (2) kompletność i proporcjonalność informacji o ryzyku według 18 kryteriów UKNF, w tym analiza układu strony (czcionka, kontrast, ukryte ostrzeżenia), (3) nieautoryzowane doradztwo inwestycyjne i podszywanie się pod podmioty z rejestru KNF. Klasyfikację wykonują deterministyczne reguły oraz lokalny model Gemma przez Ollamę; cytaty niewystępujące w treści są odrzucane, a próby prompt injection wykrywane. Panel analityka pokazuje wyniki z filtrami (data, źródło, ryzyko, moduł), trend incydentów, alerty WebSocket o wysokim ryzyku, zmianę statusu rekordu oraz panel kalibracji progu (wpływ na TP/FP/FN, precyzję i pełność). Dodatkowo: paczka dowodowa z sumami SHA-256, historia wersji strony, graf powiązań kampanii i publiczny formularz zgłoszeń obywatelskich ze zrzutu ekranu. Cały stos uruchamia `docker compose up`; tylko open source, zero płatnych API.
+
+**Trafność (zbiór 53 przypadków, próg 0,65):** reguły P 0,960 / R 0,686 / F1 0,800; gemma3:4b P 0,931 / R 0,771 / F1 0,844.

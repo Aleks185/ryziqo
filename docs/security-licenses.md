@@ -74,3 +74,7 @@ System nie korzysta z żadnych płatnych zewnętrznych API. Inferencja LLM oraz 
   - usunięte nieużywane zależności po szablonie (`dependencies` z 57 do 14): m.in. `axios` (ciągnął `follow-redirects`), `zod`, `@tanstack/react-query`, `swr`, `framer-motion`, 25 pakietów `@radix-ui/*`, oraz 44 nieużywane komponenty `components/ui/`;
   - podbite przez `resolutions` w `package.json` zależności przechodnie narzędzi builda `react-scripts` 5 do wersji z poprawkami: `follow-redirects`, `fast-uri`, `qs`, `serialize-javascript`, `launch-editor`, `body-parser`, `postcss-selector-parser`, `svgo`.
 - Narzędzia builda i tak nie trafiają do obrazu produkcyjnego (Nginx serwuje tylko statyczny build). Dalszy krok przy wdrożeniu: migracja z niewspieranego CRA na Vite.
+
+## 5. Automatyzacja audytu
+
+Workflow `.github/workflows/security.yml` uruchamia `pip-audit` (backend) i `yarn audit --level moderate` (frontend) przy każdym pushu na `main`, w pull requestach i raz w tygodniu. Są to narzędzia otwarte, bez konta zewnętrznego; skan Snyk można dołożyć jako dodatkowy krok (`snyk test`) po dodaniu `SNYK_TOKEN` do sekretów repozytorium.

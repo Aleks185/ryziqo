@@ -2,11 +2,6 @@
 const path = require("path");
 require("dotenv").config();
 
-// Environment variable overrides
-const config = {
-  enableHealthCheck: process.env.ENABLE_HEALTH_CHECK === "true",
-};
-
 // react-scripts 5 generates webpack-dev-server v4 options; the resolution pins v5,
 // so translate the removed/renamed options to their v5 equivalents.
 function makeDevServerV5Compatible(devServerConfig) {
@@ -56,16 +51,6 @@ function makeDevServerV5Compatible(devServerConfig) {
   return compatibleConfig;
 }
 
-// Conditionally load health check modules only if enabled
-let setupHealthEndpoints;
-let healthPluginInstance;
-
-if (config.enableHealthCheck) {
-  const WebpackHealthPlugin = require("./plugins/health-check/webpack-health-plugin");
-  setupHealthEndpoints = require("./plugins/health-check/health-endpoints");
-  healthPluginInstance = new WebpackHealthPlugin();
-}
-
 module.exports = {
   eslint: {
     configure: {
@@ -94,25 +79,10 @@ module.exports = {
         ],
       };
 
-      if (healthPluginInstance) {
-        webpackConfig.plugins.push(healthPluginInstance);
-      }
       return webpackConfig;
     },
   },
   devServer: (devServerConfig) => {
-    if (setupHealthEndpoints && healthPluginInstance) {
-      const originalSetupMiddlewares = devServerConfig.setupMiddlewares;
-
-      devServerConfig.setupMiddlewares = (middlewares, devServer) => {
-        if (originalSetupMiddlewares) {
-          middlewares = originalSetupMiddlewares(middlewares, devServer);
-        }
-        setupHealthEndpoints(devServer, healthPluginInstance);
-        return middlewares;
-      };
-    }
-
     return makeDevServerV5Compatible(devServerConfig);
   },
 };
