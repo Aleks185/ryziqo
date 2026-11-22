@@ -24,7 +24,8 @@ async function req(path, { body, method = "GET", signal, timeout = 90000 } = {})
       err.status = res.status;
       throw err;
     }
-    return res.json();
+    // 204 No Content (np. DELETE /watchlist/{id}) nie ma treści JSON
+    return res.status === 204 ? null : res.json();
   } finally {
     clearTimeout(timer);
   }
@@ -92,4 +93,16 @@ export const backend = {
     req(`/incidents/${encodeURIComponent(id)}/status`, { method: "PATCH", body: { status } }),
   setLabel: (id, ground_truth_label) =>
     req(`/incidents/${encodeURIComponent(id)}/label`, { method: "PATCH", body: { ground_truth_label } }),
+
+  // Crawler, watchlista i discovery (CONTRACT.md: /crawl/*, /watchlist/*, /discovery/*)
+  crawlJobs: () => req("/crawl/jobs", { timeout: 10000 }),
+  triggerCrawl: (body) => req("/crawl/trigger", { method: "POST", body, timeout: 15000 }),
+  watchlist: () => req("/watchlist", { timeout: 10000 }),
+  addWatchTarget: (body) => req("/watchlist", { method: "POST", body, timeout: 15000 }),
+  setWatchTargetEnabled: (id, enabled) => req(`/watchlist/${encodeURIComponent(id)}`, { method: "PATCH", body: { enabled } }),
+  deleteWatchTarget: (id) => req(`/watchlist/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  runWatchlist: () => req("/watchlist/run", { method: "POST" }),
+  seedWatchlist: () => req("/watchlist/seed", { method: "POST" }),
+  discoveryRecent: () => req("/discovery/recent?limit=20", { timeout: 10000 }),
+  runDiscovery: () => req("/discovery/run", { method: "POST", timeout: 120000 }),
 };

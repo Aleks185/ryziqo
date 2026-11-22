@@ -566,3 +566,92 @@ def test_robots_txt_is_fetched_from_the_pinned_ip(monkeypatch: pytest.MonkeyPatc
     with pytest.raises(RobotsDisallowedError):
         asyncio.run(reader.fetch_public_url("https://broker.pl/private"))
     assert seen == [("93.184.216.34", "broker.pl", "/robots.txt")]
+
+
+# --- Timeouts and readable fetch errors ----------------------------------------------
+
+
+def _pinned_http(monkeypatch: pytest.MonkeyPatch, handler) -> None:  # type: ignore[no-untyped-def]
+    """Like _mock_http, but requests go to a pinned IP (as in production), so error messages are checked."""
+    from app.scraper.ssrf import ValidatedURL
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(fetcher_module, "validate_public_url", lambda u: ValidatedURL(u, "93.184.216.34"))
+    monkeypatch.setattr(
+        fetcher_module.httpx,
+        "AsyncClient",
+        lambda **kw: real_client(transport=httpx.MockTransport(handler), **{k: v for k, v in kw.items() if k != "proxy"}),
+    )
+
+
+def test_slow_page_raises_readable_timeout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(404)
+        await asyncio.sleep(1.0)
+        return httpx.Response(200, headers={"content-type": "text/html"}, text="<p>za późno</p>")
+
+    _pinned_http(monkeypatch, handler)
+    fetcher = PageFetcher(_settings(tmp_path, crawler_timeout_seconds=0.2))
+    with pytest.raises(fetcher_module.FetchTimeoutError) as info:
+        asyncio.run(fetcher.fetch_public_url("https://wolny-broker.pl/oferta"))
+    assert "wolny-broker.pl" in str(info.value) and "93.184.216.34" not in str(info.value)
+    assert isinstance(info.value, TimeoutError)  # /analyze/url maps TimeoutError to HTTP 504
+
+
+def test_politeness_wait_is_outside_the_request_timeout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(404)
+        if request.url.path == "/":
+            return httpx.Response(302, headers={"location": "/pl"})
+        return httpx.Response(200, headers={"content-type": "text/html"}, text="<p>ok</p>")
+
+    _mock_http(monkeypatch, handler)
+    # The per-host spacing before the redirect hop (0.5 s) is longer than the request timeout (0.3 s)
+    fetcher = PageFetcher(_settings(tmp_path, crawler_timeout_seconds=0.3, crawler_per_host_delay_seconds=0.5))
+    page = asyncio.run(fetcher.fetch_public_url("https://site.pl/"))
+    assert page.raw_html == "<p>ok</p>"
+    assert page.redirect_chain == ["https://site.pl/", "https://site.pl/pl"]
+
+
+def test_http_error_names_the_host_not_the_pinned_ip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(404)
+        return httpx.Response(403, text="bot")
+
+    _pinned_http(monkeypatch, handler)
+    fetcher = PageFetcher(_settings(tmp_path))
+    with pytest.raises(httpx.HTTPStatusError) as info:
+        asyncio.run(fetcher.fetch_public_url("https://broker.pl/pl"))
+    message = str(info.value)
+    assert info.value.response.status_code == 403
+    assert "broker.pl" in message and "antybot" in message and "93.184.216.34" not in message
+
+
+def test_subpage_timeout_is_skipped_and_root_timeout_has_a_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.routers import crawl as crawl_router
+
+    async def fake_fetch(url: str, use_playwright: bool = False) -> FetchedPage:
+        if url.endswith("/wolna"):
+            raise fetcher_module.FetchTimeoutError("site.pl nie odpowiedział w ciągu 8 s")
+        if url.startswith("https://martwy.pl"):
+            raise TimeoutError()  # bare timeout: str() is empty
+        html = '<a href="/wolna">Wolna</a><a href="/b">B</a>' if url == "https://site.pl/" else "<p>b</p>"
+        return FetchedPage(url, url, "web", html, 200)
+
+    with TestClient(create_app(custom_settings=_settings(tmp_path))) as client:
+        monkeypatch.setattr(crawl_router, "validate_public_url", lambda u: u)
+        monkeypatch.setattr(client.app.state.fetcher, "fetch_public_url", fake_fetch)
+        body = {"mode": "public_url", "target_url": "https://site.pl/", "follow_depth": 1}
+        job = _wait_for_job(client, client.post("/api/v1/crawl/trigger", json=body).json()["job_id"])
+        assert job["status"] == "completed"
+        assert job["processed_count"] == 2  # root + /b, the slow subpage is skipped
+
+        body = {"mode": "public_url", "target_url": "https://martwy.pl/"}
+        job = _wait_for_job(client, client.post("/api/v1/crawl/trigger", json=body).json()["job_id"])
+        assert job["status"] == "failed"
+        assert job["error_message"] == "TimeoutError"

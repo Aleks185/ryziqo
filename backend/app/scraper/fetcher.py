@@ -46,6 +46,33 @@ def _host(url: str) -> str:
     host = (urlparse(url).hostname or "").lower()
     return host[4:] if host.startswith("www.") else host
 
+
+class FetchTimeoutError(TimeoutError):
+    """A page did not answer within CRAWLER_TIMEOUT_SECONDS (readable message with the host name)."""
+
+
+# Hints shown to the analyst next to common blocking / server error statuses
+HTTP_STATUS_HINTS = {
+    401: "strona wymaga logowania",
+    403: "strona blokuje automatyczne pobieranie (ochrona antybotowa)",
+    404: "strona nie istnieje",
+    410: "strona została usunięta",
+    429: "serwer ogranicza liczbę zapytań — spróbuj później",
+    451: "treść niedostępna z przyczyn prawnych",
+    503: "serwer chwilowo niedostępny",
+}
+
+
+def http_status_error(url: str, response: httpx.Response) -> httpx.HTTPStatusError:
+    """HTTPStatusError naming the original host (the pinned request URL holds only the IP)."""
+    code = response.status_code
+    hint = HTTP_STATUS_HINTS.get(code) or ("błąd serwera" if code >= 500 else "błąd klienta")
+    return httpx.HTTPStatusError(
+        f"{urlparse(url).hostname} zwrócił HTTP {code} ({hint}) dla {url}",
+        request=response.request,
+        response=response,
+    )
+
 # Ethical, transparent User-Agent pool (no spoofing to bypass access controls)
 ETHICAL_USER_AGENTS = [
     "RyziqoResearchBot/1.0 (+https://knf.gov.pl; HackNation-UKNF-MVP) httpx/0.28",
@@ -239,7 +266,7 @@ class PageFetcher:
         status_code = 200
         proxy = self.pick_proxy()
 
-        async with asyncio.timeout(self.settings.crawler_timeout_seconds), httpx.AsyncClient(
+        async with httpx.AsyncClient(
             timeout=timeout, follow_redirects=False, proxy=proxy, trust_env=False
         ) as client:
             for hop in range(self.settings.crawler_max_redirects + 1):
@@ -249,44 +276,33 @@ class PageFetcher:
                     self._snapshots.pop(current_url)
                     cached = None
                 request_headers = {**headers, "If-None-Match": cached.etag} if cached else headers
-                async with client.stream("GET", **pinned_request(current_url, request_headers)) as resp:
-                    status_code = resp.status_code
-                    if status_code == 304 and cached:
-                        raw_bytes.extend(cached.data)
-                        encoding = cached.encoding
-                        status_code = 200
-                        break
-                    if resp.is_redirect and "location" in resp.headers:
-                        if hop >= self.settings.crawler_max_redirects:
-                            raise SSRFError("Przekroczono maksymalną liczbę przekierowań HTTP.")
-                        next_url = urljoin(current_url, resp.headers["location"])
-                        chain.append(next_url)
-                        current_url = await asyncio.to_thread(validate_public_url, next_url)
-                        await self._be_polite(current_url, user_agent)
-                        continue
-
-                    resp.raise_for_status()
-                    content_type = resp.headers.get("content-type", "").lower()
-                    if not any(
-                        t in content_type for t in ("text/html", "text/plain", "application/xhtml")
-                    ):
-                        raise ValueError(f"Nieobsługiwany typ treści: {content_type}")
-
-                    encoding = resp.encoding or "utf-8"
-                    async for chunk in resp.aiter_bytes(chunk_size=65536):
-                        raw_bytes.extend(chunk)
-                        if len(raw_bytes) > self.settings.crawler_max_bytes:
-                            raise ValueError(
-                                f"Przekroczono limit rozmiaru odpowiedzi ({self.settings.crawler_max_bytes} B)."
-                            )
-                    # Keep at most four bounded representations. Only strong ETags validate byte equality.
-                    self._snapshots.pop(current_url, None)
-                    etag = resp.headers.get("etag", "")
-                    if etag.startswith('"') and "no-store" not in resp.headers.get("cache-control", "").lower() and not resp.headers.get("vary"):
-                        self._snapshots[current_url] = HttpSnapshot(time.monotonic()+900, etag, encoding, bytes(raw_bytes))
-                        if len(self._snapshots) > 4:
-                            self._snapshots.popitem(last=False)
+                next_url: str | None = None
+                # The time budget covers one request (headers + body); the politeness wait before
+                # the next redirect hop (per-host spacing, Crawl-delay) is deliberately outside it
+                try:
+                    async with asyncio.timeout(self.settings.crawler_timeout_seconds):
+                        async with client.stream("GET", **pinned_request(current_url, request_headers)) as resp:
+                            status_code = resp.status_code
+                            if status_code == 304 and cached:
+                                raw_bytes.extend(cached.data)
+                                encoding = cached.encoding
+                                status_code = 200
+                            elif resp.is_redirect and "location" in resp.headers:
+                                if hop >= self.settings.crawler_max_redirects:
+                                    raise SSRFError("Przekroczono maksymalną liczbę przekierowań HTTP.")
+                                next_url = urljoin(current_url, resp.headers["location"])
+                            else:
+                                encoding = await self._read_body(resp, current_url, raw_bytes)
+                except (TimeoutError, httpx.TimeoutException) as exc:
+                    raise FetchTimeoutError(
+                        f"{urlparse(current_url).hostname} nie odpowiedział w ciągu "
+                        f"{self.settings.crawler_timeout_seconds:g} s ({current_url})"
+                    ) from exc
+                if next_url is None:
                     break
+                chain.append(next_url)
+                current_url = await asyncio.to_thread(validate_public_url, next_url)
+                await self._be_polite(current_url, user_agent)
 
         try:
             html = raw_bytes.decode(encoding, errors="replace")
@@ -324,6 +340,35 @@ class PageFetcher:
             playwright_dom_metrics=pw_metrics,
             screenshots=screenshots,
         )
+
+    async def _read_body(self, resp: httpx.Response, url: str, raw_bytes: bytearray) -> str:
+        """Validate status / content type, stream the body into `raw_bytes` (size-capped) and
+        remember strong-ETag responses for conditional requests. Returns the text encoding."""
+        if resp.status_code >= 400:
+            raise http_status_error(url, resp)
+        content_type = resp.headers.get("content-type", "").lower()
+        if not any(t in content_type for t in ("text/html", "text/plain", "application/xhtml")):
+            raise ValueError(f"Nieobsługiwany typ treści: {content_type}")
+
+        encoding = resp.encoding or "utf-8"
+        async for chunk in resp.aiter_bytes(chunk_size=65536):
+            raw_bytes.extend(chunk)
+            if len(raw_bytes) > self.settings.crawler_max_bytes:
+                raise ValueError(
+                    f"Przekroczono limit rozmiaru odpowiedzi ({self.settings.crawler_max_bytes} B)."
+                )
+        # Keep at most four bounded representations. Only strong ETags validate byte equality.
+        self._snapshots.pop(url, None)
+        etag = resp.headers.get("etag", "")
+        if (
+            etag.startswith('"')
+            and "no-store" not in resp.headers.get("cache-control", "").lower()
+            and not resp.headers.get("vary")
+        ):
+            self._snapshots[url] = HttpSnapshot(time.monotonic() + 900, etag, encoding, bytes(raw_bytes))
+            if len(self._snapshots) > 4:
+                self._snapshots.popitem(last=False)
+        return encoding
 
     @staticmethod
     def looks_js_rendered(html: str, min_text_chars: int) -> bool:

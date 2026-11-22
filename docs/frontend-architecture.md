@@ -58,6 +58,7 @@ frontend/
     │   ├── Dashboard.jsx         # "/"               — KPI, trend, live log, przegląd zagrożeń, rejestr incydentów
     │   ├── Citizen.jsx           # "/public"         — formularz obywatela: tekst / URL / zrzut, zgoda na udostępnienie
     │   ├── Analyze.jsx           # "/analyze"        — analiza tekstu / URL / zrzutu z postępem (SSE), przykłady demo
+│   ├── Crawler.jsx           # "/crawler"        — nowy skan, zadania kolejki, watchlista, discovery
     │   ├── IncidentDetail.jsx    # "/incidents/:id"  — reguły, cytaty, wersje strony, klony, paczka dowodowa, druk A4
     │   ├── Intelligence.jsx      # "/reports", "/reports/:id", "/campaigns", "/diagnostics" + ThreatOverview
     │   ├── Graph.jsx             # "/graph"          — mapa powiązań (d3-force, SVG)
@@ -113,6 +114,7 @@ Routing definiuje `src/App.js`. Wszystkie widoki poza `/public` mają boczną na
 | `/` | `Dashboard` | analityk | ✔ (bez `ThreatOverview`) | lista incydentów ze `store`, `/intelligence/diagnostics`, `/intelligence/reports?limit=5` |
 | `/public` | `Citizen` | obywatel | ✔ tylko tekst | `POST /analyze/jobs` lub `/analyze/text` / `/analyze/url` |
 | `/analyze` | `Analyze` | analityk | ✔ tylko tekst | `POST /analyze/jobs` + SSE |
+| `/crawler` | `Crawler` | analityk | ✘ | `GET /crawl/jobs`, `POST /crawl/trigger`, `/watchlist/*`, `/discovery/*` |
 | `/incidents/:id` | `IncidentDetail` | analityk | ✔ (bez wersji, klonów, paczki dowodowej) | `GET /incidents/{id}`, `/similar`, `/versions`, `/evidence-pack` |
 | `/reports` | `Reports` | analityk | ✘ | `GET /intelligence/reports` |
 | `/reports/:id` | `ReportDetails` | analityk | ✘ | `GET`/`PATCH /intelligence/reports/{id}` |
@@ -175,6 +177,13 @@ Widoki wymagają backendu (w DEMO pokazują komunikat „Rejestr wymaga połącz
 - Macierz TP/FP/TN/FN, precyzja/czułość i wykres FP/FN w funkcji progu liczone są w przeglądarce z `risk_score` i `ground_truth_label` (funkcja `confusion()`), więc działają identycznie w obu trybach. Przycisk „Przeanalizuj przykłady” wysyła brakujące S1–S6. Licznik „Decyzje analityków użyte przez RAG” to liczba incydentów z etykietą lub statusem `confirmed` / `false_positive` (liczony lokalnie; `GET /stats` nie jest używany).
 - `/log` — pełny `LiveLog` (do 300 zdarzeń w pamięci), z czyszczeniem i symulacją cyklu crawlera w trybie DEMO.
 
+### 4.8. Crawler (`/crawler`)
+Widok wymaga backendu (w DEMO komunikat z odesłaniem do symulacji w `/log`).
+- **Nowy skan** — publiczny URL (walidacja anty-SSRF po stronie backendu, błąd `400` pokazany wprost), głębokość podstron 0–2, limit stron (1–30), moduły, opcjonalny render Playwright; przycisk **„Skanuj strony demo”** (`mode: "mock_all"`). Duplikat w kolejce (`409`) daje czytelny komunikat.
+- **Zadania crawlera** — 25 ostatnich zadań z `GET /crawl/jobs`: status, cel, źródło (ręcznie / watchlista / discovery), liczba stron i wyników, uwagi (błąd pobrania z nazwą hosta, pominięcie przez `robots.txt`) oraz termin następnego skanu harmonogramu. Odświeżanie co 4 s, gdy coś jest w kolejce lub w trakcie (inaczej co 20 s), i od razu po zdarzeniach WebSocket `crawler_status:*`, `analysis_complete`, `error`.
+- **Watchlista** — dodawanie (URL, opis, głębokość), włączanie / wyłączanie skanu okresowego, usuwanie (z potwierdzeniem), „Skanuj” pojedynczego źródła (`origin: "watchlist"`), „Skanuj wszystkie teraz” (`POST /watchlist/run`) i „Dodaj źródła startowe” (`POST /watchlist/seed`). Kolumna **„Ostatni skan”** to najnowsze zadanie z listy zadań dla tego samego kanonicznego URL-a (status, czas, błąd).
+- **Discovery** — przy `DISCOVERY_ENABLED=true` przycisk „Uruchom discovery” (`POST /discovery/run`) i ostatnio znalezione adresy (`GET /discovery/recent`); w przeciwnym razie instrukcja włączenia profilu SearXNG.
+
 ---
 
 ## 5. Warstwa stanu i tryby pracy (`lib/store.js`)
@@ -213,11 +222,12 @@ Klient: `src/lib/api.js` (`fetch` z `AbortController`, domyślny timeout 90 s; b
 | Kampanie | `GET /api/v1/intelligence/campaigns`, `PATCH /api/v1/intelligence/campaigns/{id}` |
 | Mapa powiązań | `GET /api/v1/intelligence/graph?min_score=` |
 | Diagnostyka i przegląd zagrożeń | `GET /api/v1/intelligence/diagnostics` |
+| Crawler, watchlista, discovery | `GET /api/v1/crawl/jobs`, `POST /api/v1/crawl/trigger`, `GET`/`POST /api/v1/watchlist`, `PATCH`/`DELETE /api/v1/watchlist/{id}`, `POST /api/v1/watchlist/run`, `POST /api/v1/watchlist/seed`, `GET /api/v1/discovery/recent`, `POST /api/v1/discovery/run` |
 | Live Crawler Log i alerty | WebSocket `/ws/alerts`: `crawler_status` (→ wpis `crawler_status:<stage>`), `high_risk_alert` (→ pobranie incydentu i toast), `status_updated` (→ odświeżenie incydentu), `analysis_complete` (→ odświeżenie listy), `error`, `pong` (ignorowany) |
 
 Każde żądanie analizy niesie `source_channel` (`analyst_panel` lub `public_form`), a z formularza obywatela także pola zgody (`share_mode`, `reporter_display_name`, `reporter_key`). Odpowiedź zawiera `items` (incydenty, `risk_score` 0–1) i `report` (podsumowanie, `risk_score` 0–100, `result_origin`).
 
-**Nieużywane przez panel** (dostępne przez API / Swagger): `GET /stats`, `crawl/*`, `watchlist/*`, `discovery/*`, `reports/{module_id}`, `knf-registry`, `rules` — patrz [§12](#12-znane-ograniczenia).
+**Nieużywane przez panel** (dostępne przez API / Swagger): `GET /stats`, `reports/{module_id}`, `knf-registry`, `rules` — patrz [§12](#12-znane-ograniczenia).
 
 ### 6.2. Kolejka analizy i postęp (SSE)
 
@@ -345,7 +355,8 @@ CI=true yarn build
 - **Notatka analityka i status „przekazane” (`referred`)** są przechowywane tylko w `localStorage` przeglądarki — nie trafiają do backendu ani do paczki dowodowej i nie są widoczne dla innych analityków. Notatka w bazie zgłoszeń (`/reports/:id`) jest osobnym polem zapisywanym w backendzie.
 - **Dwa słowniki statusów:** incydenty (`new`, `in_review`, `referred`, `confirmed`, `false_positive`) i wpisy bazy zgłoszeń (`new`, `confirmed_fake`, `requires_review`, `false_positive`) są niezależne.
 - **Filtry pulpitu** — tylko po module; backend obsługuje już `date_from` / `date_to`, `source_platform` i `risk_level` ([spec-checklist.md](./spec-checklist.md)).
-- **Brak widoków** dla crawla (`/crawl/*`), watchlisty, discovery i raportów modułów — dostępne tylko przez API / Swagger.
+- **Brak widoku** raportów modułów (`/reports/{module_id}`) — dostępne tylko przez API / Swagger; eksport z pulpitu liczony jest w przeglądarce.
+- **Watchlista nie przechowuje wyniku ostatniego skanu** — kolumna „Ostatni skan” w `/crawler` jest wyliczana z 25 ostatnich zadań (`GET /crawl/jobs`), więc dla rzadko skanowanych źródeł bywa pusta.
 - **Lista incydentów** ładowana jest jednorazowo do 500 rekordów (bez stronicowania po stronie serwera).
-- **Teksty `Intelligence.jsx` i `Graph.jsx`** są wpisane w komponentach (`l(pl, en)`), a nie w `i18n.js`.
+- **Teksty `Intelligence.jsx`, `Graph.jsx` i `Crawler.jsx`** są wpisane w komponentach (`l(pl, en)`), a nie w `i18n.js`.
 - **Nieużywane zależności** z szablonu Emergent/shadcn (m.in. `axios`, `swr`, część komponentów `ui/`) zwiększają powierzchnię audytu `yarn audit`. `@tanstack/react-query` jest tylko zainicjowany w `src/index.js` (`QueryClientProvider`) — żaden widok nie korzysta z `useQuery`.
