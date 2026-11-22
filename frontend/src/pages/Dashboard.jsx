@@ -1,4 +1,5 @@
 import { formatRiskPercent } from "@/lib/utils";
+import Graph from "./Graph";
 import { ThreatOverview } from "./Intelligence";
 import { useMemo, useState } from "react";
 import { ALERT_THRESHOLD, API_URL, MODULES, riskLevel } from "@/lib/config";
@@ -124,8 +125,9 @@ const ModuleReport = ({ module, filters }) => {
 };
 
 export default function Dashboard() {
-  const { incidents, knfSnapshotDate, mode, t } = useApp();
+  const { incidents, knfSnapshotDate, mode, t, lang } = useApp();
   const [filter, setFilter] = useState("all");
+  const [showGraph, setShowGraph] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const sources = useMemo(
     () => [...new Set(incidents.map((i) => i.source_platform).filter(Boolean))].sort(),
@@ -142,7 +144,7 @@ export default function Dashboard() {
             {t("knf_snapshot")}: {knfSnapshotDate || "—"}
           </p>
         </div>
-        <ModuleFilter value={filter} onChange={setFilter} />
+        <ModuleFilter value={filter} onChange={(next) => { setFilter(next); setShowGraph(false); }} />
       </div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <FilterBar sources={sources} value={filters} onChange={setFilters} />
@@ -159,7 +161,10 @@ export default function Dashboard() {
         <LiveLog limit={10} />
       </div>
       <ThreatOverview />
-      <IncidentTable incidents={list} />
+      {filter !== "all" && <button type="button" className="compact-action" aria-expanded={showGraph} onClick={() => setShowGraph(!showGraph)}>
+        {showGraph ? (lang === "en" ? "Show list" : "Pokaż listę") : (lang === "en" ? "Show relationship map" : "Pokaż graf powiązań")}
+      </button>}
+      {filter !== "all" && showGraph ? <Graph key={filter} incidents={list} module={filter} /> : <IncidentTable incidents={list} />}
     </div>
   );
 }

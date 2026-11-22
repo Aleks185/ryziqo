@@ -51,10 +51,11 @@ function ReportRows({rows}) {
   if (!rows.length) return <p className="text-sm text-slate-600">{l("Brak zgłoszeń.","No reports.")}</p>;
   return <div className="overflow-x-auto -mx-5"><table className="w-full text-left text-sm tabular-nums border-collapse">
     <thead><tr className="text-[11px] uppercase tracking-wider text-slate-500 border-b border-[#E2E8F0]">
-      {[l("Data","Date"),l("Materiał","Material"),l("Ryzyko","Risk"),"Status"].map(s=><th className="px-5 py-2 font-semibold" key={s}>{s}</th>)}
+      {[l("Data","Date"),l("Materiał","Material"),l("Źródło i hosting","Source and hosting"),l("Ryzyko","Risk"),"Status"].map(s=><th className="px-5 py-2 font-semibold" key={s}>{s}</th>)}
     </tr></thead><tbody>{rows.map(r=><tr key={r.id} className="border-b border-[#F1F5F9]">
       <td className="px-5 py-2.5 whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</td>
-      <td className="px-5 py-2.5 max-w-[320px]"><Link className="underline focus-ring" to={"/reports/"+r.id}>{r.canonical_domain || r.excerpt?.slice(0,90) || r.source_type}</Link></td>
+      <td className="px-5 py-2.5 max-w-[320px]"><Link className="underline focus-ring" to={"/reports/"+r.id}>{r.canonical_domain || r.excerpt?.slice(0,90) || r.source_type}</Link>{r.analyst_notes && <p className="text-xs text-slate-600">{r.analyst_notes}</p>}</td>
+      <td className="px-5 py-2.5 text-xs"><div>{r.platform || r.source_type}</div><div>IP: {r.target_server_ip || l("brak danych","unavailable")}</div>{[r.hosting_asn,r.hosting_country].filter(Boolean).join(" · ")}</td>
       <td className="px-5 py-2.5"><RiskScore score={r.risk_score/100}/></td>
       <td className="px-5 py-2.5">{l(...states[r.verdict_status])}</td>
     </tr>)}</tbody></table></div>;
@@ -112,29 +113,27 @@ export function ReportDetails(){
   return <div className="space-y-6"><h1 className={title}>{l("Szczegóły zgłoszenia","Report details")}</h1>
     <Panel title={l("Wynik analizy","Analysis result")}><RiskScore score={r.risk_score/100}/><p>{r.ai_report_json.summary}</p>
     {r.incident_ids.map(i=><Link key={i} className="underline focus-ring" to={"/incidents/"+i+"?report="+r.id}>{i} </Link>)}</Panel>
-    <Evidence r={r}/><ReviewForm key={id} r={r} onSave={data.reload}/></div>;
+    <Panel title={l("Opis zgłoszenia","Report description")}><p className="whitespace-pre-wrap">{r.excerpt || "—"}</p></Panel><Evidence r={r}/><ReviewForm key={id} r={r} onSave={data.reload}/></div>;
 }
-const countKeys={new:"new_count",confirmed_fake:"confirmed_count",requires_review:"review_count",false_positive:"fp_count"};
-const dominant=c=>Object.keys(countKeys).reduce((best,k)=>(c[countKeys[k]]||0)>(c[countKeys[best]]||0)?k:best,"requires_review");
-function Campaign({c,refresh}){
-  const l=useLabels(); const [status,set]=useState(dominant(c)),[note,setNote]=useState(c.analyst_notes||""),[msg,setMsg]=useState("");
-  async function save(){try{const res=await backend.intel("campaigns/"+c.campaign_id,{method:"PATCH",body:{verdict_status:status,...(note.trim()?{analyst_notes:note}:{})}});setMsg(l("Zmieniono: ","Updated: ")+res.updated);refresh();}catch(e){setMsg(e.message);}}
-  return <Panel title={c.domain || c.server_ip || c.campaign_id}><div className="space-y-3">
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"><RiskScore score={(c.risk_score||0)/100}/>
-      <span className="text-slate-600">{l("Ostatnio","Last seen")}: {new Date(c.last_seen).toLocaleString()}</span></div>
-    <p className="text-sm text-slate-600">{Object.entries(countKeys).filter(([,k])=>c[k]).map(([s,k])=>l(...states[s])+": "+c[k]).join(" · ")}</p>
-    <Link className="underline focus-ring font-semibold" to={"/campaigns/"+c.campaign_id}>{l("Centrum wywiadowcze kampanii","Campaign intelligence center")}</Link>{" · "}
-    <Link className="underline focus-ring" to={"/reports?campaign="+c.campaign_id}>{l("Zgłoszenia","Reports")} ({c.members})</Link>
-    <VerdictSelect value={status} onChange={set}/>
-    <label className="block text-sm">{l("Notatka kampanii","Campaign note")}<textarea maxLength={4000} className={field} value={note} onChange={e=>setNote(e.target.value)}/></label>
-    <button className="compact-action" onClick={save}>{l("Zastosuj do całej kampanii","Apply to the entire campaign")}</button> <span role="status">{msg}</span></div></Panel>;
-}
+const decisions = {
+  confirmed:["Kampania potwierdzona przez człowieka","Human-confirmed campaign"],
+  false_coincidence:["Przypadkowa zbieżność (false coincidence)","False coincidence"],
+};
+const pending=["Do oceny powiązania","Pending relationship review"];
 export function Campaigns(){
-  const l=useLabels(),[active,setActive]=useState(true),data=useData("campaigns?active_only="+active);
+  const l=useLabels(),data=useData("campaigns?limit=500"),[filter,setFilter]=useState("");
+  const [hiddenDemo,setHiddenDemo]=useState(()=>localStorage.getItem("ryziqo.demo.dissolved")==="1");
+  const groups=data.mode==="demo" ? [] : data.value;
+  const rows=groups?.filter(c=>!filter || (c.classification || "pending")===filter);
   return <div className="space-y-6"><h1 className={title}>{l("Kampanie","Campaigns")}</h1>
-    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/>{l("Tylko aktywne (bez kampanii w całości odrzuconych)","Active only (hide fully rejected campaigns)")}</label>
-    {data.mode==="demo" && <Panel title={l("Kampania: VectraTrade Polska — Klony sygnałów CFD","Campaign: VectraTrade Polska — CFD signal clones")}><p className="text-sm text-slate-600 mb-3">{l("Przykładowa kampania DEMO z kompletnym grafem powiązań.","Sample DEMO campaign with a complete relationship graph.")}</p><Link className="compact-action focus-ring" to={"/campaigns/"+DEMO_CAMPAIGN_ID}>{l("Otwórz centrum wywiadowcze","Open the intelligence center")}</Link></Panel>}
-    {!data.value ? (data.mode==="demo" ? null : <Feedback data={data}/>) : data.value.length ? data.value.map(c=><Campaign key={c.campaign_id} c={c} refresh={data.reload}/>) : <Panel>{l("Brak grup powiązanych zgłoszeń.","No related report groups.")}</Panel>}</div>;
+    {hiddenDemo ? <button className="compact-action" onClick={()=>{localStorage.removeItem("ryziqo.demo.dissolved");setHiddenDemo(false);}}>Przywróć kampanię DEMO</button> : <Link className="compact-action" to={"/campaigns/"+DEMO_CAMPAIGN_ID}>Kampania demonstracyjna · VectraTrade Polska</Link>}
+    <label>{l("Ocena powiązania","Relationship assessment")}<select className={field} value={filter} onChange={e=>setFilter(e.target.value)}>
+      <option value="">{l("Wszystkie","All")}</option><option value="pending">{l(...pending)}</option>
+      {Object.entries(decisions).map(([key,label])=><option key={key} value={key}>{l(...label)}</option>)}</select></label>
+    {!rows ? <Feedback data={data}/> : rows.length ? rows.map(c=><Panel key={c.campaign_id} title={c.domain || c.server_ip || c.campaign_id}>
+      <p>{l(...(decisions[c.classification] || pending))} · {l("Zgłoszenia","Reports")}: {c.members}</p>
+      <Link className="compact-action mt-2" to={"/campaigns/"+c.campaign_id}>{l("Otwórz kampanię","Open campaign")}</Link>
+    </Panel>) : <Panel>{l("Brak kampanii.","No campaigns.")}</Panel>}</div>;
 }
 export function Diagnostics(){
   const l=useLabels(),data=useData("diagnostics",3000),d=data.value;

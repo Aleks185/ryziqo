@@ -14,9 +14,9 @@ import {
 
 const field = "w-full border border-[#CBD5E1] rounded-sm px-3 py-2 text-sm bg-white focus-ring";
 const VERDICTS = [
-  ["confirmed_fake", "Kampania potwierdzona przez człowieka", "Campaign confirmed by a human"],
-  ["false_positive", "Przypadkowa zbieżność", "Coincidental match"],
-  ["requires_review", "Do oceny", "To be assessed"],
+  ["confirmed", "Kampania potwierdzona przez człowieka", "Campaign confirmed by a human"],
+  ["false_coincidence", "Przypadkowa zbieżność", "Coincidental match"],
+  ["pending", "Do oceny", "To be assessed"],
 ];
 const STATUS = { new: ["Nowe", "New"], confirmed_fake: ["Potwierdzony fake", "Confirmed fake"], requires_review: ["Do weryfikacji", "Requires review"], false_positive: ["Fałszywy alarm", "False positive"] };
 const LEVEL = { high: ["#DC2626", "bg-[#FEF2F2] text-[#991B1B] border-[#FCA5A5]"], medium: ["#D97706", "bg-[#FFFBEB] text-[#92400E] border-[#FCD34D]"], low: ["#059669", "bg-[#ECFDF5] text-[#065F46] border-[#6EE7B7]"] };
@@ -66,23 +66,23 @@ function RedirectChain({ reports, l }) {
 
 function Decision({ detail, demo, onSaved, l, lang }) {
   const navigate = useNavigate();
-  const stats = campaignStats(detail);
-  const [verdict, setVerdict] = useState(["confirmed_fake", "false_positive", "requires_review"].includes(stats.status) ? stats.status : "requires_review");
-  const [note, setNote] = useState(detail.reports.find((r) => r.analyst_notes)?.analyst_notes || "");
+  const [verdict, setVerdict] = useState(detail.classification || "pending");
+  const [note, setNote] = useState(detail.description || "");
   const [busy, setBusy] = useState(false);
   async function save() {
     setBusy(true);
     try {
-      if (!demo) await backend.intel(`campaigns/${detail.campaign_id}`, { method: "PATCH", body: { verdict_status: verdict, ...(note.trim() ? { analyst_notes: note } : {}) } });
+      if (!demo) await backend.intel(`campaigns/${encodeURIComponent(detail.campaign_id)}/decision`, { method: "PUT", body: { classification: verdict, description: note } });
       toast.success(l("Zapisano decyzję analityka.", "Analyst decision saved.") + (demo ? l(" (tryb DEMO — lokalnie)", " (DEMO mode — local)") : ""));
       onSaved(verdict, note);
     } catch (e) { toast.error(e.message); } finally { setBusy(false); }
   }
   async function dissolve() {
-    if (!window.confirm(l("Rozwiązać kampanię? Każde zgłoszenie trafi do osobnej grupy.", "Dissolve the campaign? Each report moves to its own group."))) return;
+    if (!window.confirm(l("Rozwiązać kampanię i pozostawić zgłoszenia w rejestrze?", "Dissolve the campaign and keep the reports in the registry?"))) return;
     setBusy(true);
     try {
-      if (!demo) await Promise.all(detail.reports.map((r) => backend.intel(`reports/${r.id}/detach`, { method: "POST" })));
+      if (demo) localStorage.setItem("ryziqo.demo.dissolved", "1");
+      else await backend.intel(`campaigns/${encodeURIComponent(detail.campaign_id)}`, { method: "DELETE" });
       toast.success(l("Kampania rozwiązana.", "Campaign dissolved."));
       navigate("/campaigns");
     } catch (e) { toast.error(e.message); } finally { setBusy(false); }
@@ -252,9 +252,9 @@ export default function CampaignDetail() {
         <CampaignGraphPanel nodes={graph.nodes} edges={graph.edges} saved={saved} setSaved={setSaved} dirty={dirty} onSave={persist} summary={summary} lang={lang} demo={demo} />
       </Panel>
 
-      <Decision key={detail.reports.map((r) => r.verdict_status).join()} detail={detail} demo={demo} l={l} lang={lang}
+      <Decision key={`${detail.classification}${detail.description}`} detail={detail} demo={demo} l={l} lang={lang}
         onSaved={(verdict, note) => {
-          if (demo) setState({ id, value: { ...detail, reports: detail.reports.map((r) => ({ ...r, verdict_status: verdict, analyst_notes: note })) } });
+          if (demo) setState({ id, value: { ...detail, classification: verdict, description: note } });
           else load();
         }} />
       <ReportsTable detail={detail} demo={demo} l={l} />

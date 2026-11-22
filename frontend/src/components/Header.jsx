@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, ClipboardList, FileSearch, Gauge, LayoutDashboard, Menu, Network, Radar, ScanSearch, Share2, ShieldAlert, Trophy } from "lucide-react";
+import { Activity, ClipboardList, FileSearch, Gauge, LayoutDashboard, Menu, Network, Radar, ScanSearch, ShieldAlert, Trophy } from "lucide-react";
 import { Link, NavLink, matchPath, useLocation } from "react-router-dom";
 import { Logo } from "./Logo";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
@@ -12,7 +12,6 @@ const LINKS = [
   ["/reports", "intel_reports", "nav-reports", ClipboardList],
   ["/campaigns", "intel_campaigns", "nav-campaigns", Network],
   ["/leaderboard", ["Drabinka (Leaderboard)", "Leaderboard"], "nav-leaderboard", Trophy],
-  ["/graph", "nav_graph", "nav-graph", Share2],
   ["/diagnostics", "intel_diag", "nav-diagnostics", Activity],
   ["/calibration", "nav_calibration", "nav-calibration", Gauge],
   ["/log", "nav_log", "nav-log", ScanSearch],
@@ -24,14 +23,16 @@ function usePublicView() {
 }
 
 function ConnectionPill() {
-  const { mode, wsStatus, t } = useApp();
+  const { mode, backendMode, wsStatus, t } = useApp();
   const connected = mode === "online" && wsStatus === "connected";
-  const dot = connected ? "bg-emerald-400" : mode === "checking" ? "bg-slate-400" : "bg-amber-400";
+  const fallback = mode === "online" && backendMode === "demo_fallback";
+  const dot = connected && !fallback ? "bg-emerald-400" : mode === "checking" ? "bg-slate-400" : "bg-amber-400";
 
   return (
     <div data-testid="nav-connection-status" className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-mono">
       <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
       <span className="font-bold">{t(`conn_${mode}`)}</span>
+      {fallback && <span className="font-bold text-amber-300">{t("conn_fallback")}</span>}
       <span className="text-slate-400">{t(`ws_${wsStatus}`)}</span>
     </div>
   );

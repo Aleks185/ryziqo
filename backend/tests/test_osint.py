@@ -48,3 +48,18 @@ def test_campaign_detail_enrich_and_graph_roundtrip(tmp_path, monkeypatch):
         assert client.put(f"{api}/intelligence/campaigns/{group}/graph", json=graph).status_code == 200
         assert client.get(f"{api}/intelligence/campaigns/{group}").json()["graph"]["nodes"][0]["label"] == "@vectra_vip"
         assert client.post(f"{api}/intelligence/campaigns/nope/enrich").status_code == 404
+
+
+def test_campaign_detail_carries_decision_and_dissolve(tmp_path):
+    with _build_test_client(tmp_path) as client:
+        api = "/api/v1/intelligence"
+        for text in ("Sygnały CFD gwarantowany zysk 900% https://vectra-trade.pl/start", "Wpłać 950 PLN, gwarantowany zysk https://vectra-trade.pl/start"):
+            client.post("/api/v1/analyze/text", json={"content": text, "module_ids": [2]})
+        group = client.get(api + "/reports").json()["items"][0]["campaign_id"]
+        assert client.get(f"{api}/campaigns/{group}").json()["classification"] == "pending"
+        body = {"classification": "confirmed", "description": "ten sam schemat"}
+        assert client.put(f"{api}/campaigns/{group}/decision", json=body).status_code == 200
+        detail = client.get(f"{api}/campaigns/{group}").json()
+        assert (detail["classification"], detail["description"]) == ("confirmed", "ten sam schemat")
+        assert client.delete(f"{api}/campaigns/{group}").json()["detached"] >= 2
+        assert client.get(f"{api}/campaigns/{group}").status_code == 404

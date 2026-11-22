@@ -62,10 +62,11 @@ def public_row(row):
     for key in ("redirect_chain","detected_entities","incident_ids","ai_report_json","nameservers"):
         if r.get(key): r[key]=json.loads(r[key])
         elif key in r: r[key]=[]
+    if "infrastructure" in r: r["infrastructure"]=json.loads(r["infrastructure"] or "{}")
     return r
 
 
-LIST_FIELDS="id,created_at,source_channel,reporter_display_name,source_type,target_url,canonical_domain,platform,target_server_ip,campaign_id,detected_entities,risk_score,verdict_status,excerpt,origin,incident_ids"
+LIST_FIELDS="infrastructure,domain_created_at,domain_age_days,redirect_chain,id,created_at,source_channel,reporter_display_name,source_type,target_url,canonical_domain,platform,target_server_ip,hosting_asn,hosting_country,analyst_notes,campaign_id,detected_entities,risk_score,verdict_status,excerpt,origin,incident_ids"
 
 
 @router.get("/leaderboard")
@@ -160,7 +161,7 @@ def campaigns(request:Request,active_only:bool=False,limit:int=Query(100,ge=1,le
     """Groups of related reports. `active_only` matches the dashboard: groups not entirely rejected."""
     having="count(*)>1"+(" AND sum(verdict_status!='false_positive')>0" if active_only else "")
     with request.app.state.intel.connection() as c:
-        rows=c.execute(f"""SELECT campaign_id,count(*) AS members,max(risk_score) AS risk_score,
+        rows=c.execute(f"""SELECT campaign_id,(SELECT classification FROM campaign_reviews WHERE campaign_id=t.campaign_id) AS classification,count(*) AS members,max(risk_score) AS risk_score,
             (SELECT d.canonical_domain FROM threat_reports d WHERE d.campaign_id=t.campaign_id
                AND coalesce(d.canonical_domain,'')!='' GROUP BY d.canonical_domain
                ORDER BY count(*) DESC,d.canonical_domain LIMIT 1) AS domain,
@@ -172,6 +173,35 @@ def campaigns(request:Request,active_only:bool=False,limit:int=Query(100,ge=1,le
             FROM threat_reports t GROUP BY campaign_id HAVING {having}
             ORDER BY last_seen DESC LIMIT ? OFFSET ?""",(limit,offset))
         return [dict(r) for r in rows]
+
+
+class CampaignDecision(BaseModel):
+    classification: Literal["pending","confirmed", "false_coincidence"]
+    description: str = Field("", max_length=4000)
+
+
+@router.put("/campaigns/{campaign_id}/decision")
+def decide_campaign(request: Request, campaign_id: str, body: CampaignDecision):
+    with request.app.state.intel.connection() as c:
+        c.execute("BEGIN IMMEDIATE")
+        if c.execute("SELECT count(*) FROM threat_reports WHERE campaign_id=?",(campaign_id,)).fetchone()[0]<2:
+            raise HTTPException(404,"Nie znaleziono kampanii.")
+        c.execute("""INSERT INTO campaign_reviews VALUES (?,?,?) ON CONFLICT(campaign_id) DO UPDATE SET
+                     classification=excluded.classification, description=excluded.description""",
+                  (campaign_id,body.classification,body.description))
+    return {"classification":body.classification,"description":body.description}
+
+
+@router.delete("/campaigns/{campaign_id}")
+def dissolve_campaign(request: Request, campaign_id: str):
+    with request.app.state.intel.connection() as c:
+        c.execute("BEGIN IMMEDIATE")
+        if c.execute("SELECT count(*) FROM threat_reports WHERE campaign_id=?",(campaign_id,)).fetchone()[0]<2:
+            raise HTTPException(404,"Nie znaleziono kampanii.")
+        count=c.execute("""UPDATE threat_reports SET campaign_id=lower(hex(randomblob(16))), campaign_locked=1
+                           WHERE campaign_id=?""",(campaign_id,)).rowcount
+        c.execute("DELETE FROM campaign_reviews WHERE campaign_id=?",(campaign_id,))
+    return {"detached":count}
 
 
 @router.patch("/campaigns/{campaign_id}")
@@ -209,7 +239,10 @@ def campaign_detail(request:Request,campaign_id:str):
                     e=entities.setdefault(name.strip(),{"name":name.strip(),"registry_status":inc.knf_registry_status,"warning_list":False})
                     e["warning_list"]=e["warning_list"] or any(x.rule_id=="KNF_WARNING_LIST_MATCH" for x in inc.violated_rules)
     for r in reports: r.pop("ai_report_json",None)
-    return {"campaign_id":campaign_id,"reports":reports,"reporters":reporters,"entities":list(entities.values()),
+    with request.app.state.intel.connection() as c:
+        review=c.execute("SELECT classification,description FROM campaign_reviews WHERE campaign_id=?",(campaign_id,)).fetchone()
+    return {"campaign_id":campaign_id,"classification":review[0] if review else "pending","description":review[1] if review else "",
+            "reports":reports,"reporters":reporters,"entities":list(entities.values()),
             "graph":request.app.state.intel.get_graph(campaign_id)}
 
 

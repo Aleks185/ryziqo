@@ -255,6 +255,9 @@ class Intelligence:
         self.osint_timeout = osint_timeout
         with db._connect() as c:
             c.executescript("""
+            CREATE TABLE IF NOT EXISTS campaign_reviews(
+              campaign_id TEXT PRIMARY KEY, classification TEXT NOT NULL, description TEXT NOT NULL DEFAULT ''
+            );
             CREATE TABLE IF NOT EXISTS intel_config(key TEXT PRIMARY KEY,value TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS report_quota(ip_hash TEXT,ts REAL);
             CREATE INDEX IF NOT EXISTS quota_time ON report_quota(ts);
@@ -279,7 +282,7 @@ class Intelligence:
             # image), links a screenshot with a pasted copy; module_ids: modules the verdict covers;
             # campaign_locked: the analyst detached the report, automatic merging must not undo it.
             for column,kind in (("reporter_display_name","TEXT"),("reporter_key_hash","TEXT"),("text_content_hash","TEXT"),
-                                ("module_ids","TEXT"),("campaign_locked","INTEGER NOT NULL DEFAULT 0"),
+                                ("infrastructure","TEXT"),("module_ids","TEXT"),("campaign_locked","INTEGER NOT NULL DEFAULT 0"),
                                 ("hosting_org","TEXT"),("registrar","TEXT"),("nameservers","TEXT"),("osint_at","TEXT")):
                 if column not in existing:
                     c.execute(f"ALTER TABLE threat_reports ADD COLUMN {column} {kind}")
@@ -557,11 +560,13 @@ class Intelligence:
         with self.connection() as c:
             c.execute("BEGIN IMMEDIATE")
             matches=c.execute("SELECT DISTINCT campaign_id,campaign_locked FROM threat_reports WHERE "+where,args).fetchall()
-            free=sorted({r[0] for r in matches if not r[1]})
+            reviewed={r[0] for r in c.execute("SELECT campaign_id FROM campaign_reviews")}
+            free=sorted({r[0] for r in matches if not r[1] and r[0] not in reviewed})
+            anchored=sorted({r[0] for r in matches if r[0] in reviewed})
             pinned=sorted({r[0] for r in matches if r[1]})
             # Reports detached by the analyst are never pulled back by a transitive merge; a new report
             # matching only such a report simply joins its group.
-            group=free[0] if free else pinned[0] if pinned else uuid.uuid4().hex
+            group=anchored[0] if len(anchored)==1 else free[0] if free else pinned[0] if pinned else uuid.uuid4().hex
             for old in free:
                 if old!=group: c.execute("UPDATE threat_reports SET campaign_id=? WHERE campaign_id=? AND campaign_locked=0",(group,old))
             data["campaign_id"]=group
