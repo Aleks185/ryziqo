@@ -23,6 +23,7 @@ def _build_test_client(tmp_path: Path) -> TestClient:
         crawler_enable_scheduler=False,
         watchlist_seed_on_start=False,
         crawler_per_host_delay_seconds=0,
+        osint_auto_enrich=False,
     )
     app = create_app(custom_settings=settings)
     return TestClient(app)

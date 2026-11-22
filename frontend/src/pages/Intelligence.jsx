@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { backend } from "@/lib/api";
 import { useApp } from "@/lib/store";
 import { Panel, RiskScore } from "@/components/Badges";
+import { DEMO_CAMPAIGN_ID } from "@/lib/campaignGraph";
 
 const field = "w-full border border-[#CBD5E1] rounded-sm px-3 py-2 text-sm bg-white focus-ring";
 const title = "text-2xl sm:text-3xl font-bold tracking-tight text-[#0B192C]";
@@ -122,6 +123,7 @@ function Campaign({c,refresh}){
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"><RiskScore score={(c.risk_score||0)/100}/>
       <span className="text-slate-600">{l("Ostatnio","Last seen")}: {new Date(c.last_seen).toLocaleString()}</span></div>
     <p className="text-sm text-slate-600">{Object.entries(countKeys).filter(([,k])=>c[k]).map(([s,k])=>l(...states[s])+": "+c[k]).join(" · ")}</p>
+    <Link className="underline focus-ring font-semibold" to={"/campaigns/"+c.campaign_id}>{l("Centrum wywiadowcze kampanii","Campaign intelligence center")}</Link>{" · "}
     <Link className="underline focus-ring" to={"/reports?campaign="+c.campaign_id}>{l("Zgłoszenia","Reports")} ({c.members})</Link>
     <VerdictSelect value={status} onChange={set}/>
     <label className="block text-sm">{l("Notatka kampanii","Campaign note")}<textarea maxLength={4000} className={field} value={note} onChange={e=>setNote(e.target.value)}/></label>
@@ -131,7 +133,8 @@ export function Campaigns(){
   const l=useLabels(),[active,setActive]=useState(true),data=useData("campaigns?active_only="+active);
   return <div className="space-y-6"><h1 className={title}>{l("Kampanie","Campaigns")}</h1>
     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/>{l("Tylko aktywne (bez kampanii w całości odrzuconych)","Active only (hide fully rejected campaigns)")}</label>
-    {!data.value ? <Feedback data={data}/> : data.value.length ? data.value.map(c=><Campaign key={c.campaign_id} c={c} refresh={data.reload}/>) : <Panel>{l("Brak grup powiązanych zgłoszeń.","No related report groups.")}</Panel>}</div>;
+    {data.mode==="demo" && <Panel title={l("Kampania: VectraTrade Polska — Klony sygnałów CFD","Campaign: VectraTrade Polska — CFD signal clones")}><p className="text-sm text-slate-600 mb-3">{l("Przykładowa kampania DEMO z kompletnym grafem powiązań.","Sample DEMO campaign with a complete relationship graph.")}</p><Link className="compact-action focus-ring" to={"/campaigns/"+DEMO_CAMPAIGN_ID}>{l("Otwórz centrum wywiadowcze","Open the intelligence center")}</Link></Panel>}
+    {!data.value ? (data.mode==="demo" ? null : <Feedback data={data}/>) : data.value.length ? data.value.map(c=><Campaign key={c.campaign_id} c={c} refresh={data.reload}/>) : <Panel>{l("Brak grup powiązanych zgłoszeń.","No related report groups.")}</Panel>}</div>;
 }
 export function Diagnostics(){
   const l=useLabels(),data=useData("diagnostics",3000),d=data.value;

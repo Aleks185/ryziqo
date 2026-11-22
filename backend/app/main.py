@@ -72,7 +72,7 @@ def create_app(custom_settings: Settings | None = None) -> FastAPI:
             fetcher=fetcher,
             ws_manager=ws_manager,
         )
-        app.state.intel = Intelligence(db)
+        app.state.intel = Intelligence(db, osint_timeout=settings.osint_timeout_seconds)
         worker.report_registry = app.state.intel
         await worker.start()
         app.state.intel.import_history()

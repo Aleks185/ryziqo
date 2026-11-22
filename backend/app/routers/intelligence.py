@@ -1,4 +1,5 @@
 """Analyst registry, campaigns and redacted evidence views."""
+import asyncio
 import json
 from typing import Literal
 
@@ -10,7 +11,41 @@ from app.graph import build_graph
 from app.verdicts import linked_incidents, sync_incidents
 
 router = APIRouter(prefix="/api/v1/intelligence", tags=["intelligence"])
+UNKNOWN_ENTITIES = {"","nieznany","unknown","brak reklamowanej firmy inwestycyjnej","niezidentyfikowany podmiot promowany"}
 Verdict = Literal["new","confirmed_fake","requires_review","false_positive"]
+
+
+class CustomNode(BaseModel):
+    id: str = Field(max_length=80)
+    type: Literal["domain","ip","social","phone","entity","wallet","other"]
+    label: str = Field(max_length=200)
+    note: str = Field("",max_length=2000)
+
+
+class CustomEdge(BaseModel):
+    id: str = Field(max_length=80)
+    source: str = Field(max_length=120)
+    target: str = Field(max_length=120)
+    label: str = Field("",max_length=120)
+
+
+class Point(BaseModel):
+    x: float
+    y: float
+
+
+class Override(BaseModel):
+    label: str | None = Field(None,max_length=200)
+    note: str | None = Field(None,max_length=2000)
+
+
+class CampaignGraph(BaseModel):
+    """Analyst edits on top of the generated graph: own nodes / edges, hidden items and dragged positions."""
+    nodes: list[CustomNode] = Field(default_factory=list,max_length=200)
+    edges: list[CustomEdge] = Field(default_factory=list,max_length=400)
+    positions: dict[str,Point] = Field(default_factory=dict)
+    hidden: list[str] = Field(default_factory=list,max_length=400)
+    overrides: dict[str,Override] = Field(default_factory=dict)
 
 
 class Review(BaseModel):
@@ -24,8 +59,9 @@ def public_row(row):
     # authentication, so they are kept server-side for rate limiting and retention only.
     for key in ("reporter_ip","response_json","reporter_ip_hash","reporter_user_agent","reporter_key_hash"):
         r.pop(key,None)
-    for key in ("redirect_chain","detected_entities","incident_ids","ai_report_json"):
-        if key in r: r[key]=json.loads(r[key])
+    for key in ("redirect_chain","detected_entities","incident_ids","ai_report_json","nameservers"):
+        if r.get(key): r[key]=json.loads(r[key])
+        elif key in r: r[key]=[]
     return r
 
 
@@ -148,6 +184,59 @@ def review_campaign(request:Request,campaign_id:str,body:Review):
     if not count: raise HTTPException(404,"Nie znaleziono kampanii.")
     _propagate(request,"campaign_id=?",[campaign_id],body.verdict_status)
     return {"updated":count}
+
+
+def _campaign_reports(request:Request,campaign_id:str):
+    with request.app.state.intel.connection() as c:
+        rows=c.execute("SELECT * FROM threat_reports WHERE campaign_id=? ORDER BY created_at DESC,rowid DESC",(campaign_id,)).fetchall()
+        reporters=c.execute("SELECT count(DISTINCT coalesce(reporter_key_hash,reporter_ip_hash,id)) FROM threat_reports WHERE campaign_id=?",
+                            (campaign_id,)).fetchone()[0]
+    return [public_row(r) for r in rows],reporters
+
+
+@router.get("/campaigns/{campaign_id}")
+def campaign_detail(request:Request,campaign_id:str):
+    """Everything the campaign view needs: reports with infrastructure metadata, KPIs, entities, analyst graph."""
+    reports,reporters=_campaign_reports(request,campaign_id)
+    if not reports: raise HTTPException(404,"Nie znaleziono kampanii.")
+    entities={}
+    for r in reports:
+        for incident_id in r["incident_ids"]:
+            inc=request.app.state.db.get_incident(incident_id)
+            if inc is None: continue
+            for name in (inc.entity_name,inc.promoter_name):
+                if name and name.strip().casefold() not in UNKNOWN_ENTITIES and name!=inc.title and "://" not in name:
+                    e=entities.setdefault(name.strip(),{"name":name.strip(),"registry_status":inc.knf_registry_status,"warning_list":False})
+                    e["warning_list"]=e["warning_list"] or any(x.rule_id=="KNF_WARNING_LIST_MATCH" for x in inc.violated_rules)
+    for r in reports: r.pop("ai_report_json",None)
+    return {"campaign_id":campaign_id,"reports":reports,"reporters":reporters,"entities":list(entities.values()),
+            "graph":request.app.state.intel.get_graph(campaign_id)}
+
+
+@router.post("/campaigns/{campaign_id}/enrich")
+async def enrich_campaign(request:Request,campaign_id:str,force:bool=False):
+    """Fetch the missing OSINT metadata (IP, hosting, ASN, registrar, domain age, redirects) for every report."""
+    intel=request.app.state.intel
+    reports,_=_campaign_reports(request,campaign_id)
+    if not reports: raise HTTPException(404,"Nie znaleziono kampanii.")
+    cache={}
+    def run():
+        from concurrent.futures import ThreadPoolExecutor
+        urls={}
+        for r in reports: urls.setdefault(r["target_url"] or "",r["id"])
+        with ThreadPoolExecutor(4) as pool:   # one lookup per distinct URL, the rest reuse the cache
+            list(pool.map(lambda rid:intel.enrich_report(rid,force,cache),urls.values()))
+        return [intel.enrich_report(r["id"],force,cache) for r in reports]
+    results=await asyncio.to_thread(run)
+    ok=sum(1 for i in results if i and not i.get("skipped") and not i.get("errors"))
+    return {"enriched":sum(1 for i in results if i and not i.get("skipped")),"complete":ok,"total":len(reports)}
+
+
+@router.put("/campaigns/{campaign_id}/graph")
+def save_campaign_graph(request:Request,campaign_id:str,body:CampaignGraph):
+    if not _campaign_reports(request,campaign_id)[0]: raise HTTPException(404,"Nie znaleziono kampanii.")
+    request.app.state.intel.set_graph(campaign_id,body.model_dump())
+    return body
 
 
 @router.get("/graph")

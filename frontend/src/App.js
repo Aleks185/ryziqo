@@ -14,6 +14,7 @@ import LogPage from "@/pages/LogPage";
 import { Reports, ReportDetails, Campaigns, Diagnostics } from "@/pages/Intelligence";
 import Citizen from "@/pages/Citizen";
 import Leaderboard from "@/pages/Leaderboard";
+import CampaignDetail from "@/pages/CampaignDetail";
 import Graph from "@/pages/Graph";
 import Crawler from "@/pages/Crawler";
 
@@ -38,6 +39,7 @@ function App() {
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/reports/:id" element={<ReportDetails />} />
                   <Route path="/campaigns" element={<Campaigns />} />
+                  <Route path="/campaigns/:id" element={<CampaignDetail />} />
                   <Route path="/graph" element={<Graph />} />
                   <Route path="/diagnostics" element={<Diagnostics />} />
                   <Route path="/calibration" element={<Calibration />} />
