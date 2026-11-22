@@ -2,7 +2,6 @@ import { formatRiskPercent } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Slider } from "@/components/ui/slider";
-import { ALERT_THRESHOLD } from "@/lib/config";
 import { useApp } from "@/lib/store";
 import { Panel } from "@/components/Badges";
 
@@ -46,8 +45,7 @@ const Matrix = ({ m }) => {
 };
 
 export default function Calibration() {
-  const { incidents, analyzeSamples, t } = useApp();
-  const [th, setTh] = useState(ALERT_THRESHOLD);
+  const { incidents, analyzeSamples, t, alertThreshold: th, setAlertThreshold: setTh } = useApp();
   const [busy, setBusy] = useState(false);
   const labeled = incidents.filter((i) => typeof i.ground_truth_label === "boolean");
   const m = confusion(labeled, th);

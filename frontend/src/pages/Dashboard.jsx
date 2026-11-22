@@ -2,7 +2,7 @@ import { formatRiskPercent } from "@/lib/utils";
 import Graph from "./Graph";
 import { ThreatOverview } from "./Intelligence";
 import { useMemo, useState } from "react";
-import { ALERT_THRESHOLD, API_URL, MODULES, riskLevel } from "@/lib/config";
+import { API_URL, MODULES, riskLevel } from "@/lib/config";
 import { platformLabel } from "@/lib/i18n";
 import { useApp } from "@/lib/store";
 import { IncidentTable } from "@/components/IncidentTable";
@@ -125,7 +125,7 @@ const ModuleReport = ({ module, filters }) => {
 };
 
 export default function Dashboard() {
-  const { incidents, knfSnapshotDate, mode, t, lang } = useApp();
+  const { incidents, knfSnapshotDate, mode, t, lang, alertThreshold } = useApp();
   const [filter, setFilter] = useState("all");
   const [showGraph, setShowGraph] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
@@ -152,7 +152,7 @@ export default function Dashboard() {
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi testId="kpi-total" label={t("kpi_total")} value={list.length} accent="#0B192C" />
-        <Kpi testId="kpi-high" label={`${t("kpi_high")} (≥ ${formatRiskPercent(ALERT_THRESHOLD)})`} value={list.filter((i) => i.risk_score >= ALERT_THRESHOLD).length} accent="#DC2626" />
+        <Kpi testId="kpi-high" label={`${t("kpi_high")} (≥ ${formatRiskPercent(alertThreshold)})`} value={list.filter((i) => i.risk_score >= alertThreshold).length} accent="#DC2626" />
         <Kpi testId="kpi-open" label={t("kpi_open")} value={list.filter((i) => ["new", "in_review", "referred"].includes(i.status)).length} accent="#D97706" />
         <Kpi testId="kpi-confirmed" label={t("kpi_confirmed")} value={list.filter((i) => i.status === "confirmed").length} accent="#065F46" />
       </div>
