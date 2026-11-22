@@ -3,7 +3,17 @@ import { useApp } from "@/lib/store";
 import { API_URL } from "@/lib/config";
 
 export const DemoBanner = () => {
-  const { mode, demoReason, connect, t } = useApp();
+  const { mode, demoReason, backendMode, connect, t } = useApp();
+  if (mode === "online" && backendMode === "demo_fallback") {
+    return (
+      <div data-testid="fallback-banner" role="status" className="no-print bg-amber-50 border-b border-amber-300 text-amber-950">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center gap-x-4 text-xs">
+          <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="font-semibold">{t("fallback_banner")}</span>
+        </div>
+      </div>
+    );
+  }
   if (mode === "online") return null;
   return (
     <div data-testid="demo-banner" role="status" className="no-print bg-amber-50 border-b border-amber-300 text-amber-950">
