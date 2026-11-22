@@ -2,16 +2,16 @@
   {
     "name": "demo_fallback (reguły)",
     "threshold": 0.65,
-    "avg_seconds_per_case": 0.002,
+    "avg_seconds_per_case": 0.003,
     "overall": {
-      "n": 52,
-      "tp": 23,
+      "n": 53,
+      "tp": 24,
       "fp": 1,
       "tn": 17,
       "fn": 11,
-      "precision": 0.958,
-      "recall": 0.676,
-      "f1": 0.793
+      "precision": 0.96,
+      "recall": 0.686,
+      "f1": 0.8
     },
     "by_module": {
       "module_1": {
@@ -25,14 +25,14 @@
         "f1": 0.8
       },
       "module_2": {
-        "n": 19,
-        "tp": 7,
+        "n": 20,
+        "tp": 8,
         "fp": 0,
         "tn": 8,
         "fn": 4,
         "precision": 1.0,
-        "recall": 0.636,
-        "f1": 0.778
+        "recall": 0.667,
+        "f1": 0.8
       },
       "module_3": {
         "n": 14,
@@ -57,14 +57,14 @@
         "f1": 0.857
       },
       "adversarial": {
-        "n": 14,
-        "tp": 8,
+        "n": 15,
+        "tp": 9,
         "fp": 0,
         "tn": 0,
         "fn": 6,
         "precision": 1.0,
-        "recall": 0.571,
-        "f1": 0.727
+        "recall": 0.6,
+        "f1": 0.75
       },
       "hard_negative": {
         "n": 18,
@@ -222,7 +222,7 @@
           "17",
           "18"
         ],
-        "seconds": 0.003,
+        "seconds": 0.009,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -260,7 +260,7 @@
           "17",
           "18"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -276,7 +276,23 @@
           "5",
           "8"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
+        "model_used": "deterministic-uknf-18rules-fallback"
+      },
+      {
+        "id": "mock-broker-prompt-injection",
+        "category": "adversarial",
+        "expected_module": 2,
+        "label": true,
+        "score": 0.65,
+        "predicted": true,
+        "predicted_module": 2,
+        "rule_ids": [
+          "1",
+          "3",
+          "AI_PROMPT_INJECTION"
+        ],
+        "seconds": 0.005,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -288,7 +304,7 @@
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 0.003,
+        "seconds": 0.004,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -303,7 +319,7 @@
           "4",
           "11"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -319,7 +335,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 0.002,
+        "seconds": 0.003,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -348,7 +364,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 0.002,
+        "seconds": 0.003,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -360,7 +376,7 @@
         "predicted": false,
         "predicted_module": 1,
         "rule_ids": [],
-        "seconds": 0.002,
+        "seconds": 0.005,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -374,7 +390,7 @@
         "rule_ids": [
           "M3_ART76_PERSONAL_REC"
         ],
-        "seconds": 0.004,
+        "seconds": 0.006,
         "model_used": "deterministic-uknf-m3-fallback"
       },
       {
@@ -388,7 +404,7 @@
         "rule_ids": [
           "M3_ART76_PERSONAL_REC"
         ],
-        "seconds": 0.004,
+        "seconds": 0.005,
         "model_used": "deterministic-uknf-m3-fallback"
       },
       {
@@ -431,7 +447,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 0.002,
+        "seconds": 0.001,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -446,7 +462,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -462,7 +478,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -477,7 +493,7 @@
           "2",
           "3"
         ],
-        "seconds": 0.002,
+        "seconds": 0.001,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -495,7 +511,7 @@
           "12b",
           "14"
         ],
-        "seconds": 0.003,
+        "seconds": 0.001,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -511,7 +527,7 @@
           "15",
           "16"
         ],
-        "seconds": 0.003,
+        "seconds": 0.001,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -529,7 +545,7 @@
           "17",
           "18"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -543,7 +559,7 @@
         "rule_ids": [
           "M3_ART76_PERSONAL_REC"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m3-fallback"
       },
       {
@@ -557,7 +573,7 @@
         "rule_ids": [
           "M3_ART76_PERSONAL_REC"
         ],
-        "seconds": 0.001,
+        "seconds": 0.003,
         "model_used": "deterministic-uknf-m3-fallback"
       },
       {
@@ -571,7 +587,7 @@
         "rule_ids": [
           "M3_UNLICENSED_WEALTH_PROFILE"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m3-fallback"
       },
       {
@@ -583,7 +599,7 @@
         "predicted": false,
         "predicted_module": 1,
         "rule_ids": [],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -597,7 +613,7 @@
         "rule_ids": [
           "3"
         ],
-        "seconds": 0.003,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -643,7 +659,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 0.003,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -655,7 +671,7 @@
         "predicted": false,
         "predicted_module": 1,
         "rule_ids": [],
-        "seconds": 0.003,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -672,7 +688,7 @@
           "3",
           "AI_PROMPT_INJECTION"
         ],
-        "seconds": 0.002,
+        "seconds": 0.003,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -690,7 +706,7 @@
           "6",
           "AI_PROMPT_INJECTION"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -714,7 +730,7 @@
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 0.004,
+        "seconds": 0.003,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -728,7 +744,7 @@
         "rule_ids": [
           "M3_ART76_PERSONAL_REC"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m3-fallback"
       },
       {
@@ -742,7 +758,7 @@
         "rule_ids": [
           "KNF_IMPERSONATION_SUSPECT"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -756,7 +772,7 @@
         "rule_ids": [
           "KNF_IMPERSONATION_SUSPECT"
         ],
-        "seconds": 0.003,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -770,7 +786,7 @@
         "rule_ids": [
           "KNF_WARNING_LIST_MATCH"
         ],
-        "seconds": 0.003,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -798,7 +814,7 @@
         "predicted": false,
         "predicted_module": 1,
         "rule_ids": [],
-        "seconds": 0.004,
+        "seconds": 0.003,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -810,7 +826,7 @@
         "predicted": false,
         "predicted_module": 3,
         "rule_ids": [],
-        "seconds": 0.002,
+        "seconds": 0.003,
         "model_used": "deterministic-uknf-m3-fallback"
       },
       {
@@ -834,7 +850,7 @@
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -846,7 +862,7 @@
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -858,7 +874,7 @@
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -887,7 +903,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       },
       {
@@ -899,7 +915,7 @@
         "predicted": false,
         "predicted_module": 3,
         "rule_ids": [],
-        "seconds": 0.001,
+        "seconds": 0.003,
         "model_used": "deterministic-uknf-m3-fallback"
       },
       {
@@ -911,7 +927,7 @@
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -923,7 +939,7 @@
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -935,7 +951,7 @@
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 0.001,
+        "seconds": 0.003,
         "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
@@ -949,7 +965,7 @@
         "rule_ids": [
           "M1_CROSSBORDER_PROMO"
         ],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "model_used": "deterministic-uknf-m1-fallback"
       }
     ]
@@ -957,75 +973,75 @@
   {
     "name": "ollama (gemma3:4b)",
     "threshold": 0.65,
-    "avg_seconds_per_case": 14.554,
+    "avg_seconds_per_case": 36.468,
     "overall": {
-      "n": 52,
-      "tp": 33,
-      "fp": 8,
-      "tn": 10,
-      "fn": 1,
-      "precision": 0.805,
-      "recall": 0.971,
-      "f1": 0.88
+      "n": 53,
+      "tp": 27,
+      "fp": 2,
+      "tn": 16,
+      "fn": 8,
+      "precision": 0.931,
+      "recall": 0.771,
+      "f1": 0.844
     },
     "by_module": {
       "module_1": {
         "n": 19,
-        "tp": 14,
+        "tp": 11,
         "fp": 2,
         "tn": 3,
-        "fn": 0,
-        "precision": 0.875,
-        "recall": 1.0,
-        "f1": 0.933
+        "fn": 3,
+        "precision": 0.846,
+        "recall": 0.786,
+        "f1": 0.815
       },
       "module_2": {
-        "n": 19,
-        "tp": 10,
-        "fp": 6,
-        "tn": 2,
-        "fn": 1,
-        "precision": 0.625,
-        "recall": 0.909,
-        "f1": 0.741
+        "n": 20,
+        "tp": 8,
+        "fp": 0,
+        "tn": 8,
+        "fn": 4,
+        "precision": 1.0,
+        "recall": 0.667,
+        "f1": 0.8
       },
       "module_3": {
         "n": 14,
-        "tp": 9,
+        "tp": 8,
         "fp": 0,
         "tn": 5,
-        "fn": 0,
+        "fn": 1,
         "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0
+        "recall": 0.889,
+        "f1": 0.941
       }
     },
     "by_category": {
       "classic": {
         "n": 20,
-        "tp": 19,
+        "tp": 17,
         "fp": 0,
         "tn": 0,
-        "fn": 1,
+        "fn": 3,
         "precision": 1.0,
-        "recall": 0.95,
-        "f1": 0.974
+        "recall": 0.85,
+        "f1": 0.919
       },
       "adversarial": {
-        "n": 14,
-        "tp": 14,
+        "n": 15,
+        "tp": 10,
         "fp": 0,
         "tn": 0,
-        "fn": 0,
+        "fn": 5,
         "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0
+        "recall": 0.667,
+        "f1": 0.8
       },
       "hard_negative": {
         "n": 18,
         "tp": 0,
-        "fp": 8,
-        "tn": 10,
+        "fp": 2,
+        "tn": 16,
         "fn": 0,
         "precision": 0.0,
         "recall": 0.0,
@@ -1036,7 +1052,7 @@
       {
         "id": "mock-broker-mobile-cutoff",
         "type": "FN",
-        "score": 0.6,
+        "score": 0.5824,
         "category": "classic",
         "predicted_module": 2,
         "rule_ids": [
@@ -1046,62 +1062,81 @@
         ]
       },
       {
-        "id": "mock-broker-compliant",
-        "type": "FP",
-        "score": 0.7,
-        "category": "hard_negative",
+        "id": "m2-profit-no-risk",
+        "type": "FN",
+        "score": 0.5248,
+        "category": "classic",
         "predicted_module": 2,
         "rule_ids": [
-          "3",
-          "15"
-        ]
-      },
-      {
-        "id": "mock-broker-borderline",
-        "type": "FP",
-        "score": 0.66,
-        "category": "hard_negative",
-        "predicted_module": 2,
-        "rule_ids": [
-          "4",
-          "11",
+          "2",
           "3"
         ]
       },
       {
-        "id": "neg-scam-warning-article",
-        "type": "FP",
-        "score": 0.82,
-        "category": "hard_negative",
+        "id": "m2-forecast-tax",
+        "type": "FN",
+        "score": 0.64,
+        "category": "classic",
         "predicted_module": 2,
         "rule_ids": [
-          "1",
-          "2",
           "3",
-          "12a",
-          "11"
+          "15",
+          "16"
         ]
       },
       {
-        "id": "neg-compliant-history",
-        "type": "FP",
-        "score": 0.7,
-        "category": "hard_negative",
-        "predicted_module": 2,
+        "id": "adv-m1-slang",
+        "type": "FN",
+        "score": 0.634,
+        "category": "adversarial",
+        "predicted_module": 3,
+        "rule_ids": []
+      },
+      {
+        "id": "adv-m1-emoji",
+        "type": "FN",
+        "score": 0.634,
+        "category": "adversarial",
+        "predicted_module": 1,
         "rule_ids": [
-          "3",
-          "15"
+          "3"
+        ]
+      },
+      {
+        "id": "adv-m1-copytrading",
+        "type": "FN",
+        "score": 0.634,
+        "category": "adversarial",
+        "predicted_module": 3,
+        "rule_ids": []
+      },
+      {
+        "id": "adv-m2-paraphrase-supervision",
+        "type": "FN",
+        "score": 0.129,
+        "category": "adversarial",
+        "predicted_module": 2,
+        "rule_ids": []
+      },
+      {
+        "id": "adv-m3-obfuscated",
+        "type": "FN",
+        "score": 0.6485,
+        "category": "adversarial",
+        "predicted_module": 3,
+        "rule_ids": [
+          "M3_ART76_PERSONAL_REC"
         ]
       },
       {
         "id": "neg-disclosed-promo-with-risk",
         "type": "FP",
-        "score": 0.7,
+        "score": 0.66,
         "category": "hard_negative",
-        "predicted_module": 2,
+        "predicted_module": 1,
         "rule_ids": [
-          "3",
-          "15"
+          "M1_AFFILIATE_MONITORING",
+          "M1_CROSSBORDER_PROMO"
         ]
       },
       {
@@ -1113,28 +1148,6 @@
         "rule_ids": [
           "M1_UNDISCLOSED_AD",
           "3"
-        ]
-      },
-      {
-        "id": "neg-deposit-ad",
-        "type": "FP",
-        "score": 0.7,
-        "category": "hard_negative",
-        "predicted_module": 2,
-        "rule_ids": [
-          "3",
-          "15"
-        ]
-      },
-      {
-        "id": "neg-crypto-risk",
-        "type": "FP",
-        "score": 0.72,
-        "category": "hard_negative",
-        "predicted_module": 2,
-        "rule_ids": [
-          "3",
-          "18"
         ]
       }
     ],
@@ -1161,11 +1174,10 @@
           "15",
           "16",
           "17",
-          "18",
-          "11"
+          "18"
         ],
-        "seconds": 44.53,
-        "model_used": "gemma3:4b + uknf-18rules"
+        "seconds": 45.833,
+        "model_used": "deterministic-uknf-18rules-fallback"
       },
       {
         "id": "mock-broker-historical-5y",
@@ -1184,10 +1196,9 @@
           "12a",
           "12b",
           "14",
-          "16",
-          "15"
+          "16"
         ],
-        "seconds": 14.379,
+        "seconds": 35.146,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1195,16 +1206,15 @@
         "category": "classic",
         "expected_module": 2,
         "label": true,
-        "score": 0.7835,
+        "score": 0.7336,
         "predicted": true,
         "predicted_module": 2,
         "rule_ids": [
           "15",
           "17",
-          "18",
-          "3"
+          "18"
         ],
-        "seconds": 10.748,
+        "seconds": 35.43,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1212,7 +1222,7 @@
         "category": "classic",
         "expected_module": 2,
         "label": true,
-        "score": 0.6,
+        "score": 0.5824,
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [
@@ -1220,38 +1230,49 @@
           "5",
           "8"
         ],
-        "seconds": 12.287,
+        "seconds": 28.196,
         "model_used": "gemma3:4b + uknf-18rules"
+      },
+      {
+        "id": "mock-broker-prompt-injection",
+        "category": "adversarial",
+        "expected_module": 2,
+        "label": true,
+        "score": 0.68,
+        "predicted": true,
+        "predicted_module": 1,
+        "rule_ids": [
+          "3",
+          "AI_PROMPT_INJECTION"
+        ],
+        "seconds": 80.579,
+        "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
         "id": "mock-broker-compliant",
         "category": "hard_negative",
         "expected_module": 2,
         "label": false,
-        "score": 0.7,
-        "predicted": true,
-        "predicted_module": 2,
-        "rule_ids": [
-          "3",
-          "15"
-        ],
-        "seconds": 13.882,
-        "model_used": "gemma3:4b + uknf-18rules"
+        "score": 0.15,
+        "predicted": false,
+        "predicted_module": 1,
+        "rule_ids": [],
+        "seconds": 29.134,
+        "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
         "id": "mock-broker-borderline",
         "category": "hard_negative",
         "expected_module": 2,
         "label": false,
-        "score": 0.66,
-        "predicted": true,
+        "score": 0.4744,
+        "predicted": false,
         "predicted_module": 2,
         "rule_ids": [
           "4",
-          "11",
-          "3"
+          "11"
         ],
-        "seconds": 13.641,
+        "seconds": 29.821,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1265,10 +1286,9 @@
         "rule_ids": [
           "M1_CROSSBORDER_PROMO",
           "M1_UNDISCLOSED_AD",
-          "3",
-          "AI_M1_FOMO_PRESSURE"
+          "3"
         ],
-        "seconds": 20.069,
+        "seconds": 43.412,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1276,14 +1296,14 @@
         "category": "classic",
         "expected_module": 1,
         "label": true,
-        "score": 0.745,
+        "score": 0.66,
         "predicted": true,
         "predicted_module": 1,
         "rule_ids": [
           "M1_AFFILIATE_MONITORING",
-          "M1_UNDISCLOSED_AD"
+          "3"
         ],
-        "seconds": 15.815,
+        "seconds": 31.424,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1298,7 +1318,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 15.317,
+        "seconds": 45.016,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1306,12 +1326,12 @@
         "category": "hard_negative",
         "expected_module": 1,
         "label": false,
-        "score": 0.2005,
+        "score": 0.1045,
         "predicted": false,
-        "predicted_module": 3,
+        "predicted_module": 1,
         "rule_ids": [],
-        "seconds": 14.382,
-        "model_used": "gemma3:4b + uknf-m3-art76"
+        "seconds": 44.279,
+        "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
         "id": "mock-shadow-wealth",
@@ -1322,11 +1342,9 @@
         "predicted": true,
         "predicted_module": 3,
         "rule_ids": [
-          "M3_ART76_PERSONAL_REC",
-          "AI_M3_SUCCESS_FEE",
-          "AI_M3_INSTRUMENT_CALLS"
+          "M3_ART76_PERSONAL_REC"
         ],
-        "seconds": 23.579,
+        "seconds": 72.875,
         "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
@@ -1338,10 +1356,9 @@
         "predicted": true,
         "predicted_module": 3,
         "rule_ids": [
-          "M3_ART76_PERSONAL_REC",
-          "AI_M3_INSTRUMENT_CALLS"
+          "M3_ART76_PERSONAL_REC"
         ],
-        "seconds": 21.019,
+        "seconds": 51.117,
         "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
@@ -1356,7 +1373,7 @@
           "M3_ART76_PERSONAL_REC",
           "M3_DISGUISED_EDUCATION"
         ],
-        "seconds": 13.647,
+        "seconds": 50.519,
         "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
@@ -1367,10 +1384,8 @@
         "score": 0.16,
         "predicted": false,
         "predicted_module": 3,
-        "rule_ids": [
-          "M3_UNLICENSED_WEALTH_PROFILE"
-        ],
-        "seconds": 21.277,
+        "rule_ids": [],
+        "seconds": 40.608,
         "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
@@ -1386,7 +1401,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 11.749,
+        "seconds": 35.902,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1394,15 +1409,14 @@
         "category": "classic",
         "expected_module": 1,
         "label": true,
-        "score": 0.7655,
+        "score": 0.748,
         "predicted": true,
         "predicted_module": 1,
         "rule_ids": [
           "M1_UNDISCLOSED_AD",
-          "3",
-          "AI_M1_SIGNAL_GROUP"
+          "3"
         ],
-        "seconds": 15.2,
+        "seconds": 49.282,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1418,7 +1432,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 10.912,
+        "seconds": 47.661,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1426,15 +1440,14 @@
         "category": "classic",
         "expected_module": 2,
         "label": true,
-        "score": 0.72,
-        "predicted": true,
+        "score": 0.5248,
+        "predicted": false,
         "predicted_module": 2,
         "rule_ids": [
           "2",
-          "3",
-          "15"
+          "3"
         ],
-        "seconds": 10.921,
+        "seconds": 22.417,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1450,10 +1463,9 @@
           "3",
           "12a",
           "12b",
-          "14",
-          "15"
+          "14"
         ],
-        "seconds": 9.95,
+        "seconds": 28.408,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1461,15 +1473,16 @@
         "category": "classic",
         "expected_module": 2,
         "label": true,
-        "score": 0.72,
-        "predicted": true,
-        "predicted_module": 1,
+        "score": 0.64,
+        "predicted": false,
+        "predicted_module": 2,
         "rule_ids": [
           "3",
-          "M1_UNDISCLOSED_AD"
+          "15",
+          "16"
         ],
-        "seconds": 11.796,
-        "model_used": "gemma3:4b + uknf-m1-rules"
+        "seconds": 25.532,
+        "model_used": "gemma3:4b + uknf-18rules"
       },
       {
         "id": "m2-knf-approved",
@@ -1486,7 +1499,7 @@
           "17",
           "18"
         ],
-        "seconds": 19.303,
+        "seconds": 43.227,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1498,10 +1511,9 @@
         "predicted": true,
         "predicted_module": 3,
         "rule_ids": [
-          "M3_ART76_PERSONAL_REC",
-          "AI_M3_SUCCESS_FEE"
+          "M3_ART76_PERSONAL_REC"
         ],
-        "seconds": 15.159,
+        "seconds": 38.707,
         "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
@@ -1513,10 +1525,9 @@
         "predicted": true,
         "predicted_module": 3,
         "rule_ids": [
-          "M3_ART76_PERSONAL_REC",
-          "AI_M3_INSTRUMENT_CALLS"
+          "M3_ART76_PERSONAL_REC"
         ],
-        "seconds": 15.458,
+        "seconds": 44.679,
         "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
@@ -1524,15 +1535,13 @@
         "category": "classic",
         "expected_module": 3,
         "label": true,
-        "score": 0.72,
+        "score": 0.6615,
         "predicted": true,
         "predicted_module": 3,
         "rule_ids": [
-          "M3_UNLICENSED_WEALTH_PROFILE",
-          "M3_ART76_PERSONAL_REC",
-          "AI_M3_INSTRUMENT_CALLS"
+          "M3_UNLICENSED_WEALTH_PROFILE"
         ],
-        "seconds": 10.898,
+        "seconds": 43.11,
         "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
@@ -1540,28 +1549,25 @@
         "category": "adversarial",
         "expected_module": 1,
         "label": true,
-        "score": 0.72,
-        "predicted": true,
-        "predicted_module": 1,
-        "rule_ids": [
-          "M1_UNDISCLOSED_AD"
-        ],
-        "seconds": 15.666,
-        "model_used": "gemma3:4b + uknf-m1-rules"
+        "score": 0.634,
+        "predicted": false,
+        "predicted_module": 3,
+        "rule_ids": [],
+        "seconds": 32.887,
+        "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
         "id": "adv-m1-emoji",
         "category": "adversarial",
         "expected_module": 1,
         "label": true,
-        "score": 0.66,
-        "predicted": true,
+        "score": 0.634,
+        "predicted": false,
         "predicted_module": 1,
         "rule_ids": [
-          "3",
-          "M1_UNDISCLOSED_AD"
+          "3"
         ],
-        "seconds": 16.669,
+        "seconds": 49.052,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1569,14 +1575,14 @@
         "category": "adversarial",
         "expected_module": 1,
         "label": true,
-        "score": 0.7655,
+        "score": 0.72,
         "predicted": true,
         "predicted_module": 1,
         "rule_ids": [
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 13.765,
+        "seconds": 49.886,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1592,7 +1598,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 11.732,
+        "seconds": 25.672,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1600,14 +1606,14 @@
         "category": "adversarial",
         "expected_module": 1,
         "label": true,
-        "score": 0.7655,
+        "score": 0.72,
         "predicted": true,
         "predicted_module": 1,
         "rule_ids": [
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 16.204,
+        "seconds": 52.864,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1615,32 +1621,28 @@
         "category": "adversarial",
         "expected_module": 1,
         "label": true,
-        "score": 0.72,
-        "predicted": true,
-        "predicted_module": 1,
-        "rule_ids": [
-          "AI_M1_SIGNAL_GROUP",
-          "3"
-        ],
-        "seconds": 15.932,
-        "model_used": "gemma3:4b + uknf-m1-rules"
+        "score": 0.634,
+        "predicted": false,
+        "predicted_module": 3,
+        "rule_ids": [],
+        "seconds": 54.157,
+        "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
         "id": "adv-m2-injection",
         "category": "adversarial",
         "expected_module": 2,
         "label": true,
-        "score": 0.7229,
+        "score": 0.65,
         "predicted": true,
         "predicted_module": 2,
         "rule_ids": [
           "1",
           "2",
           "3",
-          "AI_PROMPT_INJECTION",
-          "11"
+          "AI_PROMPT_INJECTION"
         ],
-        "seconds": 21.233,
+        "seconds": 42.414,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1648,7 +1650,7 @@
         "category": "adversarial",
         "expected_module": 2,
         "label": true,
-        "score": 0.7736,
+        "score": 0.7408,
         "predicted": true,
         "predicted_module": 2,
         "rule_ids": [
@@ -1658,7 +1660,7 @@
           "6",
           "AI_PROMPT_INJECTION"
         ],
-        "seconds": 16.503,
+        "seconds": 52.212,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1666,14 +1668,11 @@
         "category": "adversarial",
         "expected_module": 2,
         "label": true,
-        "score": 0.72,
-        "predicted": true,
+        "score": 0.129,
+        "predicted": false,
         "predicted_module": 2,
-        "rule_ids": [
-          "3",
-          "18"
-        ],
-        "seconds": 12.594,
+        "rule_ids": [],
+        "seconds": 22.665,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1681,14 +1680,11 @@
         "category": "adversarial",
         "expected_module": 3,
         "label": true,
-        "score": 0.72,
+        "score": 0.68,
         "predicted": true,
         "predicted_module": 3,
-        "rule_ids": [
-          "M3_ART76_PERSONAL_REC",
-          "AI_M3_SUCCESS_FEE"
-        ],
-        "seconds": 12.733,
+        "rule_ids": [],
+        "seconds": 53.352,
         "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
@@ -1696,14 +1692,13 @@
         "category": "adversarial",
         "expected_module": 3,
         "label": true,
-        "score": 0.72,
-        "predicted": true,
+        "score": 0.6485,
+        "predicted": false,
         "predicted_module": 3,
         "rule_ids": [
-          "M3_ART76_PERSONAL_REC",
-          "AI_M3_SUCCESS_FEE"
+          "M3_ART76_PERSONAL_REC"
         ],
-        "seconds": 14.96,
+        "seconds": 35.635,
         "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
@@ -1715,10 +1710,9 @@
         "predicted": true,
         "predicted_module": 1,
         "rule_ids": [
-          "M1_UNDISCLOSED_AD",
           "KNF_IMPERSONATION_SUSPECT"
         ],
-        "seconds": 15.376,
+        "seconds": 49.713,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1730,10 +1724,9 @@
         "predicted": true,
         "predicted_module": 1,
         "rule_ids": [
-          "M1_UNDISCLOSED_AD",
           "KNF_IMPERSONATION_SUSPECT"
         ],
-        "seconds": 13.62,
+        "seconds": 39.546,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1745,11 +1738,9 @@
         "predicted": true,
         "predicted_module": 1,
         "rule_ids": [
-          "M1_UNDISCLOSED_AD",
-          "3",
           "KNF_WARNING_LIST_MATCH"
         ],
-        "seconds": 17.87,
+        "seconds": 45.232,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1757,17 +1748,15 @@
         "category": "hard_negative",
         "expected_module": 2,
         "label": false,
-        "score": 0.82,
-        "predicted": true,
+        "score": 0.6256,
+        "predicted": false,
         "predicted_module": 2,
         "rule_ids": [
           "1",
           "2",
-          "3",
-          "12a",
-          "11"
+          "3"
         ],
-        "seconds": 16.768,
+        "seconds": 28.47,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1775,11 +1764,11 @@
         "category": "hard_negative",
         "expected_module": 1,
         "label": false,
-        "score": 0.08,
+        "score": 0.087,
         "predicted": false,
         "predicted_module": 1,
         "rule_ids": [],
-        "seconds": 7.1,
+        "seconds": 34.714,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1787,26 +1776,23 @@
         "category": "hard_negative",
         "expected_module": 3,
         "label": false,
-        "score": 0.2095,
+        "score": 0.16,
         "predicted": false,
-        "predicted_module": 1,
+        "predicted_module": 3,
         "rule_ids": [],
-        "seconds": 14.913,
-        "model_used": "gemma3:4b + uknf-m1-rules"
+        "seconds": 36.052,
+        "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
         "id": "neg-compliant-cfd-ad",
         "category": "hard_negative",
         "expected_module": 2,
         "label": false,
-        "score": 0.6,
+        "score": 0.129,
         "predicted": false,
         "predicted_module": 2,
-        "rule_ids": [
-          "3",
-          "15"
-        ],
-        "seconds": 10.911,
+        "rule_ids": [],
+        "seconds": 35.735,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1818,7 +1804,7 @@
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 7.629,
+        "seconds": 44.879,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1826,26 +1812,23 @@
         "category": "hard_negative",
         "expected_module": 3,
         "label": false,
-        "score": 0.1305,
+        "score": 0.12,
         "predicted": false,
-        "predicted_module": 3,
+        "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 8.444,
-        "model_used": "gemma3:4b + uknf-m3-art76"
+        "seconds": 7.767,
+        "model_used": "gemma3:4b + uknf-18rules"
       },
       {
         "id": "neg-compliant-history",
         "category": "hard_negative",
         "expected_module": 2,
         "label": false,
-        "score": 0.7,
-        "predicted": true,
+        "score": 0.129,
+        "predicted": false,
         "predicted_module": 2,
-        "rule_ids": [
-          "3",
-          "15"
-        ],
-        "seconds": 13.83,
+        "rule_ids": [],
+        "seconds": 9.57,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1853,15 +1836,15 @@
         "category": "hard_negative",
         "expected_module": 1,
         "label": false,
-        "score": 0.7,
+        "score": 0.66,
         "predicted": true,
-        "predicted_module": 2,
+        "predicted_module": 1,
         "rule_ids": [
-          "3",
-          "15"
+          "M1_AFFILIATE_MONITORING",
+          "M1_CROSSBORDER_PROMO"
         ],
-        "seconds": 13.369,
-        "model_used": "gemma3:4b + uknf-18rules"
+        "seconds": 12.462,
+        "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
         "id": "neg-scam-awareness-reel",
@@ -1875,7 +1858,7 @@
           "M1_UNDISCLOSED_AD",
           "3"
         ],
-        "seconds": 13.894,
+        "seconds": 20.928,
         "model_used": "gemma3:4b + uknf-m1-rules"
       },
       {
@@ -1887,7 +1870,7 @@
         "predicted": false,
         "predicted_module": 3,
         "rule_ids": [],
-        "seconds": 7.487,
+        "seconds": 9.353,
         "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
@@ -1895,14 +1878,11 @@
         "category": "hard_negative",
         "expected_module": 2,
         "label": false,
-        "score": 0.7,
-        "predicted": true,
+        "score": 0.15,
+        "predicted": false,
         "predicted_module": 2,
-        "rule_ids": [
-          "3",
-          "15"
-        ],
-        "seconds": 12.98,
+        "rule_ids": [],
+        "seconds": 13.204,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1910,15 +1890,12 @@
         "category": "hard_negative",
         "expected_module": 2,
         "label": false,
-        "score": 0.72,
-        "predicted": true,
-        "predicted_module": 2,
-        "rule_ids": [
-          "3",
-          "18"
-        ],
-        "seconds": 16.067,
-        "model_used": "gemma3:4b + uknf-18rules"
+        "score": 0.2005,
+        "predicted": false,
+        "predicted_module": 3,
+        "rule_ids": [],
+        "seconds": 18.842,
+        "model_used": "gemma3:4b + uknf-m3-art76"
       },
       {
         "id": "neg-ta-course",
@@ -1929,7 +1906,7 @@
         "predicted": false,
         "predicted_module": 2,
         "rule_ids": [],
-        "seconds": 7.179,
+        "seconds": 7.655,
         "model_used": "gemma3:4b + uknf-18rules"
       },
       {
@@ -1943,7 +1920,7 @@
         "rule_ids": [
           "M1_CROSSBORDER_PROMO"
         ],
-        "seconds": 5.452,
+        "seconds": 5.593,
         "model_used": "gemma3:4b + uknf-m1-rules"
       }
     ]

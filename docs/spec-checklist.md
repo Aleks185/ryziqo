@@ -1,7 +1,7 @@
 # Checklista zgodności ze specyfikacją UKNF (Ryziqo)
 
 Źródła: `Opis Wyzwania HackNation UKNF 19.11.pdf` + 4 załączniki DOCX (kryteria ryzyka, tematy 1–3).
-Stan na 2026-11-22. Testy backendu: `222 passed`, `yarn audit` 0, `pip-audit` 0. Benchmark fallback (53 przypadki): P 0,960 / R 0,686 / F1 0,800. Stos Docker w wersji API 1.4.0 uruchomiony i sprawdzony (backend, frontend, SearXNG).
+Stan na 2026-11-22. Testy backendu: `222 passed`, `yarn audit` 0, `pip-audit` 0. Benchmark (53 przypadki, próg 0,65): reguły P 0,960 / R 0,686 / F1 0,800; gemma3:4b P 0,931 / R 0,771 / F1 0,844. Stos Docker w wersji API 1.4.0 uruchomiony i sprawdzony (backend, frontend, SearXNG).
 
 ## ✅ Zrobione
 
@@ -105,4 +105,5 @@ Uporządkowane od najwyższego stosunku efektu na demo / wartości dla UKNF do n
 - [x] Scenariusz demo przez API w trybie bez Ollamy: crawl mocków (14 stron), 8 alertów `high_risk_alert` na WebSockecie, zmiana statusu i etykiety, raporty modułów 1–3, kalibracja (P 1,00 / R 0,91 / F1 0,95)
 - [ ] Ten sam scenariusz **z Ollamą** (`--profile ai` albo Ollama na hoście) i przeklikany w przeglądarce
 - [ ] Sprawdzić konsolę przeglądarki na buildzie produkcyjnym (Jury patrzy na `Console.log`). Wywrotki stron łapie własny `PageErrorBoundary`; `console.log` z domyślnej strony błędu react-routera zostaje w bundlu, ale jest nieosiągalny (`BrowserRouter`, bez data routera)
-- [ ] Wpisać aktualny wynik `python -m scripts.evaluate_detection --mode both` do prezentacji jako dowód trafności klasyfikacji
+- [x] Benchmark `--mode both` po poprawce M2 (2026-11-22): reguły P 0,960 / R 0,686 / F1 0,800; gemma3:4b P 0,931 / R 0,771 / F1 0,844 (raport `data/eval_report_gemma3-4b.json`)
+- [ ] Wpisać te liczby do prezentacji jako dowód trafności klasyfikacji
