@@ -69,6 +69,16 @@ const readLang = () => {
   }
 };
 
+const THRESHOLD_KEY = "investwatch.alertThreshold";
+const readThreshold = () => {
+  try {
+    const v = Number(localStorage.getItem(THRESHOLD_KEY));
+    return localStorage.getItem(THRESHOLD_KEY) !== null && v >= 0 && v <= 1 ? v : ALERT_THRESHOLD;
+  } catch {
+    return ALERT_THRESHOLD;
+  }
+};
+
 export function AppProvider({ children }) {
   const [mode, setMode] = useState("checking");
   const [demoReason, setDemoReason] = useState(null);
@@ -79,6 +89,14 @@ export function AppProvider({ children }) {
   const [knfSnapshotDate, setKnfSnapshotDate] = useState(null);
   const [events, setEvents] = useState([]);
   const [lang, setLangState] = useState(readLang);
+  // Próg alertu ustawiany w Kalibracji; zapamiętany w przeglądarce, domyślnie REACT_APP_ALERT_THRESHOLD
+  const [alertThreshold, setAlertThresholdState] = useState(readThreshold);
+  const thresholdRef = useRef(alertThreshold);
+  thresholdRef.current = alertThreshold;
+  const setAlertThreshold = useCallback((v) => {
+    try { localStorage.setItem(THRESHOLD_KEY, String(v)); } catch { /* tylko na czas sesji */ }
+    setAlertThresholdState(v);
+  }, []);
   const [metadata, setMetadata] = useState(() => {
     try { return JSON.parse(localStorage.getItem("investwatch.casework.v1")) || {}; }
     catch { return {}; }
@@ -137,7 +155,7 @@ export function AppProvider({ children }) {
   };
 
   const notify = useCallback((inc) => {
-    if (inc.risk_score < ALERT_THRESHOLD || alerted.current.has(inc.id)) return;
+    if (inc.risk_score < thresholdRef.current || alerted.current.has(inc.id)) return;
     alerted.current.add(inc.id);
     toast.error(`${translate(langRef.current, "toast_high")}: ${formatRiskPercent(inc.risk_score)}`, {
       id: inc.id,
@@ -284,7 +302,7 @@ export function AppProvider({ children }) {
       // "Tylko sprawdź": wynik nie trafia do rejestru, więc nie dodajemy go do listy incydentów
       if (share?.share_mode === "none") return items;
       items.forEach((inc) => {
-        pushEvent(mode === "online" ? "analysis.completed" : "analysis.local", `M${inc.module_id} · ${inc.entity_name}`, inc.risk_score >= ALERT_THRESHOLD ? "alert" : "info", inc.risk_score);
+        pushEvent(mode === "online" ? "analysis.completed" : "analysis.local", `M${inc.module_id} · ${inc.entity_name}`, inc.risk_score >= thresholdRef.current ? "alert" : "info", inc.risk_score);
         upsert(inc);
         if (citizen) annotate(inc.id, { citizen: true });
         else notify(inc);
@@ -341,9 +359,9 @@ export function AppProvider({ children }) {
   };
 
   const value = useMemo(
-    () => ({ annotate, runCycle, cycling, mode, demoReason, backendMode, wsStatus, incidents, knfSnapshotDate, events, lang, t, setLang, connect, analyze, refreshIncident, updateStatus, setGroundTruth, analyzeSamples, clearDemo, clearEvents: () => setEvents([]) }),
+    () => ({ annotate, runCycle, cycling, mode, demoReason, backendMode, wsStatus, incidents, knfSnapshotDate, events, lang, t, setLang, alertThreshold, setAlertThreshold, connect, analyze, refreshIncident, updateStatus, setGroundTruth, analyzeSamples, clearDemo, clearEvents: () => setEvents([]) }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, demoReason, backendMode, wsStatus, incidents, knfSnapshotDate, events, lang, t, connect, analyze, refreshIncident, cycling, annotate],
+    [mode, demoReason, backendMode, wsStatus, incidents, knfSnapshotDate, events, lang, t, alertThreshold, setAlertThreshold, connect, analyze, refreshIncident, cycling, annotate],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -176,6 +176,8 @@ class ReportFinding(BaseModel):
 class AnalysisReport(BaseModel):
     report_id: str | None = None
     result_origin: str | None = None
+    # Seconds spent in Ollama inference for this answer; None when no model call ran (rules/cache/fast path)
+    llm_seconds: float | None = None
     source_type: Literal["text", "url", "screenshot"]
     status: Literal["completed"] = "completed"
     risk_score: int = Field(ge=0, le=100)

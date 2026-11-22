@@ -197,6 +197,7 @@ const ResultPanel = ({ state }) => {
           {state.report && <div className="text-sm text-slate-600 space-y-1">
             <p>{state.report.summary}</p>
             {state.report.limitations.map(text => <p key={text}>{text}</p>)}
+            {state.report.llm_seconds != null && <p data-testid="analyze-llm-time">{t("llm_time")}: {state.report.llm_seconds.toFixed(1)} s</p>}
           </div>}
           <ul className="space-y-5">
             {state.items.map((inc) => (
